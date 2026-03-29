@@ -1,0 +1,60 @@
+2026-03-21 08:51:54.798 +07:00 [INF] ACS Simulator API starting on port 9060...
+2026-03-21 08:51:54.861 +07:00 [INF] [FleetPersistence] Loaded 5 AGV(s) from C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json (saved at "2026-03-19T04:30:28.9341212Z")
+2026-03-21 08:51:54.866 +07:00 [INF] [FleetRestore] Restoring 5 AGV(s)...
+2026-03-21 08:51:54.877 +07:00 [INF] AGV created: PSH-02092021
+2026-03-21 08:51:54.887 +07:00 [INF] [FleetPersistence] Saved 1 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-21 08:51:54.934 +07:00 [INF] [FleetRestore] AGV PSH-02092021 restored and started
+2026-03-21 08:51:54.937 +07:00 [INF] AGV created: PSH-02092022
+2026-03-21 08:51:54.939 +07:00 [INF] [FleetPersistence] Saved 2 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-21 08:51:54.939 +07:00 [INF] [FleetRestore] AGV PSH-02092022 restored (not auto-started)
+2026-03-21 08:51:54.942 +07:00 [INF] AGV created: PSH-02092023
+2026-03-21 08:51:54.953 +07:00 [INF] [FleetPersistence] Saved 3 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-21 08:51:54.958 +07:00 [INF] [FleetRestore] AGV PSH-02092023 restored and started
+2026-03-21 08:51:54.960 +07:00 [INF] AGV created: PSH-02092024
+2026-03-21 08:51:54.969 +07:00 [INF] [FleetPersistence] Saved 4 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-21 08:51:54.969 +07:00 [INF] [FleetRestore] AGV PSH-02092024 restored (not auto-started)
+2026-03-21 08:51:54.972 +07:00 [INF] AGV created: PSH-02092025
+2026-03-21 08:51:54.984 +07:00 [INF] [FleetRestore] AGV PSH-02092025 restored (not auto-started)
+2026-03-21 08:51:54.984 +07:00 [INF] [FleetPersistence] Saved 5 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-21 08:51:54.985 +07:00 [INF] [FleetRestore] Fleet restoration complete
+2026-03-21 08:51:54.993 +07:00 [INF] [SimulatorBroadcast] Service starting with adaptive interval (150ms / 3000ms)
+2026-03-21 08:52:40.269 +07:00 [INF] AGV updated: PSH-02092023 -> PSH-02092023
+2026-03-21 08:52:40.274 +07:00 [INF] [FleetPersistence] Saved 5 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-21 08:54:44.941 +07:00 [INF] AGV updated: PSH-02092022 -> PSH-02092022
+2026-03-21 08:54:44.944 +07:00 [INF] [FleetPersistence] Saved 5 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-21 10:24:31.561 +07:00 [INF] AGV updated: PSH-02092021 -> PSH-02092021
+2026-03-21 10:24:31.567 +07:00 [INF] [FleetPersistence] Saved 5 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-21 11:01:11.631 +07:00 [INF] AGV updated: PSH-02092021 -> PSH-02092021
+2026-03-21 11:01:11.636 +07:00 [INF] [FleetPersistence] Saved 5 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-21 11:44:07.426 +07:00 [INF] AGV updated: PSH-02092021 -> PSH-02092021
+2026-03-21 11:44:07.431 +07:00 [INF] [FleetPersistence] Saved 5 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-21 13:17:09.671 +07:00 [WRN] The WebRootPath was not found: C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\wwwroot. Static files may be unavailable.
+2026-03-21 13:17:09.698 +07:00 [INF] ACS Simulator API starting on port 9060...
+2026-03-21 13:17:09.744 +07:00 [INF] [FleetPersistence] Loaded 5 AGV(s) from C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json (saved at "2026-03-21T04:44:07.4291887Z")
+2026-03-21 13:17:09.747 +07:00 [INF] [FleetRestore] Restoring 5 AGV(s)...
+2026-03-21 13:17:09.760 +07:00 [INF] AGV created: PSH-02092021
+2026-03-21 13:17:09.772 +07:00 [INF] [FleetPersistence] Saved 1 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-21 13:17:09.773 +07:00 [INF] [FleetRestore] AGV PSH-02092021 restored (not auto-started)
+2026-03-21 13:17:09.777 +07:00 [INF] AGV created: PSH-02092022
+2026-03-21 13:17:09.787 +07:00 [INF] [FleetPersistence] Saved 2 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-21 13:17:09.840 +07:00 [INF] [FleetRestore] AGV PSH-02092022 restored and started
+2026-03-21 13:17:09.843 +07:00 [INF] AGV created: PSH-02092023
+2026-03-21 13:17:09.845 +07:00 [INF] [FleetPersistence] Saved 3 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-21 13:17:09.850 +07:00 [INF] [FleetRestore] AGV PSH-02092023 restored and started
+2026-03-21 13:17:09.853 +07:00 [INF] AGV created: PSH-02092024
+2026-03-21 13:17:09.859 +07:00 [INF] [FleetPersistence] Saved 4 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-21 13:17:09.859 +07:00 [INF] [FleetRestore] AGV PSH-02092024 restored (not auto-started)
+2026-03-21 13:17:09.862 +07:00 [INF] AGV created: PSH-02092025
+2026-03-21 13:17:09.876 +07:00 [INF] [FleetRestore] AGV PSH-02092025 restored (not auto-started)
+2026-03-21 13:17:09.876 +07:00 [INF] [FleetPersistence] Saved 5 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-21 13:17:09.877 +07:00 [INF] [FleetRestore] Fleet restoration complete
+2026-03-21 13:17:09.885 +07:00 [INF] [SimulatorBroadcast] Service starting with adaptive interval (150ms / 3000ms)
+2026-03-21 13:17:09.896 +07:00 [WRN] The WebRootPath was not found: C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\wwwroot. Static files may be unavailable.
+2026-03-21 13:25:23.413 +07:00 [INF] AGV updated: PSH-02092021 -> PSH-02092021
+2026-03-21 13:25:23.430 +07:00 [INF] [FleetPersistence] Saved 5 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-21 13:27:11.588 +07:00 [INF] AGV updated: PSH-02092021 -> PSH-02092021
+2026-03-21 13:27:11.593 +07:00 [INF] [FleetPersistence] Saved 5 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-21 13:37:48.011 +07:00 [INF] AGV updated: PSH-02092023 -> PSH-02092023
+2026-03-21 13:37:48.015 +07:00 [INF] [FleetPersistence] Saved 5 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-21 14:07:01.910 +07:00 [INF] AGV updated: PSH-02092023 -> PSH-02092023
+2026-03-21 14:07:01.916 +07:00 [INF] [FleetPersistence] Saved 5 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json

@@ -1,0 +1,23 @@
+{
+  "name": "Sensor Failure Cascade",
+  "description": "Simulate sensor failure causing speed reduction, then motor overheat. Tests cascading fault recovery.",
+  "version": "1.0",
+  "steps": [
+    { "type": "Log", "message": "=== Sensor Failure Cascade Test ===" },
+    { "type": "Assert", "agvId": "AGV-001", "condition": "isConnected == true", "timeoutMs": 3000 },
+    { "type": "SetBattery", "agvId": "AGV-001", "level": 80 },
+    { "type": "SetSpeed", "agvId": "AGV-001", "speed": 2.0, "comment": "Set full speed" },
+    { "type": "Log", "message": "Step 1: Injecting SENSOR_FAILURE..." },
+    { "type": "InjectError", "agvId": "AGV-001", "templateName": "SENSOR_FAILURE" },
+    { "type": "Assert", "agvId": "AGV-001", "condition": "errorCount > 0", "timeoutMs": 3000 },
+    { "type": "Wait", "durationMs": 2000 },
+    { "type": "Log", "message": "Step 2: Adding MOTOR_OVERHEAT (will reduce speed 50%)..." },
+    { "type": "InjectError", "agvId": "AGV-001", "templateName": "MOTOR_OVERHEAT" },
+    { "type": "Wait", "durationMs": 3000, "comment": "AGV running at reduced speed" },
+    { "type": "Log", "message": "Step 3: Recovering — clearing all errors, restoring speed..." },
+    { "type": "ClearError", "agvId": "AGV-001" },
+    { "type": "SetSpeed", "agvId": "AGV-001", "speed": 2.0 },
+    { "type": "Assert", "agvId": "AGV-001", "condition": "errorCount == 0", "timeoutMs": 3000 },
+    { "type": "Log", "message": "=== Sensor Failure Cascade COMPLETE ===" }
+  ]
+}

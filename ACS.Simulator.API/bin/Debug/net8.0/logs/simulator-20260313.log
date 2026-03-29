@@ -1,0 +1,430 @@
+2026-03-13 09:26:12.132 +07:00 [INF] ACS Simulator API starting on port 9060...
+2026-03-13 09:26:12.197 +07:00 [INF] [FleetPersistence] Loaded 3 AGV(s) from C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json (saved at "2026-03-12T16:20:53.2737010Z")
+2026-03-13 09:26:12.203 +07:00 [INF] [FleetRestore] Restoring 3 AGV(s)...
+2026-03-13 09:26:12.215 +07:00 [INF] AGV created: PSH-02092021
+2026-03-13 09:26:12.224 +07:00 [INF] [FleetPersistence] Saved 1 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-13 09:26:12.273 +07:00 [INF] [FleetRestore] AGV PSH-02092021 restored and started
+2026-03-13 09:26:12.278 +07:00 [INF] AGV created: PSH-02092022
+2026-03-13 09:26:12.280 +07:00 [INF] [FleetPersistence] Saved 2 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-13 09:26:12.283 +07:00 [INF] [FleetRestore] AGV PSH-02092022 restored and started
+2026-03-13 09:26:12.286 +07:00 [INF] AGV created: PSH-02092023
+2026-03-13 09:26:12.293 +07:00 [INF] [FleetPersistence] Saved 3 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-13 09:26:12.296 +07:00 [INF] [FleetRestore] AGV PSH-02092023 restored and started
+2026-03-13 09:26:12.297 +07:00 [INF] [FleetRestore] Fleet restoration complete
+2026-03-13 09:26:12.305 +07:00 [INF] [SimulatorBroadcast] Service starting with adaptive interval (150ms / 3000ms)
+2026-03-13 10:35:32.578 +07:00 [INF] ACS Simulator API starting on port 9060...
+2026-03-13 10:35:32.678 +07:00 [INF] [FleetPersistence] Loaded 3 AGV(s) from C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json (saved at "2026-03-13T02:26:12.2874829Z")
+2026-03-13 10:35:32.687 +07:00 [INF] [FleetRestore] Restoring 3 AGV(s)...
+2026-03-13 10:35:32.705 +07:00 [INF] AGV created: PSH-02092021
+2026-03-13 10:35:32.720 +07:00 [INF] [FleetPersistence] Saved 1 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-13 10:35:32.798 +07:00 [INF] [FleetRestore] AGV PSH-02092021 restored and started
+2026-03-13 10:35:32.805 +07:00 [INF] AGV created: PSH-02092022
+2026-03-13 10:35:32.808 +07:00 [INF] [FleetPersistence] Saved 2 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-13 10:35:32.814 +07:00 [INF] [FleetRestore] AGV PSH-02092022 restored and started
+2026-03-13 10:35:32.816 +07:00 [INF] AGV created: PSH-02092023
+2026-03-13 10:35:32.821 +07:00 [INF] [FleetPersistence] Saved 3 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-13 10:35:32.821 +07:00 [INF] [FleetRestore] AGV PSH-02092023 restored (not auto-started)
+2026-03-13 10:35:32.824 +07:00 [INF] [FleetRestore] Fleet restoration complete
+2026-03-13 10:35:32.833 +07:00 [INF] [SimulatorBroadcast] Service starting with adaptive interval (150ms / 3000ms)
+2026-03-13 10:38:17.228 +07:00 [INF] [FleetPersistence] Saved 3 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-13 10:38:24.039 +07:00 [INF] [FleetPersistence] Saved 3 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-13 13:56:39.297 +07:00 [INF] [FleetPersistence] Saved 3 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-13 13:57:07.163 +07:00 [ERR] Connection id "0HNK0M6JKAK7V", Request id "0HNK0M6JKAK7V:00000053": An unhandled exception was thrown by the application.
+System.InvalidOperationException: It is not allowed to connect with a server after the connection is established.
+   at MQTTnet.Client.MqttClient.ThrowIfConnected(String message)
+   at MQTTnet.Client.MqttClient.ConnectAsync(MqttClientOptions options, CancellationToken cancellationToken)
+   at ACS.Simulator.API.Core.Services.VirtualAgv.ConnectAsync() in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Core\Services\VirtualAgv.cs:line 300
+   at ACS.Simulator.API.Services.SimulatorService.StartAgvAsync(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Services\SimulatorService.cs:line 164
+   at ACS.Simulator.API.Controllers.AgvController.Start(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Controllers\AgvController.cs:line 43
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
+2026-03-13 13:57:12.783 +07:00 [ERR] Connection id "0HNK0M6JKAK7V", Request id "0HNK0M6JKAK7V:00000062": An unhandled exception was thrown by the application.
+System.InvalidOperationException: It is not allowed to connect with a server after the connection is established.
+   at MQTTnet.Client.MqttClient.ThrowIfConnected(String message)
+   at MQTTnet.Client.MqttClient.ConnectAsync(MqttClientOptions options, CancellationToken cancellationToken)
+   at ACS.Simulator.API.Core.Services.VirtualAgv.ConnectAsync() in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Core\Services\VirtualAgv.cs:line 300
+   at ACS.Simulator.API.Services.SimulatorService.StartAgvAsync(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Services\SimulatorService.cs:line 164
+   at ACS.Simulator.API.Controllers.AgvController.Start(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Controllers\AgvController.cs:line 43
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
+2026-03-13 13:58:36.312 +07:00 [ERR] Connection id "0HNK0M6JKAK7V", Request id "0HNK0M6JKAK7V:00000082": An unhandled exception was thrown by the application.
+System.InvalidOperationException: It is not allowed to connect with a server after the connection is established.
+   at MQTTnet.Client.MqttClient.ThrowIfConnected(String message)
+   at MQTTnet.Client.MqttClient.ConnectAsync(MqttClientOptions options, CancellationToken cancellationToken)
+   at ACS.Simulator.API.Core.Services.VirtualAgv.ConnectAsync() in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Core\Services\VirtualAgv.cs:line 300
+   at ACS.Simulator.API.Services.SimulatorService.StartAgvAsync(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Services\SimulatorService.cs:line 164
+   at ACS.Simulator.API.Controllers.AgvController.Start(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Controllers\AgvController.cs:line 43
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
+2026-03-13 13:58:42.426 +07:00 [ERR] Connection id "0HNK0M6JKAK7V", Request id "0HNK0M6JKAK7V:00000086": An unhandled exception was thrown by the application.
+System.InvalidOperationException: It is not allowed to connect with a server after the connection is established.
+   at MQTTnet.Client.MqttClient.ThrowIfConnected(String message)
+   at MQTTnet.Client.MqttClient.ConnectAsync(MqttClientOptions options, CancellationToken cancellationToken)
+   at ACS.Simulator.API.Core.Services.VirtualAgv.ConnectAsync() in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Core\Services\VirtualAgv.cs:line 300
+   at ACS.Simulator.API.Services.SimulatorService.StartAgvAsync(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Services\SimulatorService.cs:line 164
+   at ACS.Simulator.API.Controllers.AgvController.Start(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Controllers\AgvController.cs:line 43
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
+2026-03-13 13:58:42.607 +07:00 [ERR] Connection id "0HNK0M6JKAK7V", Request id "0HNK0M6JKAK7V:00000087": An unhandled exception was thrown by the application.
+System.InvalidOperationException: It is not allowed to connect with a server after the connection is established.
+   at MQTTnet.Client.MqttClient.ThrowIfConnected(String message)
+   at MQTTnet.Client.MqttClient.ConnectAsync(MqttClientOptions options, CancellationToken cancellationToken)
+   at ACS.Simulator.API.Core.Services.VirtualAgv.ConnectAsync() in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Core\Services\VirtualAgv.cs:line 300
+   at ACS.Simulator.API.Services.SimulatorService.StartAgvAsync(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Services\SimulatorService.cs:line 164
+   at ACS.Simulator.API.Controllers.AgvController.Start(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Controllers\AgvController.cs:line 43
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
+2026-03-13 13:58:42.784 +07:00 [ERR] Connection id "0HNK0M6JKAK7V", Request id "0HNK0M6JKAK7V:00000088": An unhandled exception was thrown by the application.
+System.InvalidOperationException: It is not allowed to connect with a server after the connection is established.
+   at MQTTnet.Client.MqttClient.ThrowIfConnected(String message)
+   at MQTTnet.Client.MqttClient.ConnectAsync(MqttClientOptions options, CancellationToken cancellationToken)
+   at ACS.Simulator.API.Core.Services.VirtualAgv.ConnectAsync() in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Core\Services\VirtualAgv.cs:line 300
+   at ACS.Simulator.API.Services.SimulatorService.StartAgvAsync(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Services\SimulatorService.cs:line 164
+   at ACS.Simulator.API.Controllers.AgvController.Start(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Controllers\AgvController.cs:line 43
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
+2026-03-13 13:58:42.970 +07:00 [ERR] Connection id "0HNK0M6JKAK7V", Request id "0HNK0M6JKAK7V:00000089": An unhandled exception was thrown by the application.
+System.InvalidOperationException: It is not allowed to connect with a server after the connection is established.
+   at MQTTnet.Client.MqttClient.ThrowIfConnected(String message)
+   at MQTTnet.Client.MqttClient.ConnectAsync(MqttClientOptions options, CancellationToken cancellationToken)
+   at ACS.Simulator.API.Core.Services.VirtualAgv.ConnectAsync() in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Core\Services\VirtualAgv.cs:line 300
+   at ACS.Simulator.API.Services.SimulatorService.StartAgvAsync(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Services\SimulatorService.cs:line 164
+   at ACS.Simulator.API.Controllers.AgvController.Start(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Controllers\AgvController.cs:line 43
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
+2026-03-13 13:58:43.137 +07:00 [ERR] Connection id "0HNK0M6JKAK7V", Request id "0HNK0M6JKAK7V:0000008A": An unhandled exception was thrown by the application.
+System.InvalidOperationException: It is not allowed to connect with a server after the connection is established.
+   at MQTTnet.Client.MqttClient.ThrowIfConnected(String message)
+   at MQTTnet.Client.MqttClient.ConnectAsync(MqttClientOptions options, CancellationToken cancellationToken)
+   at ACS.Simulator.API.Core.Services.VirtualAgv.ConnectAsync() in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Core\Services\VirtualAgv.cs:line 300
+   at ACS.Simulator.API.Services.SimulatorService.StartAgvAsync(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Services\SimulatorService.cs:line 164
+   at ACS.Simulator.API.Controllers.AgvController.Start(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Controllers\AgvController.cs:line 43
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
+2026-03-13 13:58:43.313 +07:00 [ERR] Connection id "0HNK0M6JKAK7V", Request id "0HNK0M6JKAK7V:0000008B": An unhandled exception was thrown by the application.
+System.InvalidOperationException: It is not allowed to connect with a server after the connection is established.
+   at MQTTnet.Client.MqttClient.ThrowIfConnected(String message)
+   at MQTTnet.Client.MqttClient.ConnectAsync(MqttClientOptions options, CancellationToken cancellationToken)
+   at ACS.Simulator.API.Core.Services.VirtualAgv.ConnectAsync() in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Core\Services\VirtualAgv.cs:line 300
+   at ACS.Simulator.API.Services.SimulatorService.StartAgvAsync(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Services\SimulatorService.cs:line 164
+   at ACS.Simulator.API.Controllers.AgvController.Start(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Controllers\AgvController.cs:line 43
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
+2026-03-13 13:58:43.510 +07:00 [ERR] Connection id "0HNK0M6JKAK7V", Request id "0HNK0M6JKAK7V:0000008D": An unhandled exception was thrown by the application.
+System.InvalidOperationException: It is not allowed to connect with a server after the connection is established.
+   at MQTTnet.Client.MqttClient.ThrowIfConnected(String message)
+   at MQTTnet.Client.MqttClient.ConnectAsync(MqttClientOptions options, CancellationToken cancellationToken)
+   at ACS.Simulator.API.Core.Services.VirtualAgv.ConnectAsync() in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Core\Services\VirtualAgv.cs:line 300
+   at ACS.Simulator.API.Services.SimulatorService.StartAgvAsync(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Services\SimulatorService.cs:line 164
+   at ACS.Simulator.API.Controllers.AgvController.Start(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Controllers\AgvController.cs:line 43
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
+2026-03-13 13:58:43.678 +07:00 [ERR] Connection id "0HNK0M6JKAK7V", Request id "0HNK0M6JKAK7V:0000008E": An unhandled exception was thrown by the application.
+System.InvalidOperationException: It is not allowed to connect with a server after the connection is established.
+   at MQTTnet.Client.MqttClient.ThrowIfConnected(String message)
+   at MQTTnet.Client.MqttClient.ConnectAsync(MqttClientOptions options, CancellationToken cancellationToken)
+   at ACS.Simulator.API.Core.Services.VirtualAgv.ConnectAsync() in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Core\Services\VirtualAgv.cs:line 300
+   at ACS.Simulator.API.Services.SimulatorService.StartAgvAsync(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Services\SimulatorService.cs:line 164
+   at ACS.Simulator.API.Controllers.AgvController.Start(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Controllers\AgvController.cs:line 43
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
+2026-03-13 13:58:43.874 +07:00 [ERR] Connection id "0HNK0M6JKAK7V", Request id "0HNK0M6JKAK7V:0000008F": An unhandled exception was thrown by the application.
+System.InvalidOperationException: It is not allowed to connect with a server after the connection is established.
+   at MQTTnet.Client.MqttClient.ThrowIfConnected(String message)
+   at MQTTnet.Client.MqttClient.ConnectAsync(MqttClientOptions options, CancellationToken cancellationToken)
+   at ACS.Simulator.API.Core.Services.VirtualAgv.ConnectAsync() in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Core\Services\VirtualAgv.cs:line 300
+   at ACS.Simulator.API.Services.SimulatorService.StartAgvAsync(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Services\SimulatorService.cs:line 164
+   at ACS.Simulator.API.Controllers.AgvController.Start(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Controllers\AgvController.cs:line 43
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
+2026-03-13 13:58:44.063 +07:00 [ERR] Connection id "0HNK0M6JKAK7V", Request id "0HNK0M6JKAK7V:00000090": An unhandled exception was thrown by the application.
+System.InvalidOperationException: It is not allowed to connect with a server after the connection is established.
+   at MQTTnet.Client.MqttClient.ThrowIfConnected(String message)
+   at MQTTnet.Client.MqttClient.ConnectAsync(MqttClientOptions options, CancellationToken cancellationToken)
+   at ACS.Simulator.API.Core.Services.VirtualAgv.ConnectAsync() in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Core\Services\VirtualAgv.cs:line 300
+   at ACS.Simulator.API.Services.SimulatorService.StartAgvAsync(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Services\SimulatorService.cs:line 164
+   at ACS.Simulator.API.Controllers.AgvController.Start(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Controllers\AgvController.cs:line 43
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
+2026-03-13 13:58:44.247 +07:00 [ERR] Connection id "0HNK0M6JKAK7V", Request id "0HNK0M6JKAK7V:00000091": An unhandled exception was thrown by the application.
+System.InvalidOperationException: It is not allowed to connect with a server after the connection is established.
+   at MQTTnet.Client.MqttClient.ThrowIfConnected(String message)
+   at MQTTnet.Client.MqttClient.ConnectAsync(MqttClientOptions options, CancellationToken cancellationToken)
+   at ACS.Simulator.API.Core.Services.VirtualAgv.ConnectAsync() in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Core\Services\VirtualAgv.cs:line 300
+   at ACS.Simulator.API.Services.SimulatorService.StartAgvAsync(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Services\SimulatorService.cs:line 164
+   at ACS.Simulator.API.Controllers.AgvController.Start(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Controllers\AgvController.cs:line 43
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
+2026-03-13 13:58:44.429 +07:00 [ERR] Connection id "0HNK0M6JKAK7V", Request id "0HNK0M6JKAK7V:00000092": An unhandled exception was thrown by the application.
+System.InvalidOperationException: It is not allowed to connect with a server after the connection is established.
+   at MQTTnet.Client.MqttClient.ThrowIfConnected(String message)
+   at MQTTnet.Client.MqttClient.ConnectAsync(MqttClientOptions options, CancellationToken cancellationToken)
+   at ACS.Simulator.API.Core.Services.VirtualAgv.ConnectAsync() in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Core\Services\VirtualAgv.cs:line 300
+   at ACS.Simulator.API.Services.SimulatorService.StartAgvAsync(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Services\SimulatorService.cs:line 164
+   at ACS.Simulator.API.Controllers.AgvController.Start(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Controllers\AgvController.cs:line 43
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
+2026-03-13 13:58:44.608 +07:00 [ERR] Connection id "0HNK0M6JKAK7V", Request id "0HNK0M6JKAK7V:00000093": An unhandled exception was thrown by the application.
+System.InvalidOperationException: It is not allowed to connect with a server after the connection is established.
+   at MQTTnet.Client.MqttClient.ThrowIfConnected(String message)
+   at MQTTnet.Client.MqttClient.ConnectAsync(MqttClientOptions options, CancellationToken cancellationToken)
+   at ACS.Simulator.API.Core.Services.VirtualAgv.ConnectAsync() in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Core\Services\VirtualAgv.cs:line 300
+   at ACS.Simulator.API.Services.SimulatorService.StartAgvAsync(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Services\SimulatorService.cs:line 164
+   at ACS.Simulator.API.Controllers.AgvController.Start(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Controllers\AgvController.cs:line 43
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
+2026-03-13 13:58:44.798 +07:00 [ERR] Connection id "0HNK0M6JKAK7V", Request id "0HNK0M6JKAK7V:00000094": An unhandled exception was thrown by the application.
+System.InvalidOperationException: It is not allowed to connect with a server after the connection is established.
+   at MQTTnet.Client.MqttClient.ThrowIfConnected(String message)
+   at MQTTnet.Client.MqttClient.ConnectAsync(MqttClientOptions options, CancellationToken cancellationToken)
+   at ACS.Simulator.API.Core.Services.VirtualAgv.ConnectAsync() in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Core\Services\VirtualAgv.cs:line 300
+   at ACS.Simulator.API.Services.SimulatorService.StartAgvAsync(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Services\SimulatorService.cs:line 164
+   at ACS.Simulator.API.Controllers.AgvController.Start(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Controllers\AgvController.cs:line 43
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
+2026-03-13 13:58:44.986 +07:00 [ERR] Connection id "0HNK0M6JKAK7V", Request id "0HNK0M6JKAK7V:00000095": An unhandled exception was thrown by the application.
+System.InvalidOperationException: It is not allowed to connect with a server after the connection is established.
+   at MQTTnet.Client.MqttClient.ThrowIfConnected(String message)
+   at MQTTnet.Client.MqttClient.ConnectAsync(MqttClientOptions options, CancellationToken cancellationToken)
+   at ACS.Simulator.API.Core.Services.VirtualAgv.ConnectAsync() in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Core\Services\VirtualAgv.cs:line 300
+   at ACS.Simulator.API.Services.SimulatorService.StartAgvAsync(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Services\SimulatorService.cs:line 164
+   at ACS.Simulator.API.Controllers.AgvController.Start(String id) in C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\Controllers\AgvController.cs:line 43
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
+2026-03-13 13:58:49.328 +07:00 [INF] [FleetPersistence] Saved 3 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json
+2026-03-13 13:59:20.211 +07:00 [INF] AGV updated: PSH-02092022 -> PSH-02092022
+2026-03-13 13:59:20.217 +07:00 [INF] [FleetPersistence] Saved 3 AGV(s) to C:\Users\ducbu\Documents\GitHub\ACS\src\backend\ACS.Simulator.API\bin\Debug\net8.0\data\fleet.json

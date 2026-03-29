@@ -1,0 +1,35 @@
+{
+  "name": "acs-simulator-web",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 3001",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^5.6.1",
+    "@microsoft/signalr": "^8.0.7",
+    "antd": "^5.26.0",
+    "axios": "^1.10.0",
+    "dayjs": "^1.11.13",
+    "immer": "^10.1.1",
+    "konva": "^9.3.20",
+    "nipplejs": "^0.10.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-konva": "^18.2.10",
+    "react-router-dom": "^7.6.0",
+    "react-zoom-pan-pinch": "^3.7.0",
+    "recharts": "^2.15.3",
+    "zustand": "^5.0.5"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.23",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "~5.7.2",
+    "vite": "^6.3.5"
+  }
+}

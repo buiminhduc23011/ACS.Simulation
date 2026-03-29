@@ -1,0 +1,125 @@
+{
+  "name": "Battery Lifecycle Test",
+  "description": "Kiểm tra các mức pin khác nhau và xác nhận trạng thái AGV",
+  "version": "1.0",
+  "steps": [
+    {
+      "type": "Log",
+      "message": "=== Bắt đầu kiểm tra vòng đời pin ==="
+    },
+    {
+      "type": "SetBattery",
+      "agvId": "",
+      "level": 100.0,
+      "comment": "Pin đầy 100%"
+    },
+    {
+      "type": "Assert",
+      "agvId": "",
+      "condition": "battery > 90",
+      "timeoutMs": 3000,
+      "comment": "Xác nhận pin trên 90%"
+    },
+    {
+      "type": "Wait",
+      "durationMs": 1000
+    },
+    {
+      "type": "Log",
+      "message": ">>> Giảm pin xuống 50% - mức bình thường"
+    },
+    {
+      "type": "SetBattery",
+      "agvId": "",
+      "level": 50.0
+    },
+    {
+      "type": "Assert",
+      "agvId": "",
+      "condition": "battery > 40",
+      "timeoutMs": 3000
+    },
+    {
+      "type": "Wait",
+      "durationMs": 1000
+    },
+    {
+      "type": "Log",
+      "message": ">>> Giảm pin xuống 20% - mức cảnh báo"
+    },
+    {
+      "type": "SetBattery",
+      "agvId": "",
+      "level": 20.0
+    },
+    {
+      "type": "Wait",
+      "durationMs": 1500
+    },
+    {
+      "type": "Log",
+      "message": ">>> Giảm pin xuống 5% - mức nguy hiểm"
+    },
+    {
+      "type": "SetBattery",
+      "agvId": "",
+      "level": 5.0
+    },
+    {
+      "type": "InjectError",
+      "agvId": "",
+      "templateName": "BATTERY_LOW",
+      "comment": "Cảnh báo pin yếu"
+    },
+    {
+      "type": "Wait",
+      "durationMs": 2000
+    },
+    {
+      "type": "Assert",
+      "agvId": "",
+      "condition": "battery < 10",
+      "timeoutMs": 3000,
+      "comment": "Xác nhận pin dưới 10%"
+    },
+    {
+      "type": "Assert",
+      "agvId": "",
+      "condition": "haserrors == true",
+      "timeoutMs": 3000,
+      "comment": "Xác nhận có cảnh báo lỗi"
+    },
+    {
+      "type": "Log",
+      "message": ">>> Sạc pin lên 100%"
+    },
+    {
+      "type": "ClearError",
+      "agvId": "",
+      "comment": "Xóa cảnh báo pin yếu"
+    },
+    {
+      "type": "SetBattery",
+      "agvId": "",
+      "level": 100.0
+    },
+    {
+      "type": "Assert",
+      "agvId": "",
+      "condition": "battery > 90",
+      "timeoutMs": 3000,
+      "comment": "Xác nhận pin đã đầy"
+    },
+    {
+      "type": "Assert",
+      "agvId": "",
+      "condition": "haserrors == false",
+      "timeoutMs": 3000,
+      "comment": "Xác nhận không còn lỗi"
+    },
+    {
+      "type": "Log",
+      "message": "=== Hoàn thành kiểm tra vòng đời pin ==="
+    }
+  ]
+}
