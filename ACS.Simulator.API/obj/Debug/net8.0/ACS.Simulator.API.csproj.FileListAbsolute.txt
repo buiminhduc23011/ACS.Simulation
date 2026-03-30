@@ -277,3 +277,4 @@ C:\Users\ducbu\Documents\GitHub\ACS.Simulation\ACS.Simulator.API\obj\Debug\net8.
 C:\Users\ducbu\Documents\GitHub\ACS.Simulation\ACS.Simulator.API\obj\Debug\net8.0\ACS.Simulator.API.pdb
 C:\Users\ducbu\Documents\GitHub\ACS.Simulation\ACS.Simulator.API\obj\Debug\net8.0\ACS.Simulator.API.genruntimeconfig.cache
 C:\Users\ducbu\Documents\GitHub\ACS.Simulation\ACS.Simulator.API\obj\Debug\net8.0\ref\ACS.Simulator.API.dll
+C:\Users\ducbu\Documents\GitHub\ACS.Simulation\ACS.Simulator.API\obj\Debug\net8.0\ACS.Simulator.API.sourcelink.json

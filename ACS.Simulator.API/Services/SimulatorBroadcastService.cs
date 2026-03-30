@@ -1,6 +1,7 @@
 using ACS.Simulator.API.Hubs;
 using ACS.Simulator.API.Models;
 using Microsoft.AspNetCore.SignalR;
+using System.Collections.Concurrent;
 
 namespace ACS.Simulator.API.Services;
 
@@ -13,8 +14,8 @@ public class SimulatorBroadcastService : BackgroundService
     private readonly IHubContext<SimulatorHub> _hub;
     private readonly SimulatorService _simulator;
     private readonly ILogger<SimulatorBroadcastService> _logger;
-    private readonly List<FleetEventDto> _pendingEvents = new();
-    private readonly SemaphoreSlim _eventLock = new(1, 1);
+    // ConcurrentQueue — lock-free, safe to enqueue from any thread
+    private readonly ConcurrentQueue<FleetEventDto> _pendingEvents = new();
 
     // Adaptive interval: fast when AGVs are moving, slow when idle
     private static readonly TimeSpan FastInterval = TimeSpan.FromMilliseconds(150);
@@ -38,9 +39,8 @@ public class SimulatorBroadcastService : BackgroundService
 
     private void OnFleetEvent(FleetEventDto evt)
     {
-        _eventLock.Wait();
-        try { _pendingEvents.Add(evt); }
-        finally { _eventLock.Release(); }
+        // Lock-free enqueue — safe to call from any thread
+        _pendingEvents.Enqueue(evt);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -61,21 +61,11 @@ public class SimulatorBroadcastService : BackgroundService
                 // Detect position changes for adaptive interval
                 hasChanges = DetectPositionChanges(fleet);
 
-                // Drain pending events (events always indicate changes)
-                await _eventLock.WaitAsync(stoppingToken);
-                List<FleetEventDto> toSend;
-                try
+                // Drain pending events (lock-free)
+                bool hasEvents = !_pendingEvents.IsEmpty;
+                while (_pendingEvents.TryDequeue(out var evt))
                 {
-                    toSend = new List<FleetEventDto>(_pendingEvents);
-                    _pendingEvents.Clear();
-                }
-                finally { _eventLock.Release(); }
-
-                if (toSend.Count > 0)
                     hasChanges = true;
-
-                foreach (var evt in toSend)
-                {
                     await _hub.Clients.Group("fleet")
                         .SendAsync("FleetEvent", evt, stoppingToken);
                 }

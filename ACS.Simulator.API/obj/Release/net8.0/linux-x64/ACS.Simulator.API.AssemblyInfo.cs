@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ACS.Simulator.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+566aea0e9d19a22ea256c99aba661786832c64eb")]
 [assembly: System.Reflection.AssemblyProductAttribute("ACS.Simulator.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ACS.Simulator.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

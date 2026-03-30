@@ -5,6 +5,7 @@ using MQTTnet.Client;
 using MQTTnet.Protocol;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Channels;
 
 namespace ACS.Simulator.API.Core.Services;
 
@@ -49,11 +50,17 @@ public class VirtualAgv : IVirtualAgv
     private Vda5050Visualization _currentVisualization;
     private Vda5050Order? _currentOrder;
     private int _headerIdCounter = 0;
+    private int GetNextHeaderId() => Interlocked.Increment(ref _headerIdCounter);
     private Timer? _statePublishTimer;
     private Timer? _movementTimer;
     private Timer? _visualizationTimer;
     private bool _isRunning = false;
     private bool _disposed = false;
+
+    // Actor-loop: all state mutations serialized through bounded channel
+    private readonly Channel<AgvCommand> _commandChannel;
+    private CancellationTokenSource? _loopCts;
+    private Task? _eventLoopTask;
 
     // Manual position (joystick) control: auto-stop visualization after inactivity
     private Timer? _manualPositionTimer;
@@ -274,6 +281,15 @@ public class VirtualAgv : IVirtualAgv
         // Create MQTT client
         var factory = new MqttFactory();
         _mqttClient = factory.CreateMqttClient();
+
+        // Bounded channel — DropOldest so stale movement ticks are discarded under load
+        _commandChannel = Channel.CreateBounded<AgvCommand>(
+            new BoundedChannelOptions(512)
+            {
+                FullMode = BoundedChannelFullMode.DropOldest,
+                SingleReader = true,
+                SingleWriter = false
+            });
     }
 
     public async Task ConnectAsync()
@@ -334,21 +350,28 @@ public class VirtualAgv : IVirtualAgv
     public async Task StartAsync()
     {
         if (_isRunning) return;
-
         _isRunning = true;
+        _loopCts = new CancellationTokenSource();
 
-        // Start publishing state periodically - 3s cycle
-        _statePublishTimer = new Timer(async _ => await PublishStateAsync(false), null,
+        // Timers only enqueue commands — no direct state mutation
+        _statePublishTimer = new Timer(
+            _ => _commandChannel.Writer.TryWrite(new StatePublishTickCmd(false)),
+            null,
             TimeSpan.FromMilliseconds(_statePublishConfig.PeriodicInterval),
             TimeSpan.FromMilliseconds(_statePublishConfig.PeriodicInterval));
 
-        // Start movement update timer - 100ms
-        _movementTimer = new Timer(async _ => await UpdateMovementAsync(), null,
+        _movementTimer = new Timer(
+            _ => _commandChannel.Writer.TryWrite(MovementTickCmd.Instance),
+            null,
             TimeSpan.FromMilliseconds(_movementConfig.MovementUpdateInterval),
             TimeSpan.FromMilliseconds(_movementConfig.MovementUpdateInterval));
 
-        _logger.LogInformation("AGV {SerialNumber} started - State publish: {StatePeriod}ms, Movement update: {MovementPeriod}ms",
+        // Single event loop — all state mutations happen here, eliminating races
+        _eventLoopTask = Task.Run(() => RunEventLoopAsync(_loopCts.Token));
+
+        _logger.LogInformation("AGV {SerialNumber} started (actor-loop) - State: {StatePeriod}ms, Movement: {MovementPeriod}ms",
             _config.SerialNumber, _statePublishConfig.PeriodicInterval, _movementConfig.MovementUpdateInterval);
+        await Task.CompletedTask;
     }
 
     private async Task OnMessageReceived(MqttApplicationMessageReceivedEventArgs e)
@@ -364,7 +387,11 @@ public class VirtualAgv : IVirtualAgv
                     _config.SerialNumber, topic);
                 var order = JsonSerializer.Deserialize<Vda5050Order>(payload);
                 if (order != null)
-                    await ProcessOrderAsync(order);
+                {
+                    // Cancel any in-progress action immediately before queuing the new order
+                    _actionCts?.Cancel();
+                    await _commandChannel.Writer.WriteAsync(new ProcessOrderCmd(order));
+                }
             }
             else if (topic == InstantActionsTopic)
             {
@@ -372,12 +399,176 @@ public class VirtualAgv : IVirtualAgv
                     _config.SerialNumber, topic);
                 var instantActions = JsonSerializer.Deserialize<Vda5050InstantActions>(payload);
                 if (instantActions != null)
-                    await ProcessInstantActionsAsync(instantActions);
+                {
+                    // For stop-priority actions, cancel running action immediately
+                    if (instantActions.Actions.Any(a =>
+                        a.ActionType != null &&
+                        (a.ActionType.Equals("cancelOrder", StringComparison.OrdinalIgnoreCase) ||
+                         a.ActionType.Equals("startPause", StringComparison.OrdinalIgnoreCase) ||
+                         a.ActionType.Equals("pause", StringComparison.OrdinalIgnoreCase))))
+                    {
+                        _actionCts?.Cancel();
+                    }
+                    await _commandChannel.Writer.WriteAsync(new ProcessInstantActionsCmd(instantActions));
+                }
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing message for AGV {SerialNumber}", _config.SerialNumber);
+        }
+    }
+
+    // ── Actor Event Loop ──────────────────────────────────────────────────
+
+    private async Task RunEventLoopAsync(CancellationToken ct)
+    {
+        _logger.LogInformation("AGV {SerialNumber} event loop started", _config.SerialNumber);
+        try
+        {
+            await foreach (var cmd in _commandChannel.Reader.ReadAllAsync(ct))
+            {
+                try
+                {
+                    await DispatchCommandAsync(cmd);
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                {
+                    break;
+                }
+                catch (OperationCanceledException)
+                {
+                    // Action was cancelled by a new order — normal, continue loop
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "AGV {SerialNumber} event loop error on {Cmd}",
+                        _config.SerialNumber, cmd.GetType().Name);
+                }
+            }
+        }
+        catch (OperationCanceledException) { /* shutdown */ }
+        finally
+        {
+            _logger.LogInformation("AGV {SerialNumber} event loop stopped", _config.SerialNumber);
+        }
+    }
+
+    private async Task DispatchCommandAsync(AgvCommand cmd)
+    {
+        switch (cmd)
+        {
+            case MovementTickCmd:
+                await UpdateMovementAsync();
+                break;
+
+            case StatePublishTickCmd s:
+                await PublishStateAsync(s.Immediate);
+                break;
+
+            case VisualizationTickCmd:
+                await PublishVisualizationAsync();
+                break;
+
+            case ProcessOrderCmd o:
+                _actionCts?.Dispose();
+                _actionCts = new CancellationTokenSource();
+                await ProcessOrderAsync(o.Order);
+                break;
+
+            case ProcessInstantActionsCmd ia:
+                _actionCts?.Dispose();
+                _actionCts = new CancellationTokenSource();
+                await ProcessInstantActionsAsync(ia.Actions);
+                break;
+
+            case SetPositionCmd s:
+                SetPositionInternal(s.X, s.Y, s.Theta, s.MapId);
+                break;
+
+            case SetBatteryCmd b:
+                _batteryLevel = Math.Clamp(b.Level, 0, 100);
+                _currentState.BatteryState.BatteryCharge = _batteryLevel;
+                break;
+
+            case SetSpeedCmd s:
+                _movementConfig.Speed = s.Speed;
+                _logger.LogInformation("AGV {SerialNumber} speed updated to {Speed} m/s", _config.SerialNumber, s.Speed);
+                break;
+
+            case SetChaosCmd c:
+                _chaosMinLatencyMs = Math.Max(0, c.MinMs);
+                _chaosMaxLatencyMs = Math.Max(0, c.MaxMs);
+                _chaosPacketLossPercent = Math.Clamp(c.LossPercent, 0, 100);
+                break;
+
+            case AddErrorCmd a:
+                _currentState.Errors.Add(new VdaError
+                {
+                    ErrorType = a.ErrorType,
+                    ErrorLevel = a.ErrorLevel,
+                    ErrorDescription = a.Description
+                });
+                _logger.LogWarning("AGV {SerialNumber} error added: {Type} [{Level}]",
+                    _config.SerialNumber, a.ErrorType, a.ErrorLevel);
+                await PublishStateAsync(true);
+                break;
+
+            case ClearErrorCmd c:
+                if (c.ErrorType == null)
+                    _currentState.Errors.Clear();
+                else
+                    _currentState.Errors.RemoveAll(e =>
+                        e.ErrorType.Equals(c.ErrorType, StringComparison.OrdinalIgnoreCase));
+                await PublishStateAsync(true);
+                break;
+
+            case InjectErrorTemplateCmd it:
+                await InjectErrorTemplateInternalAsync(it.Template);
+                break;
+
+            case LiftCmd:
+                await LiftInternalAsync();
+                break;
+
+            case LowerCmd:
+                await LowerInternalAsync();
+                break;
+
+            case ClearEmergencyStopCmd:
+                _currentState.SafetyState.EStop = "NONE";
+                _currentState.SafetyState.FieldViolation = false;
+                _currentState.Paused = false;
+                _currentState.Errors.RemoveAll(e => e.ErrorType == "safety");
+                _logger.LogInformation("AGV {SerialNumber} emergency stop cleared", _config.SerialNumber);
+                await PublishStateAsync(true);
+                break;
+
+            case RestoreLocalizationCmd:
+                _currentState.AgvPosition!.PositionInitialized = true;
+                _currentState.AgvPosition.LocalizationScore = 1.0;
+                _currentState.Errors.RemoveAll(e => e.ErrorType == "localization");
+                _logger.LogInformation("AGV {SerialNumber} localization restored", _config.SerialNumber);
+                await PublishStateAsync(true);
+                break;
+
+            case ManualPositionStopCmd:
+                _manualPositionTimer?.Dispose();
+                _manualPositionTimer = null;
+                if (!_isMoving)
+                {
+                    _currentState.Driving = false;
+                    _currentState.Velocity!.Vx = 0;
+                    _currentState.Velocity.Vy = 0;
+                    _currentState.Velocity.Omega = 0;
+                    _currentVisualization.Velocity!.Vx = 0;
+                    _currentVisualization.Velocity.Vy = 0;
+                    _currentVisualization.Velocity.Omega = 0;
+                    _lastManualPoseAt = DateTime.MinValue;
+                    StopVisualizationTimer();
+                }
+                _logger.LogDebug("AGV {SerialNumber} stopped manual position publishing", _config.SerialNumber);
+                break;
         }
     }
 
@@ -943,8 +1134,10 @@ public class VirtualAgv : IVirtualAgv
         if (_visualizationTimer != null)
             return;
 
-        // Publish visualization at 200ms while moving
-        _visualizationTimer = new Timer(async _ => await PublishVisualizationAsync(), null,
+        // Enqueue visualization command — processed by single event loop, no concurrent publish
+        _visualizationTimer = new Timer(
+            _ => _commandChannel.Writer.TryWrite(VisualizationTickCmd.Instance),
+            null,
             TimeSpan.FromMilliseconds(_movementConfig.VisualizationPublishInterval),
             TimeSpan.FromMilliseconds(_movementConfig.VisualizationPublishInterval));
 
@@ -1203,6 +1396,8 @@ public class VirtualAgv : IVirtualAgv
         _logger.LogInformation("AGV {SerialNumber} executing action {ActionType} (id: {ActionId})",
             _config.SerialNumber, action.ActionType, action.ActionId);
 
+        var ct = _actionCts?.Token ?? CancellationToken.None;
+
         var actionState = new ActionState
         {
             ActionId = action.ActionId,
@@ -1212,8 +1407,6 @@ public class VirtualAgv : IVirtualAgv
         };
 
         _currentState.ActionStates.Add(actionState);
-
-        // Publish state when action starts (state change)
         await PublishStateAsync(true);
 
         try
@@ -1225,7 +1418,7 @@ public class VirtualAgv : IVirtualAgv
             {
                 case "PICK":
                 case "LIFT":
-                    await Task.Delay(_actionsConfig.LiftDurationMs);
+                    await Task.Delay(_actionsConfig.LiftDurationMs, ct);
                     _hasLoad = true;
                     _currentState.Loads.Add(new Load
                     {
@@ -1238,7 +1431,7 @@ public class VirtualAgv : IVirtualAgv
 
                 case "DROP":
                 case "LOWER":
-                    await Task.Delay(_actionsConfig.LowerDurationMs);
+                    await Task.Delay(_actionsConfig.LowerDurationMs, ct);
                     _hasLoad = false;
                     _currentState.Loads.Clear();
                     _logger.LogInformation("AGV {SerialNumber} dropped load", _config.SerialNumber);
@@ -1247,7 +1440,7 @@ public class VirtualAgv : IVirtualAgv
                 case "WAIT":
                     var durationParam = action.ActionParameters?.FirstOrDefault(p => p.Key == "duration");
                     int waitMs = durationParam != null ? Convert.ToInt32(durationParam.Value) : 1000;
-                    await Task.Delay(waitMs);
+                    await Task.Delay(waitMs, ct);
                     _logger.LogInformation("AGV {SerialNumber} waited {Duration}ms", _config.SerialNumber, waitMs);
                     break;
 
@@ -1260,13 +1453,21 @@ public class VirtualAgv : IVirtualAgv
             actionState.ActionStatus = "FINISHED";
             _logger.LogInformation("AGV {SerialNumber} finished action {ActionType}", _config.SerialNumber, action.ActionType);
         }
+        catch (OperationCanceledException)
+        {
+            // Action cancelled by new order or EStop — propagate so order processing stops cleanly
+            actionState.ActionStatus = "FAILED";
+            actionState.ResultDescription = "Cancelled by new order";
+            _logger.LogInformation("AGV {SerialNumber} action {ActionType} cancelled", _config.SerialNumber, action.ActionType);
+            await PublishStateAsync(true);
+            throw;
+        }
         catch (Exception ex)
         {
             actionState.ActionStatus = "FAILED";
             _logger.LogError(ex, "AGV {SerialNumber} failed action {ActionType}", _config.SerialNumber, action.ActionType);
         }
 
-        // Publish state when action completes (state change)
         await PublishStateAsync(true);
     }
 
@@ -1361,7 +1562,7 @@ public class VirtualAgv : IVirtualAgv
                     await Task.Delay(delay);
             }
 
-            _currentState.HeaderId = _headerIdCounter++;
+            _currentState.HeaderId = GetNextHeaderId();
             _currentState.Timestamp = DateTime.UtcNow.ToString("o");
 
             var json = JsonSerializer.Serialize(_currentState);
@@ -1424,7 +1625,7 @@ public class VirtualAgv : IVirtualAgv
     {
         try
         {
-            _currentVisualization.HeaderId = _headerIdCounter++;
+            _currentVisualization.HeaderId = GetNextHeaderId();
             _currentVisualization.Timestamp = DateTime.UtcNow;
 
             var json = JsonSerializer.Serialize(_currentVisualization);
@@ -1451,14 +1652,32 @@ public class VirtualAgv : IVirtualAgv
 
     public async Task StopAsync()
     {
+        if (!_isRunning) return;
         _isRunning = false;
 
-        _statePublishTimer?.Dispose();
-        _movementTimer?.Dispose();
+        // Stop timers first — no more commands will be enqueued
+        _statePublishTimer?.Dispose(); _statePublishTimer = null;
+        _movementTimer?.Dispose();     _movementTimer = null;
+        _manualPositionTimer?.Dispose(); _manualPositionTimer = null;
         StopVisualizationTimer();
 
+        // Complete channel so the event loop exits after draining remaining commands
+        _commandChannel.Writer.TryComplete();
+
+        if (_eventLoopTask != null)
+        {
+            try { await _eventLoopTask.WaitAsync(TimeSpan.FromSeconds(5)); }
+            catch (TimeoutException)
+            {
+                _logger.LogWarning("AGV {SerialNumber} event loop did not stop in 5s — cancelling", _config.SerialNumber);
+                _loopCts?.Cancel();
+            }
+            catch (OperationCanceledException) { }
+        }
+
+        _loopCts?.Dispose(); _loopCts = null;
+        _eventLoopTask = null;
         _logger.LogInformation("AGV {SerialNumber} stopped", _config.SerialNumber);
-        await Task.CompletedTask;
     }
 
     public async Task DisconnectAsync()
@@ -1478,7 +1697,7 @@ public class VirtualAgv : IVirtualAgv
         {
             var payload = JsonSerializer.Serialize(new Vda5050Connection
             {
-                HeaderId = _headerIdCounter++,
+                HeaderId = GetNextHeaderId(),
                 Timestamp = DateTime.UtcNow.ToString("o"),
                 Version = "2.0.0",
                 Manufacturer = _config.Manufacturer,
@@ -1516,19 +1735,24 @@ public class VirtualAgv : IVirtualAgv
         _disposed = true;
     }
 
+    /// <summary>Thread-safe: enqueues SetPositionCmd to event loop.</summary>
     public void SetPosition(double x, double y, double theta, string mapId)
+    {
+        // Update lastManualPositionUpdate BEFORE enqueueing so watchdog sees fresh timestamp
+        _lastManualPositionUpdate = DateTime.UtcNow;
+        _commandChannel.Writer.TryWrite(new SetPositionCmd(x, y, theta, mapId));
+    }
+
+    /// <summary>Internal: called inside event loop — no race condition.</summary>
+    private void SetPositionInternal(double x, double y, double theta, string mapId)
     {
         var previousX = _currentX;
         var previousY = _currentY;
         var previousTheta = _currentTheta;
         var now = DateTime.UtcNow;
 
-        _currentX = x;
-        _currentY = y;
-        _currentTheta = theta;
-        _targetTheta = theta;
-        _arrivalTheta = null;
-        _isReversing = false;
+        _currentX = x; _currentY = y; _currentTheta = theta;
+        _targetTheta = theta; _arrivalTheta = null; _isReversing = false;
         _currentMapId = mapId;
 
         _currentState.AgvPosition!.X = x;
@@ -1541,13 +1765,10 @@ public class VirtualAgv : IVirtualAgv
         _currentVisualization.AgvPosition.Theta = ToServerTheta(theta);
         _currentVisualization.AgvPosition.MapId = mapId;
         UpdateManualVelocity(previousX, previousY, previousTheta, now);
-
-        // Start visualization publishing for manual position updates (joystick)
         _lastManualPositionUpdate = now;
         StartManualPositionPublishing();
-
-        _logger.LogInformation("AGV {SerialNumber} position updated to ({X}, {Y}, {Theta}) on map {MapId}",
-            _config.SerialNumber, x, y, theta, mapId);
+        _logger.LogInformation("AGV {SerialNumber} position set to ({X:F2}, {Y:F2}) on {MapId}",
+            _config.SerialNumber, x, y, mapId);
     }
 
     /// <summary>
@@ -1558,45 +1779,14 @@ public class VirtualAgv : IVirtualAgv
     {
         if (_manualPositionTimer != null)
             return;
-
-        // Start visualization timer to publish position via MQTT
         StartVisualizationTimer();
-
-        // Start a watchdog timer that checks for inactivity and stops publishing
+        // Watchdog enqueues ManualPositionStopCmd rather than mutating state directly
         _manualPositionTimer = new Timer(_ =>
         {
             if ((DateTime.UtcNow - _lastManualPositionUpdate) > ManualPositionTimeout)
-            {
-                StopManualPositionPublishing();
-            }
+                _commandChannel.Writer.TryWrite(ManualPositionStopCmd.Instance);
         }, null, ManualPositionTimeout, TimeSpan.FromMilliseconds(200));
-
         _logger.LogDebug("AGV {SerialNumber} started manual position publishing", _config.SerialNumber);
-    }
-
-    private void StopManualPositionPublishing()
-    {
-        if (_manualPositionTimer != null)
-        {
-            _manualPositionTimer.Dispose();
-            _manualPositionTimer = null;
-
-            // Only stop visualization timer if AGV is not order-moving
-            if (!_isMoving)
-            {
-                _currentState.Driving = false;
-                _currentState.Velocity!.Vx = 0;
-                _currentState.Velocity.Vy = 0;
-                _currentState.Velocity.Omega = 0;
-                _currentVisualization.Velocity!.Vx = 0;
-                _currentVisualization.Velocity.Vy = 0;
-                _currentVisualization.Velocity.Omega = 0;
-                _lastManualPoseAt = DateTime.MinValue;
-                StopVisualizationTimer();
-            }
-
-            _logger.LogDebug("AGV {SerialNumber} stopped manual position publishing", _config.SerialNumber);
-        }
     }
 
     private void UpdateManualVelocity(double previousX, double previousY, double previousTheta, DateTime now)
@@ -1633,39 +1823,30 @@ public class VirtualAgv : IVirtualAgv
         }
     }
 
-    public void SetSpeed(double speed)
-    {
-        _movementConfig.Speed = speed;
-        _logger.LogInformation("AGV {SerialNumber} speed updated to {Speed} m/s", _config.SerialNumber, speed);
-    }
+    // Public API mutations — all route to event loop via channel
+    public void SetSpeed(double speed)         => _commandChannel.Writer.TryWrite(new SetSpeedCmd(speed));
+    public void SetBatteryLevel(double level)  => _commandChannel.Writer.TryWrite(new SetBatteryCmd(level));
+    public async Task LiftAsync()              { _commandChannel.Writer.TryWrite(new LiftCmd()); await Task.CompletedTask; }
+    public async Task LowerAsync()             { _commandChannel.Writer.TryWrite(new LowerCmd()); await Task.CompletedTask; }
 
-    public void SetBatteryLevel(double level)
+    // Internal: runs inside event loop
+    private async Task LiftInternalAsync()
     {
-        _batteryLevel = Math.Clamp(level, 0, 100);
-        _currentState.BatteryState.BatteryCharge = _batteryLevel;
-        _logger.LogInformation("AGV {SerialNumber} battery manually set to {Level:F1}%", _config.SerialNumber, _batteryLevel);
-    }
-
-    public async Task LiftAsync()
-    {
-        await Task.Delay(_actionsConfig.LiftDurationMs);
+        var ct = _actionCts?.Token ?? CancellationToken.None;
+        try { await Task.Delay(_actionsConfig.LiftDurationMs, ct); } catch (OperationCanceledException) { return; }
         _hasLoad = true;
-        _currentState.Loads.Add(new Load
-        {
-            LoadId = $"LOAD_{DateTime.UtcNow.Ticks}",
-            LoadType = "PALLET",
-            Weight = 100.0
-        });
-        _logger.LogInformation("AGV {SerialNumber} lift (manual control)", _config.SerialNumber);
+        _currentState.Loads.Add(new Load { LoadId = $"LOAD_{DateTime.UtcNow.Ticks}", LoadType = "PALLET", Weight = 100.0 });
+        _logger.LogInformation("AGV {SerialNumber} lift complete", _config.SerialNumber);
         await PublishStateAsync(true);
     }
 
-    public async Task LowerAsync()
+    private async Task LowerInternalAsync()
     {
-        await Task.Delay(_actionsConfig.LowerDurationMs);
+        var ct = _actionCts?.Token ?? CancellationToken.None;
+        try { await Task.Delay(_actionsConfig.LowerDurationMs, ct); } catch (OperationCanceledException) { return; }
         _hasLoad = false;
         _currentState.Loads.Clear();
-        _logger.LogInformation("AGV {SerialNumber} lower (manual control)", _config.SerialNumber);
+        _logger.LogInformation("AGV {SerialNumber} lower complete", _config.SerialNumber);
         await PublishStateAsync(true);
     }
 
@@ -1673,18 +1854,11 @@ public class VirtualAgv : IVirtualAgv
 
     /// <summary>Simulate MQTT latency. Pass (0,0) to disable.</summary>
     public void SetChaosLatency(int minMs, int maxMs)
-    {
-        _chaosMinLatencyMs = Math.Max(0, minMs);
-        _chaosMaxLatencyMs = Math.Max(0, maxMs);
-        _logger.LogInformation("AGV {SerialNumber} chaos latency set to {Min}-{Max}ms", _config.SerialNumber, minMs, maxMs);
-    }
+        => _commandChannel.Writer.TryWrite(new SetChaosCmd(minMs, maxMs, _chaosPacketLossPercent));
 
     /// <summary>Simulate packet loss. 0 = off, 100 = drop all state publishes.</summary>
     public void SetPacketLoss(int percent)
-    {
-        _chaosPacketLossPercent = Math.Clamp(percent, 0, 100);
-        _logger.LogInformation("AGV {SerialNumber} chaos packet loss set to {Pct}%", _config.SerialNumber, percent);
-    }
+        => _commandChannel.Writer.TryWrite(new SetChaosCmd(_chaosMinLatencyMs, _chaosMaxLatencyMs, percent));
 
     /// <summary>Force-disconnect from MQTT broker, automatically reconnect after durationMs.</summary>
     public async Task TriggerDisconnectAsync(int durationMs)
@@ -1716,70 +1890,26 @@ public class VirtualAgv : IVirtualAgv
     /// <param name="errorType">Type of error (e.g., "HARDWARE", "NAVIGATION", "COMMUNICATION")</param>
     /// <param name="errorLevel">Level of error: "WARNING", "FATAL"</param>
     /// <param name="description">Optional description of the error</param>
+    // Error management — enqueue to event loop for thread safety
     public async Task AddErrorAsync(string errorType, string errorLevel = "WARNING", string? description = null)
     {
-        var error = new VdaError
-        {
-            ErrorType = errorType,
-            ErrorLevel = errorLevel,
-            ErrorDescription = description
-        };
-
-        _currentState.Errors.Add(error);
-
-        _logger.LogWarning("AGV {SerialNumber} added error: Type={ErrorType}, Level={ErrorLevel}, Description={Description}",
-            _config.SerialNumber, errorType, errorLevel, description ?? "N/A");
-
-        // Publish state immediately when error changes
-        await PublishStateAsync(true);
+        _commandChannel.Writer.TryWrite(new AddErrorCmd(errorType, errorLevel, description));
+        await Task.CompletedTask;
     }
 
-    /// <summary>
-    /// Clear a specific error from the AGV state by error type.
-    /// </summary>
-    /// <param name="errorType">Type of error to clear</param>
-    /// <returns>True if error was found and removed, false otherwise</returns>
     public async Task<bool> ClearErrorAsync(string errorType)
     {
-        var errorToRemove = _currentState.Errors.FirstOrDefault(e => 
-            e.ErrorType.Equals(errorType, StringComparison.OrdinalIgnoreCase));
-
-        if (errorToRemove != null)
-        {
-            _currentState.Errors.Remove(errorToRemove);
-
-            _logger.LogInformation("AGV {SerialNumber} cleared error: Type={ErrorType}",
-                _config.SerialNumber, errorType);
-
-            // Publish state immediately when error changes
-            await PublishStateAsync(true);
-            return true;
-        }
-
-        _logger.LogWarning("AGV {SerialNumber} tried to clear non-existent error: Type={ErrorType}",
-            _config.SerialNumber, errorType);
-        return false;
+        bool exists = _currentState.Errors.Any(e => e.ErrorType.Equals(errorType, StringComparison.OrdinalIgnoreCase));
+        _commandChannel.Writer.TryWrite(new ClearErrorCmd(errorType));
+        await Task.CompletedTask;
+        return exists; // slightly optimistic but correct for simulator use
     }
 
-    /// <summary>
-    /// Clear all errors from the AGV state.
-    /// </summary>
-    /// <returns>Number of errors cleared</returns>
     public async Task<int> ClearAllErrorsAsync()
     {
         int count = _currentState.Errors.Count;
-
-        if (count > 0)
-        {
-            _currentState.Errors.Clear();
-
-            _logger.LogInformation("AGV {SerialNumber} cleared all errors ({Count} errors removed)",
-                _config.SerialNumber, count);
-
-            // Publish state immediately when errors change
-            await PublishStateAsync(true);
-        }
-
+        _commandChannel.Writer.TryWrite(new ClearErrorCmd(null));
+        await Task.CompletedTask;
         return count;
     }
 
@@ -1788,91 +1918,65 @@ public class VirtualAgv : IVirtualAgv
     /// </summary>
     public async Task InjectErrorTemplateAsync(ErrorTemplate template)
     {
+        _commandChannel.Writer.TryWrite(new InjectErrorTemplateCmd(template));
+        await Task.CompletedTask;
+    }
+
+    // Internal version runs inside event loop
+    private async Task InjectErrorTemplateInternalAsync(ErrorTemplate template)
+    {
         _logger.LogWarning("AGV {SerialNumber} injecting error template: {Name} (level: {Level})",
             _config.SerialNumber, template.Name, template.ErrorLevel);
-
-        // Remove existing same-type error first
         _currentState.Errors.RemoveAll(e => e.ErrorType == template.ErrorType);
-
         _currentState.Errors.Add(new VdaError
         {
-            ErrorType = template.ErrorType,
-            ErrorLevel = template.ErrorLevel,
-            ErrorDescription = template.Description
+            ErrorType = template.ErrorType, ErrorLevel = template.ErrorLevel, ErrorDescription = template.Description
         });
-
-        // Apply side-effects
         switch (template.SideEffect)
         {
             case ErrorSideEffect.ReduceSpeed50Percent:
                 _movementConfig.Speed *= 0.5;
                 _logger.LogWarning("AGV {SerialNumber} speed reduced to {Speed} m/s", _config.SerialNumber, _movementConfig.Speed);
                 break;
-
             case ErrorSideEffect.StopMovement:
-                _isMoving = false;
-                _currentState.Driving = false;
+                _isMoving = false; _currentState.Driving = false;
                 StopVisualizationTimer();
                 _logger.LogWarning("AGV {SerialNumber} movement stopped due to error", _config.SerialNumber);
                 break;
-
             case ErrorSideEffect.EmergencyStop:
-                _isMoving = false;
-                _isRotating = false;
-                _currentState.Driving = false;
-                _currentState.Paused = true;
-                _currentState.SafetyState.EStop = "MANUAL";
-                _currentState.SafetyState.FieldViolation = true;
-                StopVisualizationTimer();
-                _actionCts?.Cancel();
+                _isMoving = false; _isRotating = false;
+                _currentState.Driving = false; _currentState.Paused = true;
+                _currentState.SafetyState.EStop = "MANUAL"; _currentState.SafetyState.FieldViolation = true;
+                StopVisualizationTimer(); _actionCts?.Cancel();
                 _logger.LogCritical("AGV {SerialNumber} EMERGENCY STOP activated", _config.SerialNumber);
                 break;
-
             case ErrorSideEffect.LocalizationLost:
                 _currentState.AgvPosition!.PositionInitialized = false;
                 _currentState.AgvPosition.LocalizationScore = 0.0;
-                _isMoving = false;
-                _currentState.Driving = false;
+                _isMoving = false; _currentState.Driving = false;
                 StopVisualizationTimer();
                 _logger.LogCritical("AGV {SerialNumber} localization LOST", _config.SerialNumber);
                 break;
-
             case ErrorSideEffect.ClearLoads:
-                _hasLoad = false;
-                _currentState.Loads.Clear();
-                _isMoving = false;
-                _currentState.Driving = false;
+                _hasLoad = false; _currentState.Loads.Clear();
+                _isMoving = false; _currentState.Driving = false;
                 StopVisualizationTimer();
                 _logger.LogCritical("AGV {SerialNumber} loads CLEARED due to drop", _config.SerialNumber);
                 break;
         }
-
         await PublishStateAsync(true);
     }
 
-    /// <summary>
-    /// Clear the side-effects of an EMERGENCY_STOP error template.
-    /// </summary>
     public async Task ClearEmergencyStopAsync()
     {
-        _currentState.SafetyState.EStop = "NONE";
-        _currentState.SafetyState.FieldViolation = false;
-        _currentState.Paused = false;
-        _currentState.Errors.RemoveAll(e => e.ErrorType == "safety");
-        _logger.LogInformation("AGV {SerialNumber} emergency stop cleared", _config.SerialNumber);
-        await PublishStateAsync(true);
+        _commandChannel.Writer.TryWrite(new ClearEmergencyStopCmd());
+        await Task.CompletedTask;
     }
 
-    /// <summary>
-    /// Restore localization after LOCALIZATION_LOST error.
-    /// </summary>
     public async Task RestoreLocalizationAsync()
     {
-        _currentState.AgvPosition!.PositionInitialized = true;
-        _currentState.AgvPosition.LocalizationScore = 1.0;
-        _currentState.Errors.RemoveAll(e => e.ErrorType == "localization");
-        _logger.LogInformation("AGV {SerialNumber} localization restored", _config.SerialNumber);
-        await PublishStateAsync(true);
+        _commandChannel.Writer.TryWrite(new RestoreLocalizationCmd());
+        await Task.CompletedTask;
     }
 
     /// <summary>

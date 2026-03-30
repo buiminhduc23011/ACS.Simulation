@@ -2,6 +2,7 @@ using ACS.Simulator.API.Core.Models;
 using ACS.Simulator.API.Core.Services;
 using ACS.Simulator.API.Models;
 using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
 
 namespace ACS.Simulator.API.Services;
 
@@ -18,8 +19,10 @@ public class SimulatorService
     private readonly ILogger<SimulatorService> _logger;
     private readonly SimulatorConfig _config;
     private readonly FleetPersistenceService _persistence;
-    private readonly Dictionary<string, IVirtualAgv> _fleet = new();
-    private readonly Dictionary<string, AgvMeta> _meta = new();
+    // ConcurrentDictionary — safe for concurrent reads (FindBlockingAgv) without locking
+    private readonly ConcurrentDictionary<string, IVirtualAgv> _fleet = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, AgvMeta> _meta = new(StringComparer.OrdinalIgnoreCase);
+    // _lock guards only write operations (Create/Update/Delete) atomically
     private readonly SemaphoreSlim _lock = new(1, 1);
     private System.Threading.Timer? _saveDebounceTimer;
     private static readonly TimeSpan SaveDebounceDelay = TimeSpan.FromMilliseconds(1500);
@@ -106,8 +109,8 @@ public class SimulatorService
             // Stop and dispose the old AGV
             await oldAgv.StopAsync();
             oldAgv.Dispose();
-            _fleet.Remove(id);
-            _meta.Remove(id);
+            _fleet.TryRemove(id, out _);
+            _meta.TryRemove(id, out _);
 
             // Create new AGV with updated config
             var newId = req.SerialNumber;
@@ -183,8 +186,8 @@ public class SimulatorService
             if (!_fleet.TryGetValue(id, out var agv)) return false;
             await agv.StopAsync();
             agv.Dispose();
-            _fleet.Remove(id);
-            _meta.Remove(id);
+            _fleet.TryRemove(id, out _);
+            _meta.TryRemove(id, out _);
             EmitEvent(id, "Deleted", $"AGV {id} removed from fleet");
 
             _ = SaveFleetAsync(); // fire-and-forget persist
@@ -197,14 +200,14 @@ public class SimulatorService
     public bool SetPosition(string id, SetPositionRequest req)
     {
         if (!_fleet.TryGetValue(id, out var agv)) return false;
-        // If new mapId is empty, keep the AGV's current mapId to avoid overwriting a valid value
         var effectiveMapId = string.IsNullOrEmpty(req.MapId)
             ? agv.CurrentState.AgvPosition.MapId ?? ""
             : req.MapId;
         agv.SetPosition(req.X, req.Y, req.Theta, effectiveMapId);
-        // Debounce: schedule save 1.5s after the LAST call (prevents flooding from joystick)
-        _saveDebounceTimer?.Dispose();
-        _saveDebounceTimer = new System.Threading.Timer(_ => { _ = SaveFleetAsync(); }, null, SaveDebounceDelay, Timeout.InfiniteTimeSpan);
+        // Thread-safe debounce: atomically swap the timer reference
+        var newTimer = new System.Threading.Timer(_ => { _ = SaveFleetAsync(); }, null, SaveDebounceDelay, Timeout.InfiniteTimeSpan);
+        var oldTimer = Interlocked.Exchange(ref _saveDebounceTimer, newTimer);
+        oldTimer?.Dispose();
         return true;
     }
 
@@ -347,72 +350,40 @@ public class SimulatorService
 
     private string? FindBlockingAgv(
         string selfId,
-        double currentX,
-        double currentY,
-        double nextX,
-        double nextY,
-        double headingRad,
-        bool isRotating,
-        string mapId)
+        double currentX, double currentY,
+        double nextX, double nextY,
+        double headingRad, bool isRotating, string mapId)
     {
-        List<KeyValuePair<string, IVirtualAgv>> fleetSnapshot;
-        _lock.Wait();
-        try
-        {
-            fleetSnapshot = _fleet.ToList();
-        }
-        finally
-        {
-            _lock.Release();
-        }
-
+        // ConcurrentDictionary — safe to enumerate without locking
         var moveDx = nextX - currentX;
         var moveDy = nextY - currentY;
         var moveLength = Math.Sqrt(moveDx * moveDx + moveDy * moveDy);
-
-        // Movement direction:
-        // - Translating: use actual step vector.
-        // - Rotating: use current heading as "front".
         var dirX = moveLength > 1e-6 ? moveDx / moveLength : Math.Cos(headingRad);
         var dirY = moveLength > 1e-6 ? moveDy / moveLength : Math.Sin(headingRad);
         var frontCosThreshold = Math.Cos(FrontConeHalfAngleRad);
         var rotateFrontCosThreshold = Math.Cos(RotateFrontConeHalfAngleRad);
 
-        foreach (var (agvId, agv) in fleetSnapshot)
+        foreach (var (agvId, agv) in _fleet)
         {
-            if (agvId.Equals(selfId, StringComparison.OrdinalIgnoreCase))
-                continue;
-
+            if (agvId.Equals(selfId, StringComparison.OrdinalIgnoreCase)) continue;
             var pos = agv.CurrentState.AgvPosition;
-            if (pos == null)
-                continue;
-
+            if (pos == null) continue;
             var otherMap = pos.MapId ?? "";
             if (!string.IsNullOrWhiteSpace(mapId) &&
-                !otherMap.Equals(mapId, StringComparison.OrdinalIgnoreCase))
-                continue;
+                !otherMap.Equals(mapId, StringComparison.OrdinalIgnoreCase)) continue;
 
-            // Rule 1: hard no-overlap guarantee.
-            var distToNext = Math.Sqrt(
-                (pos.X - nextX) * (pos.X - nextX) +
-                (pos.Y - nextY) * (pos.Y - nextY));
-            if (distToNext < MinSeparationMeters)
-                return agvId;
+            var distToNext = Math.Sqrt((pos.X - nextX) * (pos.X - nextX) + (pos.Y - nextY) * (pos.Y - nextY));
+            if (distToNext < MinSeparationMeters) return agvId;
 
-            // Rule 2: stop if another AGV is in front within safety distance.
             var toOtherX = pos.X - currentX;
             var toOtherY = pos.Y - currentY;
             var distToCurrent = Math.Sqrt(toOtherX * toOtherX + toOtherY * toOtherY);
-            if (distToCurrent < 1e-6)
-                return agvId;
+            if (distToCurrent < 1e-6) return agvId;
 
             var facingDot = (toOtherX / distToCurrent) * dirX + (toOtherY / distToCurrent) * dirY;
             var requiredDot = isRotating ? rotateFrontCosThreshold : frontCosThreshold;
-            var inFront = facingDot >= requiredDot;
-            if (inFront && distToCurrent < FrontStopDistanceMeters)
-                return agvId;
+            if (facingDot >= requiredDot && distToCurrent < FrontStopDistanceMeters) return agvId;
         }
-
         return null;
     }
 
