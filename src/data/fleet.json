@@ -1,0 +1,77 @@
+{
+  "savedAt": "2026-04-07T15:13:03.1303831Z",
+  "agvs": [
+    {
+      "serialNumber": "PSH-02092026",
+      "manufacturer": "stivn",
+      "ipAddress": "192.168.1.100",
+      "macAddress": "02:68:ED:89:00:01",
+      "posX": 0,
+      "posY": 0,
+      "posTheta": 0,
+      "mapId": "e4ab6c99-98cf-4c18-8ea1-cb5950f5965d",
+      "speed": 1,
+      "autoStart": false
+    },
+    {
+      "serialNumber": "PSH-02092024",
+      "manufacturer": "stivn",
+      "ipAddress": "192.168.1.100",
+      "macAddress": "02:FA:59:14:00:01",
+      "posX": 0,
+      "posY": 0,
+      "posTheta": 0,
+      "mapId": "e4ab6c99-98cf-4c18-8ea1-cb5950f5965d",
+      "speed": 1,
+      "autoStart": false
+    },
+    {
+      "serialNumber": "PSH-02092022",
+      "manufacturer": "stivn",
+      "ipAddress": "192.168.1.100",
+      "macAddress": "02:41:20:98:00:01",
+      "posX": 0,
+      "posY": 0,
+      "posTheta": 0,
+      "mapId": "e4ab6c99-98cf-4c18-8ea1-cb5950f5965d",
+      "speed": 1,
+      "autoStart": false
+    },
+    {
+      "serialNumber": "PSH-02092025",
+      "manufacturer": "stivn",
+      "ipAddress": "192.168.1.100",
+      "macAddress": "02:DA:4D:B3:00:01",
+      "posX": 0,
+      "posY": 0,
+      "posTheta": 0,
+      "mapId": "e4ab6c99-98cf-4c18-8ea1-cb5950f5965d",
+      "speed": 1,
+      "autoStart": false
+    },
+    {
+      "serialNumber": "PSH-02092023",
+      "manufacturer": "stivn",
+      "ipAddress": "192.168.1.100",
+      "macAddress": "02:02:B7:EB:00:01",
+      "posX": 0,
+      "posY": 0,
+      "posTheta": 0,
+      "mapId": "e4ab6c99-98cf-4c18-8ea1-cb5950f5965d",
+      "speed": 1,
+      "autoStart": false
+    },
+    {
+      "serialNumber": "PSH-02092021",
+      "manufacturer": "stivn",
+      "ipAddress": "192.168.1.100",
+      "macAddress": "02:0B:D7:ED:00:01",
+      "posX": 0,
+      "posY": 0,
+      "posTheta": 0,
+      "mapId": "e4ab6c99-98cf-4c18-8ea1-cb5950f5965d",
+      "speed": 1,
+      "autoStart": false
+    }
+  ]
+}

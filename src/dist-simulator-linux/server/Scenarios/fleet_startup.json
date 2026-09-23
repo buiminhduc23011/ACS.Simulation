@@ -1,0 +1,21 @@
+{
+  "name": "Full Fleet Startup",
+  "description": "Start up all fleet AGVs, verify they come online, then set initial positions and check readiness.",
+  "version": "1.0",
+  "steps": [
+    { "type": "Log", "message": "=== Fleet Startup Sequence ===" },
+    { "type": "Log", "message": "Initializing AGV-001..." },
+    { "type": "SetBattery", "agvId": "AGV-001", "level": 95 },
+    { "type": "SetPosition", "agvId": "AGV-001", "x": 0.0, "y": 0.0, "theta": 0.0, "mapId": "1" },
+    { "type": "Assert", "agvId": "AGV-001", "condition": "isConnected == true", "timeoutMs": 5000, "comment": "AGV-001 online check" },
+    { "type": "Assert", "agvId": "AGV-001", "condition": "battery >= 90", "timeoutMs": 2000 },
+    { "type": "Log", "message": "AGV-001 ready ✅" },
+    { "type": "Log", "message": "Initializing AGV-002..." },
+    { "type": "SetBattery", "agvId": "AGV-002", "level": 85 },
+    { "type": "SetPosition", "agvId": "AGV-002", "x": 5.0, "y": 0.0, "theta": 0.0, "mapId": "1" },
+    { "type": "Assert", "agvId": "AGV-002", "condition": "isConnected == true", "timeoutMs": 5000, "comment": "AGV-002 online check" },
+    { "type": "Log", "message": "AGV-002 ready ✅" },
+    { "type": "Wait", "durationMs": 2000, "comment": "Stabilization delay" },
+    { "type": "Log", "message": "=== Fleet Startup COMPLETE — all AGVs operational ===" }
+  ]
+}

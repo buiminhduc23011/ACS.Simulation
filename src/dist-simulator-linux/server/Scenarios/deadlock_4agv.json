@@ -1,0 +1,240 @@
+{
+  "name": "Deadlock Detection — 4 AGVs",
+  "description": "Simulates 4 AGVs in opposing positions that would cause a deadlock. Injects navigation/obstacle errors to force each AGV to stop, then clears faults and verifies recovery. Tests ACS deadlock detection by creating contention at a chokepoint.",
+  "version": "1.0",
+  "steps": [
+    {
+      "type": "Log",
+      "message": "=== Deadlock Detection Test — 4 AGVs ==="
+    },
+    {
+      "type": "Log",
+      "message": "Phase 1: Position AGVs at bottleneck entry points"
+    },
+    {
+      "type": "SetBattery",
+      "agvId": "AGV-001",
+      "level": 100
+    },
+    {
+      "type": "SetBattery",
+      "agvId": "AGV-002",
+      "level": 100
+    },
+    {
+      "type": "SetBattery",
+      "agvId": "AGV-003",
+      "level": 100
+    },
+    {
+      "type": "SetBattery",
+      "agvId": "AGV-004",
+      "level": 100
+    },
+    {
+      "type": "SetPosition",
+      "agvId": "AGV-001",
+      "x": 0.0,
+      "y": 5.0,
+      "theta": 0.0,
+      "mapId": "1",
+      "comment": "North entry — heading south"
+    },
+    {
+      "type": "SetPosition",
+      "agvId": "AGV-002",
+      "x": 10.0,
+      "y": 5.0,
+      "theta": 3.14159,
+      "mapId": "1",
+      "comment": "South entry — heading north"
+    },
+    {
+      "type": "SetPosition",
+      "agvId": "AGV-003",
+      "x": 5.0,
+      "y": 0.0,
+      "theta": 1.5708,
+      "mapId": "1",
+      "comment": "West entry — heading east"
+    },
+    {
+      "type": "SetPosition",
+      "agvId": "AGV-004",
+      "x": 5.0,
+      "y": 10.0,
+      "theta": 4.7124,
+      "mapId": "1",
+      "comment": "East entry — heading west"
+    },
+    {
+      "type": "Assert",
+      "agvId": "AGV-001",
+      "condition": "isConnected == true",
+      "timeoutMs": 5000,
+      "comment": "AGV-001 online"
+    },
+    {
+      "type": "Assert",
+      "agvId": "AGV-002",
+      "condition": "isConnected == true",
+      "timeoutMs": 5000,
+      "comment": "AGV-002 online"
+    },
+    {
+      "type": "Assert",
+      "agvId": "AGV-003",
+      "condition": "isConnected == true",
+      "timeoutMs": 5000,
+      "comment": "AGV-003 online"
+    },
+    {
+      "type": "Assert",
+      "agvId": "AGV-004",
+      "condition": "isConnected == true",
+      "timeoutMs": 5000,
+      "comment": "AGV-004 online"
+    },
+    {
+      "type": "Log",
+      "message": "Phase 2: Simulate all 4 AGVs blocking each other (obstacle errors)"
+    },
+    {
+      "type": "InjectError",
+      "agvId": "AGV-001",
+      "templateName": "OBSTACLE_DETECTED",
+      "comment": "AGV-001 path blocked"
+    },
+    {
+      "type": "InjectError",
+      "agvId": "AGV-002",
+      "templateName": "OBSTACLE_DETECTED",
+      "comment": "AGV-002 path blocked"
+    },
+    {
+      "type": "InjectError",
+      "agvId": "AGV-003",
+      "templateName": "OBSTACLE_DETECTED",
+      "comment": "AGV-003 path blocked"
+    },
+    {
+      "type": "InjectError",
+      "agvId": "AGV-004",
+      "templateName": "OBSTACLE_DETECTED",
+      "comment": "AGV-004 path blocked"
+    },
+    {
+      "type": "Wait",
+      "durationMs": 1000,
+      "comment": "Allow state propagation"
+    },
+    {
+      "type": "Assert",
+      "agvId": "AGV-001",
+      "condition": "hasErrors == true",
+      "timeoutMs": 3000,
+      "comment": "AGV-001 stopped with error"
+    },
+    {
+      "type": "Assert",
+      "agvId": "AGV-002",
+      "condition": "hasErrors == true",
+      "timeoutMs": 3000,
+      "comment": "AGV-002 stopped with error"
+    },
+    {
+      "type": "Assert",
+      "agvId": "AGV-003",
+      "condition": "hasErrors == true",
+      "timeoutMs": 3000,
+      "comment": "AGV-003 stopped with error"
+    },
+    {
+      "type": "Assert",
+      "agvId": "AGV-004",
+      "condition": "hasErrors == true",
+      "timeoutMs": 3000,
+      "comment": "AGV-004 stopped with error"
+    },
+    {
+      "type": "Log",
+      "message": "Phase 3: ACS should detect deadlock — waiting 3s for backend response..."
+    },
+    {
+      "type": "Wait",
+      "durationMs": 3000,
+      "comment": "Time for ACS deadlock detection to trigger"
+    },
+    {
+      "type": "Log",
+      "message": "Phase 4: Resolve deadlock — clear obstacles in priority order"
+    },
+    {
+      "type": "ClearError",
+      "agvId": "AGV-001",
+      "comment": "Release highest-priority AGV first"
+    },
+    {
+      "type": "Wait",
+      "durationMs": 500
+    },
+    {
+      "type": "ClearError",
+      "agvId": "AGV-003",
+      "comment": "Release crossing AGV"
+    },
+    {
+      "type": "Wait",
+      "durationMs": 500
+    },
+    {
+      "type": "ClearError",
+      "agvId": "AGV-002"
+    },
+    {
+      "type": "Wait",
+      "durationMs": 500
+    },
+    {
+      "type": "ClearError",
+      "agvId": "AGV-004"
+    },
+    {
+      "type": "Wait",
+      "durationMs": 2000,
+      "comment": "Allow recovery"
+    },
+    {
+      "type": "Assert",
+      "agvId": "AGV-001",
+      "condition": "hasErrors == false",
+      "timeoutMs": 8000,
+      "comment": "AGV-001 recovered"
+    },
+    {
+      "type": "Assert",
+      "agvId": "AGV-002",
+      "condition": "hasErrors == false",
+      "timeoutMs": 8000,
+      "comment": "AGV-002 recovered"
+    },
+    {
+      "type": "Assert",
+      "agvId": "AGV-003",
+      "condition": "hasErrors == false",
+      "timeoutMs": 8000,
+      "comment": "AGV-003 recovered"
+    },
+    {
+      "type": "Assert",
+      "agvId": "AGV-004",
+      "condition": "hasErrors == false",
+      "timeoutMs": 8000,
+      "comment": "AGV-004 recovered"
+    },
+    {
+      "type": "Log",
+      "message": "=== Deadlock test COMPLETE — all AGVs cleared and recovered ==="
+    }
+  ]
+}
