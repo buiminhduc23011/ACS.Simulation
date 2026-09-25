@@ -306,36 +306,37 @@ public partial class VirtualAgv
         {
             ErrorType = template.ErrorType, ErrorLevel = template.ErrorLevel, ErrorDescription = template.Description
         });
+        // Any error injection immediately stops movement
+        _isMoving = false;
+        _isRotating = false;
+        _currentState.Driving = false;
+        ZeroStoppedVelocities();
+        StopVisualizationTimer();
+
         switch (template.SideEffect)
         {
             case ErrorSideEffect.ReduceSpeed50Percent:
                 _movementConfig.Speed *= 0.5;
-                _logger.LogWarning("AGV {SerialNumber} speed reduced to {Speed} m/s", _config.SerialNumber, _movementConfig.Speed);
+                _logger.LogWarning("AGV {SerialNumber} speed reduced to {Speed} m/s and stopped due to error", _config.SerialNumber, _movementConfig.Speed);
                 break;
             case ErrorSideEffect.StopMovement:
-                _isMoving = false; _currentState.Driving = false;
-                StopVisualizationTimer();
                 _logger.LogWarning("AGV {SerialNumber} movement stopped due to error", _config.SerialNumber);
                 break;
             case ErrorSideEffect.EmergencyStop:
-                _isMoving = false; _isRotating = false;
-                _currentState.Driving = false; _currentState.Paused = true;
-                _currentState.SafetyState.EStop = "MANUAL"; _currentState.SafetyState.FieldViolation = true;
-                ZeroStoppedVelocities();
-                StopVisualizationTimer(); _actionCts?.Cancel();
+                _currentState.Paused = true;
+                _currentState.SafetyState.EStop = "MANUAL";
+                _currentState.SafetyState.FieldViolation = true;
+                _actionCts?.Cancel();
                 _logger.LogCritical("AGV {SerialNumber} EMERGENCY STOP activated", _config.SerialNumber);
                 break;
             case ErrorSideEffect.LocalizationLost:
                 _currentState.AgvPosition!.PositionInitialized = false;
                 _currentState.AgvPosition.LocalizationScore = 0.0;
-                _isMoving = false; _currentState.Driving = false;
-                StopVisualizationTimer();
                 _logger.LogCritical("AGV {SerialNumber} localization LOST", _config.SerialNumber);
                 break;
             case ErrorSideEffect.ClearLoads:
-                _hasLoad = false; _currentState.Loads.Clear();
-                _isMoving = false; _currentState.Driving = false;
-                StopVisualizationTimer();
+                _hasLoad = false;
+                _currentState.Loads.Clear();
                 _logger.LogCritical("AGV {SerialNumber} loads CLEARED due to drop", _config.SerialNumber);
                 break;
         }

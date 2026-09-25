@@ -14,11 +14,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\ducbu\\Documents\\GitHub\\ACS\\src\\ACS.Geometry\\ACS.Geometry.csproj",
+      "projectUniqueName": "C:\\Users\\ducbu\\Documents\\GitHub\\ACS.Simulation\\src\\ACS.Geometry\\ACS.Geometry.csproj",
       "projectName": "ACS.Geometry",
-      "projectPath": "C:\\Users\\ducbu\\Documents\\GitHub\\ACS\\src\\ACS.Geometry\\ACS.Geometry.csproj",
+      "projectPath": "C:\\Users\\ducbu\\Documents\\GitHub\\ACS.Simulation\\src\\ACS.Geometry\\ACS.Geometry.csproj",
       "packagesPath": "C:\\Users\\ducbu\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\ducbu\\Documents\\GitHub\\ACS\\src\\ACS.Geometry\\obj\\",
+      "outputPath": "C:\\Users\\ducbu\\Documents\\GitHub\\ACS.Simulation\\src\\ACS.Geometry\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -75,7 +75,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.401/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

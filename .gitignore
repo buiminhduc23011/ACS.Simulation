@@ -1,21 +1,21 @@
-﻿# Visual Studio / .NET / C#
+# Visual Studio / .NET / C#
 ## Build results
-[Dd]ebug/
-[Dd]ebugPublic/
-[Rr]elease/
-[Rr]eleases/
-x64/
-x86/
-[Aa]rms/
-[Aa]rm64/
-bld/
-[Bb]in/
-[Oo]bj/
-[Ll]og/
-[Ll]ogs/
+**/[Dd]ebug/
+**/[Dd]ebugPublic/
+**/[Rr]elease/
+**/[Rr]eleases/
+**/x64/
+**/x86/
+**/[Aa]rms/
+**/[Aa]rm64/
+**/bld/
+**/[Bb]in/
+**/[Oo]bj/
+**/[Ll]og/
+**/[Ll]ogs/
 
 ## Visual Studio cache & settings
-.vs/
+**/.vs/
 *.user
 *.userosscache
 *.suo
@@ -24,8 +24,8 @@ bld/
 *.ide/
 
 ## Testing
-TestResults/
-[Bb]uild[Ll]og.*
+**/TestResults/
+**/[Bb]uild[Ll]og.*
 
 ## NuGet Packages
 *.nupkg
@@ -33,12 +33,12 @@ TestResults/
 !**/packages/build/
 
 ## Node / Frontend (if present)
-node_modules/
-dist/
-dist-*/
-build/
-.npm/
-.cache/
+**/node_modules/
+**/dist/
+**/dist-*/
+**/build/
+**/.npm/
+**/.cache/
 
 ## OS generated files
 Thumbs.db

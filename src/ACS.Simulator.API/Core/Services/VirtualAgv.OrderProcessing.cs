@@ -615,18 +615,21 @@ public partial class VirtualAgv
                     _config.SerialNumber, previousMapId, _currentMapId, node.NodeId);
             }
 
-            // Consume a pause that arrived during station action before rolling to next hop.
-            if (_pauseLatched || _currentState.Paused)
+            // Consume a pause or error that arrived during station action before rolling to next hop.
+            if (_pauseLatched || _currentState.Paused || _currentState.Errors.Count > 0)
             {
-                _pauseLatched = true;
+                if (_pauseLatched || _currentState.Paused)
+                {
+                    _pauseLatched = true;
+                    _currentState.Paused = true;
+                }
                 _isMoving = false;
-                _currentState.Paused = true;
                 _currentState.Driving = false;
                 ZeroStoppedVelocities();
                 StopVisualizationTimer();
                 _currentNodeIndex--;
                 _logger.LogInformation(
-                    "AGV {SerialNumber} held at node {NodeId} — startPause pending, waiting for stopPause before movement",
+                    "AGV {SerialNumber} held at node {NodeId} — pause/error pending, waiting before movement",
                     _config.SerialNumber,
                     node.NodeId);
                 await PublishStateAsync(true);
@@ -938,6 +941,8 @@ public partial class VirtualAgv
     private void ClearMissionState()
     {
         _currentOrder = null;
+        _currentState.OrderId = "";
+        _currentState.OrderUpdateId = 0;
         _currentNodeIndex = -1;
         _isMoving = false;
         _isRotating = false;
@@ -1025,5 +1030,27 @@ public partial class VirtualAgv
         if (trimmed.Equals("SERVICE", StringComparison.OrdinalIgnoreCase)) return "SERVICE";
         if (trimmed.Equals("TEACHIN", StringComparison.OrdinalIgnoreCase)) return "TEACHIN";
         return "AUTOMATIC";
+    }
+
+    private async Task TryResumeMovementAsync()
+    {
+        if (_currentOrder != null &&
+            _currentNodeIndex >= 0 &&
+            !HasRunningNodeLoadAction())
+        {
+            if (_isMoving ||
+                (_currentNodeIndex < _currentOrder.Nodes.Count &&
+                 Math.Abs(_targetX - _currentX) + Math.Abs(_targetY - _currentY) > _movementConfig.Tolerance))
+            {
+                _isMoving = true;
+                _currentState.Driving = true;
+                StartVisualizationTimer();
+                _logger.LogInformation("AGV {SerialNumber} resumed movement", _config.SerialNumber);
+            }
+            else
+            {
+                await ExecuteNextNodeAsync();
+            }
+        }
     }
 }

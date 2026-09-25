@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "AZoYTpv53FI=",
+  "dgSpecHash": "gTxGsu73QF0=",
   "success": true,
-  "projectFilePath": "C:\\Users\\ducbu\\Documents\\GitHub\\ACS\\src\\ACS.Geometry\\ACS.Geometry.csproj",
+  "projectFilePath": "C:\\Users\\ducbu\\Documents\\GitHub\\ACS.Simulation\\src\\ACS.Geometry\\ACS.Geometry.csproj",
   "expectedPackageFiles": [],
   "logs": []
 }

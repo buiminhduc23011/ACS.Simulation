@@ -16,14 +16,18 @@ public partial class VirtualAgv
 {
     private async Task UpdateMovementAsync()
     {
-        // Honor MQTT-latched startPause even if ProcessInstantActions has not drained yet.
-        if (_pauseLatched || _currentState.Paused)
+        // Honor MQTT-latched startPause, paused state, or any active error
+        if (_pauseLatched || _currentState.Paused || _currentState.Errors.Count > 0)
         {
             if (_isMoving || _currentState.Driving)
             {
                 _isMoving = false;
+                _isRotating = false;
                 _currentState.Driving = false;
-                _currentState.Paused = true;
+                if (_pauseLatched)
+                {
+                    _currentState.Paused = true;
+                }
                 ZeroStoppedVelocities();
                 StopVisualizationTimer();
             }

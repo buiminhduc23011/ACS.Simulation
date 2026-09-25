@@ -217,7 +217,12 @@ public partial class VirtualAgv
                     ErrorLevel = a.ErrorLevel,
                     ErrorDescription = a.Description
                 });
-                _logger.LogWarning("AGV {SerialNumber} error added: {Type} [{Level}]",
+                _isMoving = false;
+                _isRotating = false;
+                _currentState.Driving = false;
+                ZeroStoppedVelocities();
+                StopVisualizationTimer();
+                _logger.LogWarning("AGV {SerialNumber} error added: {Type} [{Level}] -> Stopped movement",
                     _config.SerialNumber, a.ErrorType, a.ErrorLevel);
                 await PublishStateAsync(true);
                 break;
@@ -228,7 +233,14 @@ public partial class VirtualAgv
                 else
                     _currentState.Errors.RemoveAll(e =>
                         e.ErrorType.Equals(c.ErrorType, StringComparison.OrdinalIgnoreCase));
+                _logger.LogInformation("AGV {SerialNumber} error cleared: {Type}",
+                    _config.SerialNumber, c.ErrorType ?? "ALL");
                 await PublishStateAsync(true);
+
+                if (_currentState.Errors.Count == 0 && !_pauseLatched && !_currentState.Paused && (_currentState.SafetyState?.EStop ?? "NONE") == "NONE")
+                {
+                    await TryResumeMovementAsync();
+                }
                 break;
 
             case InjectErrorTemplateCmd it:
@@ -260,6 +272,11 @@ public partial class VirtualAgv
                 _currentState.Errors.RemoveAll(e => e.ErrorType == "safety");
                 _logger.LogInformation("AGV {SerialNumber} emergency stop cleared", _config.SerialNumber);
                 await PublishStateAsync(true);
+
+                if (_currentState.Errors.Count == 0 && !_pauseLatched)
+                {
+                    await TryResumeMovementAsync();
+                }
                 break;
 
             case RestoreLocalizationCmd:
@@ -268,6 +285,11 @@ public partial class VirtualAgv
                 _currentState.Errors.RemoveAll(e => e.ErrorType == "localization");
                 _logger.LogInformation("AGV {SerialNumber} localization restored", _config.SerialNumber);
                 await PublishStateAsync(true);
+
+                if (_currentState.Errors.Count == 0 && !_pauseLatched && !_currentState.Paused)
+                {
+                    await TryResumeMovementAsync();
+                }
                 break;
 
             case ManualPositionStopCmd:

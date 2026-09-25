@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "d8InIs1da2g=",
+  "dgSpecHash": "bv8UstLkOXA=",
   "success": true,
-  "projectFilePath": "C:\\Users\\ducbu\\Documents\\GitHub\\ACS\\src\\simulator\\ACS.Simulator.API\\ACS.Simulator.API.csproj",
+  "projectFilePath": "C:\\Users\\ducbu\\Documents\\GitHub\\ACS.Simulation\\src\\ACS.Simulator.API\\ACS.Simulator.API.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\ducbu\\.nuget\\packages\\microsoft.aspnetcore.authentication.abstractions\\2.2.0\\microsoft.aspnetcore.authentication.abstractions.2.2.0.nupkg.sha512",
     "C:\\Users\\ducbu\\.nuget\\packages\\microsoft.aspnetcore.authorization\\2.2.0\\microsoft.aspnetcore.authorization.2.2.0.nupkg.sha512",

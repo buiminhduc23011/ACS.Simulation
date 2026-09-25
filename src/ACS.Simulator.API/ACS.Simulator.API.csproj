@@ -29,7 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\ACS.Geometry\ACS.Geometry.csproj" />
+    <ProjectReference Include="..\ACS.Geometry\ACS.Geometry.csproj" />
   </ItemGroup>
 
   <ItemGroup>

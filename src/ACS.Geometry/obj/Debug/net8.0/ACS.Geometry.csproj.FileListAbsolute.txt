@@ -10,3 +10,15 @@ C:\Users\ducbu\Documents\GitHub\ACS\src\ACS.Geometry\obj\Debug\net8.0\ACS.Geomet
 C:\Users\ducbu\Documents\GitHub\ACS\src\ACS.Geometry\obj\Debug\net8.0\refint\ACS.Geometry.dll
 C:\Users\ducbu\Documents\GitHub\ACS\src\ACS.Geometry\obj\Debug\net8.0\ACS.Geometry.pdb
 C:\Users\ducbu\Documents\GitHub\ACS\src\ACS.Geometry\obj\Debug\net8.0\ref\ACS.Geometry.dll
+C:\Users\ducbu\Documents\GitHub\ACS.Simulation\src\ACS.Geometry\bin\Debug\net8.0\ACS.Geometry.deps.json
+C:\Users\ducbu\Documents\GitHub\ACS.Simulation\src\ACS.Geometry\bin\Debug\net8.0\ACS.Geometry.dll
+C:\Users\ducbu\Documents\GitHub\ACS.Simulation\src\ACS.Geometry\bin\Debug\net8.0\ACS.Geometry.pdb
+C:\Users\ducbu\Documents\GitHub\ACS.Simulation\src\ACS.Geometry\obj\Debug\net8.0\ACS.Geometry.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\ducbu\Documents\GitHub\ACS.Simulation\src\ACS.Geometry\obj\Debug\net8.0\ACS.Geometry.AssemblyInfoInputs.cache
+C:\Users\ducbu\Documents\GitHub\ACS.Simulation\src\ACS.Geometry\obj\Debug\net8.0\ACS.Geometry.AssemblyInfo.cs
+C:\Users\ducbu\Documents\GitHub\ACS.Simulation\src\ACS.Geometry\obj\Debug\net8.0\ACS.Geometry.csproj.CoreCompileInputs.cache
+C:\Users\ducbu\Documents\GitHub\ACS.Simulation\src\ACS.Geometry\obj\Debug\net8.0\ACS.Geometry.sourcelink.json
+C:\Users\ducbu\Documents\GitHub\ACS.Simulation\src\ACS.Geometry\obj\Debug\net8.0\ACS.Geometry.dll
+C:\Users\ducbu\Documents\GitHub\ACS.Simulation\src\ACS.Geometry\obj\Debug\net8.0\refint\ACS.Geometry.dll
+C:\Users\ducbu\Documents\GitHub\ACS.Simulation\src\ACS.Geometry\obj\Debug\net8.0\ACS.Geometry.pdb
+C:\Users\ducbu\Documents\GitHub\ACS.Simulation\src\ACS.Geometry\obj\Debug\net8.0\ref\ACS.Geometry.dll
