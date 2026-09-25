@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ACS.Geometry")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b3bd5f5bb30cb4ae778c87c334378349e2312375")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b54d4a24c8263822b399207e5d23fcfee70c71ee")]
 [assembly: System.Reflection.AssemblyProductAttribute("ACS.Geometry")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ACS.Geometry")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

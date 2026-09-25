@@ -229,11 +229,43 @@ public partial class VirtualAgv
 
             case ClearErrorCmd c:
                 if (c.ErrorType == null)
+                {
                     _currentState.Errors.Clear();
+                    _currentState.SafetyState.EStop = "NONE";
+                    _currentState.SafetyState.FieldViolation = false;
+                    _currentState.Paused = false;
+                    _pauseLatched = false;
+                    if (_currentState.AgvPosition != null)
+                    {
+                        _currentState.AgvPosition.PositionInitialized = true;
+                        _currentState.AgvPosition.LocalizationScore = 1.0;
+                    }
+                }
                 else
+                {
                     _currentState.Errors.RemoveAll(e =>
                         e.ErrorType.Equals(c.ErrorType, StringComparison.OrdinalIgnoreCase));
-                _logger.LogInformation("AGV {SerialNumber} error cleared: {Type}",
+
+                    if (c.ErrorType.Equals("safety", StringComparison.OrdinalIgnoreCase) ||
+                        c.ErrorType.Equals("EMERGENCY_STOP", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _currentState.SafetyState.EStop = "NONE";
+                        _currentState.SafetyState.FieldViolation = false;
+                        _currentState.Paused = false;
+                    }
+
+                    if (c.ErrorType.Equals("localization", StringComparison.OrdinalIgnoreCase) ||
+                        c.ErrorType.Equals("LOCALIZATION_LOST", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (_currentState.AgvPosition != null)
+                        {
+                            _currentState.AgvPosition.PositionInitialized = true;
+                            _currentState.AgvPosition.LocalizationScore = 1.0;
+                        }
+                    }
+                }
+
+                _logger.LogInformation("AGV {SerialNumber} error cleared: {Type} (Reset EStop to NONE, fieldViolation=false)",
                     _config.SerialNumber, c.ErrorType ?? "ALL");
                 await PublishStateAsync(true);
 
@@ -269,7 +301,10 @@ public partial class VirtualAgv
                 _currentState.SafetyState.EStop = "NONE";
                 _currentState.SafetyState.FieldViolation = false;
                 _currentState.Paused = false;
-                _currentState.Errors.RemoveAll(e => e.ErrorType == "safety");
+                _pauseLatched = false;
+                _currentState.Errors.RemoveAll(e =>
+                    e.ErrorType.Equals("safety", StringComparison.OrdinalIgnoreCase) ||
+                    e.ErrorType.Equals("EMERGENCY_STOP", StringComparison.OrdinalIgnoreCase));
                 _logger.LogInformation("AGV {SerialNumber} emergency stop cleared", _config.SerialNumber);
                 await PublishStateAsync(true);
 
@@ -280,9 +315,14 @@ public partial class VirtualAgv
                 break;
 
             case RestoreLocalizationCmd:
-                _currentState.AgvPosition!.PositionInitialized = true;
-                _currentState.AgvPosition.LocalizationScore = 1.0;
-                _currentState.Errors.RemoveAll(e => e.ErrorType == "localization");
+                if (_currentState.AgvPosition != null)
+                {
+                    _currentState.AgvPosition.PositionInitialized = true;
+                    _currentState.AgvPosition.LocalizationScore = 1.0;
+                }
+                _currentState.Errors.RemoveAll(e =>
+                    e.ErrorType.Equals("localization", StringComparison.OrdinalIgnoreCase) ||
+                    e.ErrorType.Equals("LOCALIZATION_LOST", StringComparison.OrdinalIgnoreCase));
                 _logger.LogInformation("AGV {SerialNumber} localization restored", _config.SerialNumber);
                 await PublishStateAsync(true);
 
