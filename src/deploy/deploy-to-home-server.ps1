@@ -30,6 +30,7 @@ echo '$password' | sudo -S mv /tmp/simulator-update /home/ducne/acs-simulator/di
 echo '$password' | sudo -S cp -r /tmp/simulator-data-backup /home/ducne/acs-simulator/dist-simulator/server/data || true
 echo '$password' | sudo -S rm -rf /tmp/simulator-data-backup
 echo '$password' | sudo -S chmod +x /home/ducne/acs-simulator/dist-simulator/server/ACS.Simulator.API
+echo '$password' | sudo -S chown -R ducne:ducne /home/ducne/acs-simulator/dist-simulator
 echo '$password' | sudo -S systemctl start acs-simulator
 echo '$password' | sudo -S systemctl status acs-simulator --no-pager
 "@
