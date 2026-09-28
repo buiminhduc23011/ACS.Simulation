@@ -34,8 +34,8 @@ echo '$password' | sudo -S chown -R ducne:ducne /home/ducne/acs-simulator/dist-s
 echo '$password' | sudo -S systemctl start acs-simulator
 echo '$password' | sudo -S systemctl status acs-simulator --no-pager
 "@
-
-& ssh home-server $sshCommand
+$cleanSshCommand = $sshCommand.Replace("`r", "")
+& ssh home-server $cleanSshCommand
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "`nSuccessfully updated and restarted ACS Simulator on home-server!" -ForegroundColor Green
