@@ -33,7 +33,6 @@ try
     // Core services
     builder.Services.AddSingleton<FleetPersistenceService>();
     builder.Services.AddSingleton<SimulatorService>();
-    builder.Services.AddSingleton<ScenarioRunnerService>();
     builder.Services.AddHostedService<SimulatorBroadcastService>();
     builder.Services.AddHostedService<SimulatorMapGraphLoaderService>();
 

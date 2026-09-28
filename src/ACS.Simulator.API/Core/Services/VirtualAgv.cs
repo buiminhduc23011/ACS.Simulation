@@ -17,7 +17,7 @@ namespace ACS.Simulator.API.Core.Services;
 ///
 /// This file contains: fields, properties, topics, and constructor.
 /// Behaviour is split across partial class files:
-///   VirtualAgv.Mqtt.cs          — MQTT connect / subscribe / publish / network chaos
+///   VirtualAgv.Mqtt.cs          — MQTT connect / subscribe / publish / disconnect
 ///   VirtualAgv.Lifecycle.cs     — Startup / shutdown / actor event loop / timer helpers
 ///   VirtualAgv.OrderProcessing.cs — VDA5050 order execution, instant actions
 ///   VirtualAgv.Movement.cs      — Movement physics, heading, trajectory, collision
@@ -35,12 +35,6 @@ public partial class VirtualAgv : IVirtualAgv
     private readonly ActionsConfig _actionsConfig;
     private readonly BatteryConfig _batteryConfig;
     private readonly IMqttClient _mqttClient;
-
-    // Network chaos state
-    private int _chaosMinLatencyMs = 0;
-    private int _chaosMaxLatencyMs = 0;
-    private int _chaosPacketLossPercent = 0;
-    private readonly Random _chaosRandom = new();
 
     // Battery simulation
     private double _batteryLevel;
@@ -70,8 +64,8 @@ public partial class VirtualAgv : IVirtualAgv
     private readonly Channel<AgvCommand> _commandChannel;
     private CancellationTokenSource? _loopCts;
     private Task? _eventLoopTask;
-    private CancellationTokenSource? _chaosReconnectCts;
-    private Task? _chaosReconnectTask;
+    private CancellationTokenSource? _disconnectCts;
+    private Task? _disconnectTask;
     private bool _mqttHandlerAttached;
 
     // Manual position (joystick) control: auto-stop visualization after inactivity
@@ -137,8 +131,7 @@ public partial class VirtualAgv : IVirtualAgv
         StatePublishConfig statePublishConfig,
         ActionsConfig actionsConfig,
         ILogger<VirtualAgv> logger,
-        BatteryConfig? batteryConfig = null,
-        NetworkChaosConfig? networkChaosConfig = null)
+        BatteryConfig? batteryConfig = null)
     {
         _config = config;
         _mqttConfig = mqttConfig;
@@ -150,14 +143,6 @@ public partial class VirtualAgv : IVirtualAgv
 
         // Initialize battery
         _batteryLevel = _batteryConfig.InitialLevel;
-
-        // Initialize network chaos
-        if (networkChaosConfig != null)
-        {
-            _chaosMinLatencyMs = networkChaosConfig.MinLatencyMs;
-            _chaosMaxLatencyMs = networkChaosConfig.MaxLatencyMs;
-            _chaosPacketLossPercent = networkChaosConfig.PacketLossPercent;
-        }
 
         // Initialize position
         foreach (var mapping in config.MapMappings)

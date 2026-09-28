@@ -95,24 +95,6 @@ Fleet-wide overview:
   - **Errors**: Manually inject errors or clear all active errors
   - **Network**: Trigger connection drop
 
-### Map Monitor
-- Konva canvas rendering the map graph (edges, nodes, stations)
-- AGVs drawn at their live position and theta heading
-- Mouse zoom & pan (react-zoom-pan-pinch)
-- Select any map from the ACS API and activate it fleet-wide
-
-### Chaos Engineering
-- **8 preset error templates** — click a card to inject instantly
-- **Network chaos sliders**: latency range (ms) and packet loss (%)
-- Active errors table showing all faults across the entire fleet
-- Clear errors or trigger disconnect per AGV
-
-### Scenario Runner
-- Import JSON scenario files from disk
-- Start / stop scenario execution on demand
-- Progress bar with per-step pass/fail result timeline
-- **Dark terminal log console** streaming `LogMessage` events via SignalR
-
 ### Settings
 - Configure MQTT broker (host, port, username/password)
 - Configure the main ACS API base URL
@@ -127,9 +109,6 @@ src/
 │   └── config.ts                  # Global constants
 ├── types/
 │   ├── agv.ts                     # ISimAgv, AgvStatus, ICreateAgvRequest
-│   ├── map.ts                     # IMapSummary, IMapDetail, IMapNode/Edge/Station
-│   ├── scenario.ts                # IScenario, IScenarioRun, IStepResult
-│   ├── chaos.ts                   # IErrorTemplate, IChaosSettings
 │   └── events.ts                  # IFleetEvent, ILogMessage
 ├── infrastructure/
 │   ├── api/
@@ -139,15 +118,10 @@ src/
 │       └── useSimulatorSignalR.ts # React hook for the SignalR hub
 ├── store/
 │   ├── fleetStore.ts              # Zustand: AGV map + event log
-│   ├── mapStore.ts                # Zustand: selected map detail
-│   ├── scenarioStore.ts           # Zustand: scenarios + run state + logs
 │   └── configStore.ts             # Zustand: MQTT / API config
 ├── features/
-│   ├── fleet/                     # FleetPage, CreateAgvModal, AgvDetailDrawer
+│   ├── fleet/                     # FleetPage, CreateAgvModal, AgvControlPage
 │   ├── dashboard/                 # DashboardPage (charts + stats)
-│   ├── map/                       # MapMonitorPage, MapCanvas (Konva)
-│   ├── chaos/                     # ChaosPage (templates + network sliders)
-│   ├── scenario/                  # ScenarioPage (runner + log console)
 │   └── settings/                  # SettingsPage (MQTT + API config)
 ├── layouts/
 │   └── AppLayout.tsx              # Dark sider + header + SignalR root
@@ -164,34 +138,6 @@ Hub URL: `http://localhost:9060/hubs/simulator`
 |-------|-------|-------------|
 | `fleet` | `AgvFleetUpdated` | Full fleet snapshot, pushed every 300 ms |
 | `fleet` | `FleetEvent` | Discrete events (created, deleted, status change, …) |
-| `scenario` | `ScenarioStarted` | Scenario execution begins |
-| `scenario` | `ScenarioStep` | Result of a single step |
-| `scenario` | `ScenarioProgress` | Rolling progress update |
-| `scenario` | `ScenarioFinished` | Scenario completed / failed / stopped |
-| `scenario` | `LogMessage` | Free-text log line from the server |
-
----
-
-## Scenario File Format (JSON)
-
-```json
-{
-  "id": "scenario-001",
-  "name": "Test Emergency Stop",
-  "description": "Simulate an AGV emergency-stop fault",
-  "steps": [
-    { "type": "SetPosition",  "agvId": "SN001", "x": 5.0, "y": 3.0, "theta": 0 },
-    { "type": "WaitStep",     "durationMs": 2000 },
-    { "type": "InjectError",  "agvId": "SN001", "errorType": "EMERGENCY_STOP",
-      "errorLevel": "FATAL", "errorDescription": "Simulated fatal fault" },
-    { "type": "WaitStep",     "durationMs": 3000 },
-    { "type": "ClearError",   "agvId": "SN001" },
-    { "type": "LogStep",      "message": "Scenario complete" }
-  ]
-}
-```
-
-Supported step types: `WaitStep`, `SetPosition`, `SetBattery`, `SetSpeed`, `InjectError`, `ClearError`, `DisconnectStep`, `SetChaos`, `AssertStep`, `LogStep`.
 
 ---
 
@@ -207,9 +153,7 @@ Supported step types: `WaitStep`, `SetPosition`, `SetBattery`, `SetSpeed`, `Inje
 | Zustand | 5.0 | Lightweight state management |
 | Axios | 1.10 | HTTP client |
 | @microsoft/signalr | 8.0 | SignalR client |
-| react-konva | 18.2 | 2D canvas (map rendering) |
 | Recharts | 2.15 | Charts (pie, bar) |
-| react-zoom-pan-pinch | 3.7 | Zoom / pan on Konva canvas |
 | react-router-dom | 7.6 | Client-side routing |
 
 ---

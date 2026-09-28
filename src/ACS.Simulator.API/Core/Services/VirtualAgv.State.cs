@@ -121,24 +121,6 @@ public partial class VirtualAgv
                 await CheckBatteryWarningAsync();
             }
 
-            // Network chaos: Packet loss
-            if (_chaosPacketLossPercent > 0 && _chaosRandom.Next(100) < _chaosPacketLossPercent)
-            {
-                _logger.LogDebug("AGV {SerialNumber} state publish DROPPED (packet loss {Pct}%)",
-                    _config.SerialNumber, _chaosPacketLossPercent);
-                return;
-            }
-
-            // Network chaos: Latency
-            if (_chaosMaxLatencyMs > 0)
-            {
-                int delay = _chaosMinLatencyMs == _chaosMaxLatencyMs
-                    ? _chaosMinLatencyMs
-                    : _chaosRandom.Next(_chaosMinLatencyMs, _chaosMaxLatencyMs);
-                if (delay > 0)
-                    await Task.Delay(delay);
-            }
-
             if (string.IsNullOrWhiteSpace(_currentState.LastNodeId))
             {
                 TryPopulateLastNodeIdFromCurrentPose();

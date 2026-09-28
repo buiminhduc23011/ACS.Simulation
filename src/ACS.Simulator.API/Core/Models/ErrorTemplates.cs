@@ -2,7 +2,7 @@ namespace ACS.Simulator.API.Core.Models;
 
 /// <summary>
 /// Predefined error templates với side-effects tương ứng.
-/// Dùng trong Error Injection UI và Scenario Scripting.
+/// Dùng trong Error Injection UI.
 /// </summary>
 public class ErrorTemplate
 {

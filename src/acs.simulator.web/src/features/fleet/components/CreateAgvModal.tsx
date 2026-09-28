@@ -1,10 +1,7 @@
 import React, { useEffect } from 'react';
-import { Modal, Form, Input, InputNumber, Select, Button, AutoComplete, Space, Typography } from 'antd';
+import { Modal, Form, Input, InputNumber, Select, Button, Space, Typography } from 'antd';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import type { ICreateAgvRequest, ISimAgv } from '../../../types/agv';
-import type { IMapSummary } from '../../../types/map';
-import apiClient from '../../../infrastructure/api/apiClient';
-import { ENDPOINTS } from '../../../infrastructure/api/endpoints';
 
 const { Text } = Typography;
 
@@ -19,14 +16,7 @@ interface Props {
 export const CreateAgvModal: React.FC<Props> = ({ open, onClose, onCreate, onUpdate, editingAgv }) => {
   const [form] = Form.useForm<ICreateAgvRequest>();
   const [loading, setLoading] = React.useState(false);
-  const [mapOptions, setMapOptions] = React.useState<{ value: string; label: string }[]>([]);
   const isEdit = !!editingAgv;
-
-  useEffect(() => {
-    apiClient.get<IMapSummary[]>(ENDPOINTS.maps.list)
-      .then(res => setMapOptions(res.data.map(m => ({ value: m.mapId, label: `${m.mapId} — ${m.mapName}` }))))
-      .catch(() => { /* ACS not connected */ });
-  }, []);
 
   useEffect(() => {
     if (open && editingAgv) {
@@ -97,12 +87,7 @@ export const CreateAgvModal: React.FC<Props> = ({ open, onClose, onCreate, onUpd
           </Form.Item>
         </Form.Item>
         <Form.Item name="mapId" label="Map ID" rules={[{ required: true, message: 'Map ID is required' }]}>
-          <AutoComplete
-            options={mapOptions}
-            placeholder={mapOptions.length ? 'Select or type map ID' : 'Type map ID (e.g. floor1)'}
-            filterOption={(input, opt) => (opt?.value ?? '').toLowerCase().includes(input.toLowerCase())}
-            allowClear
-          />
+          <Input placeholder="Type map ID (e.g. floor1)" />
         </Form.Item>
         <Form.Item label="Map Mapping" style={{ marginBottom: 12 }}>
           <Text type="secondary">
@@ -121,12 +106,7 @@ export const CreateAgvModal: React.FC<Props> = ({ open, onClose, onCreate, onUpd
                         rules={[{ required: true, message: 'Source map is required' }]}
                         style={{ minWidth: 220, marginBottom: 0 }}
                       >
-                        <AutoComplete
-                          options={mapOptions}
-                          placeholder="e.g. 1 or ACS_MAP_01"
-                          filterOption={(input, opt) => (opt?.value ?? '').toLowerCase().includes(input.toLowerCase())}
-                          allowClear
-                        />
+                        <Input placeholder="e.g. 1 or ACS_MAP_01" />
                       </Form.Item>
                       <Form.Item
                         {...field}
@@ -135,12 +115,7 @@ export const CreateAgvModal: React.FC<Props> = ({ open, onClose, onCreate, onUpd
                         rules={[{ required: true, message: 'Target map is required' }]}
                         style={{ minWidth: 220, marginBottom: 0 }}
                       >
-                        <AutoComplete
-                          options={mapOptions}
-                          placeholder="e.g. FLOOR_1_SIM"
-                          filterOption={(input, opt) => (opt?.value ?? '').toLowerCase().includes(input.toLowerCase())}
-                          allowClear
-                        />
+                        <Input placeholder="e.g. FLOOR_1_SIM" />
                       </Form.Item>
                       <Button
                         danger

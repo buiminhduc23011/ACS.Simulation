@@ -134,5 +134,5 @@ public record BulkCreateRequest(
     double Theta = 0,
     double Spacing = 3.0,
     int Columns = 0,   // 0 = auto (sqrt)
-    int SerialNumberPadWidth = 3 // default 3 => AGV-001 style serials (scenario-friendly)
+    int SerialNumberPadWidth = 3 // default 3 => AGV-001 style serials
 );

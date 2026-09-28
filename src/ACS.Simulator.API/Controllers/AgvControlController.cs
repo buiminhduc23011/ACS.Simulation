@@ -111,13 +111,6 @@ public class AgvControlController : ControllerBase
         return BadRequest(new { message = "AGV not found or template unknown" });
     }
 
-    [HttpPost("chaos")]
-    public IActionResult SetChaos(string id, [FromBody] ChaosSettingsRequest req)
-    {
-        if (_sim.SetChaos(id, req)) return Ok();
-        return NotFound();
-    }
-
     [HttpPost("disconnect")]
     public async Task<IActionResult> TriggerDisconnect(string id, [FromBody] DisconnectRequest req)
     {

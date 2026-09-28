@@ -10,8 +10,6 @@ export type FleetEventType =
   | 'ErrorsCleared'
   | 'BatteryChanged'
   | 'PositionChanged'
-  | 'MapActivated'
-  | 'ChaosApplied'
   | 'Disconnected';
 
 export interface IFleetEvent {

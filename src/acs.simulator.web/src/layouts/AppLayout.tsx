@@ -4,9 +4,6 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   DashboardOutlined,
   RobotOutlined,
-  EnvironmentOutlined,
-  ThunderboltOutlined,
-  PlaySquareOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
 import { useShallow } from 'zustand/react/shallow';
@@ -23,9 +20,6 @@ const { Text } = Typography;
 const MENU_ITEMS = [
   { key: '/', icon: <DashboardOutlined />, label: 'Dashboard' },
   { key: '/fleet', icon: <RobotOutlined />, label: 'Fleet' },
-  { key: '/map', icon: <EnvironmentOutlined />, label: 'Map Monitor' },
-  { key: '/chaos', icon: <ThunderboltOutlined />, label: 'Chaos' },
-  { key: '/scenario', icon: <PlaySquareOutlined />, label: 'Scenarios' },
   { key: '/settings', icon: <SettingOutlined />, label: 'Settings' },
 ];
 
@@ -94,7 +88,7 @@ export const AppLayout: React.FC<Props> = ({ children }) => {
               checked={!isDarkMode}
               onChange={toggleTheme}
             />
-            <Text style={{ color: token.colorPrimary, fontSize: 12 }}>ACS Simulator Web v1.3.0</Text>
+            <Text style={{ color: token.colorPrimary, fontSize: 12 }}>ACS Simulator Web v1.3.1</Text>
           </div>
         </Header>
 

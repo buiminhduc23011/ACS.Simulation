@@ -3,7 +3,7 @@ using ACS.Simulator.API.Core.Models;
 namespace ACS.Simulator.API.Core.Services;
 
 /// <summary>
-/// Interface for Virtual AGV - allows mocking in tests and scenario scripting.
+/// Interface for Virtual AGV - allows mocking in tests.
 /// </summary>
 public interface IVirtualAgv : IDisposable
 {
@@ -17,9 +17,6 @@ public interface IVirtualAgv : IDisposable
     bool IsRunning { get; }
     Vda5050State CurrentState { get; }
 
-    // Network chaos
-    void SetChaosLatency(int minMs, int maxMs);
-    void SetPacketLoss(int percent);
     Task TriggerDisconnectAsync(int durationMs);
 
     // Lifecycle

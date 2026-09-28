@@ -24,25 +24,10 @@ export const ENDPOINTS = {
     addError: (id: string) => `${BASE}/agvs/${id}/control/errors`,
     clearErrors: (id: string) => `${BASE}/agvs/${id}/control/errors`,
     injectTemplate: (id: string) => `${BASE}/agvs/${id}/control/errors/inject`,
-    chaos: (id: string) => `${BASE}/agvs/${id}/control/chaos`,
     disconnect: (id: string) => `${BASE}/agvs/${id}/control/disconnect`,
   },
   // Error Templates
   errorTemplates: `${BASE}/error-templates`,
-  // Maps
-  maps: {
-    list: `${BASE}/maps`,
-    detail: (mapId: string) => `${BASE}/maps/${mapId}`,
-    activate: (mapId: string) => `${BASE}/maps/${mapId}/activate`,
-  },
-  // Scenarios
-  scenarios: {
-    list: `${BASE}/scenarios`,
-    import: `${BASE}/scenarios/import`,
-    run: (id: string) => `${BASE}/scenarios/${id}/run`,
-    stop: `${BASE}/scenarios/stop`,
-    currentRun: `${BASE}/scenarios/current-run`,
-  },
   // Config
   config: {
     get: `${BASE}/config`,

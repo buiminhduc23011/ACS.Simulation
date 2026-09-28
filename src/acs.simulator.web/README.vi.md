@@ -95,24 +95,6 @@ Màn hình tổng quan toàn đội xe:
   - **Errors**: Inject lỗi thủ công hoặc xóa tất cả lỗi
   - **Network**: Kích hoạt ngắt kết nối
 
-### Map Monitor — Theo dõi bản đồ
-- Canvas Konva hiển thị đồ thị bản đồ (cạnh, nút, trạm dừng)
-- AGV được vẽ theo vị trí và góc theta thực tế
-- Zoom & pan bằng chuột (react-zoom-pan-pinch)
-- Chọn bản đồ từ ACS API và kích hoạt cho toàn bộ đội xe
-
-### Chaos Engineering — Kiểm thử độ tin cậy
-- **8 mẫu lỗi** có sẵn (click để inject ngay lập tức)
-- **Sliders** điều chỉnh độ trễ mạng (latency) và tỷ lệ mất gói (packet loss)
-- Xem bảng tất cả lỗi đang hoạt động trên toàn đội
-- Xóa lỗi hoặc ngắt kết nối từng xe
-
-### Scenario Runner — Chạy kịch bản
-- Import file JSON kịch bản từ máy tính
-- Chạy / dừng kịch bản theo yêu cầu
-- Thanh tiến trình và danh sách kết quả từng bước (pass/fail)
-- **Terminal log** tối màu hiển thị log theo thời gian thực từ SignalR
-
 ### Settings — Cài đặt
 - Cấu hình MQTT Broker (host, port, username/password)
 - Cấu hình URL ACS API chính
@@ -127,9 +109,6 @@ src/
 │   └── config.ts                  # Hằng số cấu hình toàn cục
 ├── types/
 │   ├── agv.ts                     # ISimAgv, AgvStatus, ICreateAgvRequest
-│   ├── map.ts                     # IMapSummary, IMapDetail, IMapNode/Edge/Station
-│   ├── scenario.ts                # IScenario, IScenarioRun, IStepResult
-│   ├── chaos.ts                   # IErrorTemplate, IChaosSettings
 │   └── events.ts                  # IFleetEvent, ILogMessage
 ├── infrastructure/
 │   ├── api/
@@ -139,15 +118,10 @@ src/
 │       └── useSimulatorSignalR.ts # React hook kết nối SignalR Hub
 ├── store/
 │   ├── fleetStore.ts              # Zustand: danh sách AGV + sự kiện
-│   ├── mapStore.ts                # Zustand: bản đồ đang chọn
-│   ├── scenarioStore.ts           # Zustand: kịch bản + log
 │   └── configStore.ts             # Zustand: cấu hình MQTT/API
 ├── features/
-│   ├── fleet/                     # FleetPage, CreateAgvModal, AgvDetailDrawer
+│   ├── fleet/                     # FleetPage, CreateAgvModal, AgvControlPage
 │   ├── dashboard/                 # DashboardPage (charts + stats)
-│   ├── map/                       # MapMonitorPage, MapCanvas (Konva)
-│   ├── chaos/                     # ChaosPage (templates + network sliders)
-│   ├── scenario/                  # ScenarioPage (runner + log console)
 │   └── settings/                  # SettingsPage (MQTT + API config)
 ├── layouts/
 │   └── AppLayout.tsx              # Sider dark theme + Header + SignalR root
@@ -164,31 +138,6 @@ Hub URL: `http://localhost:9060/hubs/simulator`
 |-------|-------|-------|
 | `fleet` | `AgvFleetUpdated` | Danh sách toàn bộ AGV, cập nhật 300ms/lần |
 | `fleet` | `FleetEvent` | Sự kiện đơn lẻ (tạo, xóa, đổi trạng thái...) |
-| `scenario` | `ScenarioStarted` | Kịch bản bắt đầu chạy |
-| `scenario` | `ScenarioStep` | Kết quả từng bước |
-| `scenario` | `ScenarioProgress` | Cập nhật tiến trình |
-| `scenario` | `ScenarioFinished` | Kịch bản kết thúc |
-| `scenario` | `LogMessage` | Log text từ server |
-
----
-
-## Định dạng file Scenario (JSON)
-
-```json
-{
-  "id": "scenario-001",
-  "name": "Test Emergency Stop",
-  "description": "Mô phỏng dừng khẩn cấp",
-  "steps": [
-    { "type": "SetPosition", "agvId": "SN001", "x": 5.0, "y": 3.0, "theta": 0 },
-    { "type": "WaitStep", "durationMs": 2000 },
-    { "type": "InjectError", "agvId": "SN001", "errorType": "EMERGENCY_STOP", "errorLevel": "FATAL", "errorDescription": "Test fatal error" },
-    { "type": "WaitStep", "durationMs": 3000 },
-    { "type": "ClearError", "agvId": "SN001" },
-    { "type": "LogStep", "message": "Scenario completed" }
-  ]
-}
-```
 
 ---
 
@@ -204,9 +153,7 @@ Hub URL: `http://localhost:9060/hubs/simulator`
 | Zustand | 5.0 | State management |
 | Axios | 1.10 | HTTP client |
 | @microsoft/signalr | 8.0 | SignalR client |
-| react-konva | 18.2 | Canvas 2D (bản đồ) |
 | Recharts | 2.15 | Biểu đồ |
-| react-zoom-pan-pinch | 3.7 | Zoom/pan bản đồ |
 | react-router-dom | 7.6 | Routing |
 
 ---

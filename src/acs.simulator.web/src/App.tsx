@@ -7,9 +7,6 @@ import { AppLayout } from './layouts/AppLayout';
 const DashboardPage = lazy(() => import('./features/dashboard/pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
 const FleetPage = lazy(() => import('./features/fleet/pages/FleetPage').then((m) => ({ default: m.FleetPage })));
 const AgvControlPage = lazy(() => import('./features/fleet/pages/AgvControlPage').then((m) => ({ default: m.AgvControlPage })));
-const MapMonitorPage = lazy(() => import('./features/map/pages/MapMonitorPage').then((m) => ({ default: m.MapMonitorPage })));
-const ChaosPage = lazy(() => import('./features/chaos/pages/ChaosPage').then((m) => ({ default: m.ChaosPage })));
-const ScenarioPage = lazy(() => import('./features/scenario/pages/ScenarioPage').then((m) => ({ default: m.ScenarioPage })));
 const SettingsPage = lazy(() => import('./features/settings/pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 
 const loader = (
@@ -61,9 +58,6 @@ export const App: React.FC = () => {
             <Route path="/" element={<DashboardPage />} />
             <Route path="/fleet" element={<FleetPage />} />
             <Route path="/fleet/:id/control" element={<AgvControlPage />} />
-            <Route path="/map" element={<MapMonitorPage />} />
-            <Route path="/chaos" element={<ChaosPage />} />
-            <Route path="/scenario" element={<ScenarioPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

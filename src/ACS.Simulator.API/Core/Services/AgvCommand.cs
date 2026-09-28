@@ -38,9 +38,6 @@ public sealed record SetBatteryCmd(double Level) : AgvCommand;
 /// <summary>Enqueued by SetSpeed() HTTP call.</summary>
 public sealed record SetSpeedCmd(double Speed) : AgvCommand;
 
-/// <summary>Enqueued by SetChaosLatency() + SetPacketLoss() HTTP calls.</summary>
-public sealed record SetChaosCmd(int MinMs, int MaxMs, int LossPercent) : AgvCommand;
-
 /// <summary>Enqueued by AddErrorAsync().</summary>
 public sealed record AddErrorCmd(string ErrorType, string ErrorLevel, string? Description) : AgvCommand;
 

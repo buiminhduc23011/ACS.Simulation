@@ -49,22 +49,12 @@ public record AddErrorRequest(
 
 public record InjectTemplateRequest(string TemplateName);
 
-public record ChaosSettingsRequest(
-    bool LatencyEnabled,
-    int LatencyMinMs,
-    int LatencyMaxMs,
-    bool PacketLossEnabled,
-    int PacketLossPercent
-);
-
 public record DisconnectRequest(int DurationMs);
 
 public record MqttConfigRequest(string Host, int Port);
 public record AcsApiConfigRequest(string BaseUrl);
 public record MqttConfigDto(string Host, int Port);
 public record AcsApiConfigDto(string BaseUrl);
-
-public record RunScenarioRequest(string? AgvId);
 
 // Response DTOs
 
@@ -125,37 +115,6 @@ public record FleetEventDto(
     string EventType,
     string Message,
     DateTime Timestamp
-);
-
-public record ScenarioSummaryDto(
-    string Id,
-    string Name,
-    string Description,
-    string Version,
-    int StepCount,
-    string FilePath
-);
-
-public record ScenarioRunDto(
-    string RunId,
-    string ScenarioName,
-    string Status,
-    int TotalSteps,
-    int PassedSteps,
-    int FailedSteps,
-    DateTime StartedAt,
-    DateTime? FinishedAt,
-    List<StepResultDto> StepResults
-);
-
-public record StepResultDto(
-    int Index,
-    string StepType,
-    string? AgvId,
-    string? Comment,
-    bool Passed,
-    string? Message,
-    long DurationMs
 );
 
 public record LogMessageDto(

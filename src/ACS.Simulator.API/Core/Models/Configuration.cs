@@ -99,18 +99,6 @@ public class BatteryConfig
     /// </remarks>
 }
 
-public class NetworkChaosConfig
-{
-    /// <summary>Độ trễ tối thiểu giả lập (ms, 0 = tắt)</summary>
-    public int MinLatencyMs { get; set; } = 0;
-
-    /// <summary>Độ trễ tối đa giả lập (ms)</summary>
-    public int MaxLatencyMs { get; set; } = 0;
-
-    /// <summary>Tỷ lệ mất gói tin (0-100%, 0 = tắt)</summary>
-    public int PacketLossPercent { get; set; } = 0;
-}
-
 public class AgvSimulatorSettings
 {
     public MqttBrokerConfig MqttBroker { get; set; } = new();
@@ -119,5 +107,4 @@ public class AgvSimulatorSettings
     public StatePublishConfig StatePublish { get; set; } = new();
     public ActionsConfig Actions { get; set; } = new();
     public BatteryConfig Battery { get; set; } = new();
-    public NetworkChaosConfig NetworkChaos { get; set; } = new();
 }

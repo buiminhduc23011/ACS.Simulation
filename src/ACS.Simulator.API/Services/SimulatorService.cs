@@ -340,23 +340,6 @@ public class SimulatorService
         return true;
     }
 
-    public bool SetChaos(string id, ChaosSettingsRequest req)
-    {
-        if (!_fleet.TryGetValue(id, out var agv)) return false;
-        agv.SetChaosLatency(req.LatencyEnabled ? req.LatencyMinMs : 0,
-                            req.LatencyEnabled ? req.LatencyMaxMs : 0);
-        agv.SetPacketLoss(req.PacketLossEnabled ? req.PacketLossPercent : 0);
-        if (_meta.TryGetValue(id, out var m))
-        {
-            m.ChaosLatencyEnabled = req.LatencyEnabled;
-            m.ChaosLatencyMin = req.LatencyMinMs;
-            m.ChaosLatencyMax = req.LatencyMaxMs;
-            m.ChaosPacketLossEnabled = req.PacketLossEnabled;
-            m.ChaosPacketLoss = req.PacketLossPercent;
-        }
-        return true;
-    }
-
     public async Task<bool> TriggerDisconnectAsync(string id, int durationMs)
     {
         if (!_fleet.TryGetValue(id, out var agv)) return false;
@@ -665,9 +648,4 @@ public class AgvMeta
     public string Manufacturer { get; set; } = "";
     public double Speed { get; set; } = 1.0;
     public List<AgvMapMapping> MapMappings { get; set; } = new();
-    public bool ChaosLatencyEnabled { get; set; }
-    public int ChaosLatencyMin { get; set; }
-    public int ChaosLatencyMax { get; set; }
-    public bool ChaosPacketLossEnabled { get; set; }
-    public int ChaosPacketLoss { get; set; }
 }

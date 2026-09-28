@@ -41,14 +41,14 @@ public partial class VirtualAgv
         if (!_isRunning) return;
         _isRunning = false;
 
-        _chaosReconnectCts?.Cancel();
-        var reconnectTask = _chaosReconnectTask;
+        _disconnectCts?.Cancel();
+        var reconnectTask = _disconnectTask;
         if (reconnectTask is { IsCompleted: false })
         {
             try { await reconnectTask.WaitAsync(TimeSpan.FromSeconds(2)); }
             catch (TimeoutException)
             {
-                _logger.LogWarning("AGV {SerialNumber} chaos reconnect task did not stop in 2s", _config.SerialNumber);
+                _logger.LogWarning("AGV {SerialNumber} reconnect task did not stop in 2s", _config.SerialNumber);
             }
             catch (OperationCanceledException) { }
         }
@@ -76,8 +76,8 @@ public partial class VirtualAgv
         }
 
         _loopCts?.Dispose(); _loopCts = null;
-        _chaosReconnectCts?.Dispose(); _chaosReconnectCts = null;
-        _chaosReconnectTask = null;
+        _disconnectCts?.Dispose(); _disconnectCts = null;
+        _disconnectTask = null;
         _eventLoopTask = null;
         _logger.LogInformation("AGV {SerialNumber} stopped", _config.SerialNumber);
     }
@@ -93,8 +93,8 @@ public partial class VirtualAgv
         _loopCts?.Cancel();
         _loopCts?.Dispose();
         _actionCts?.Dispose();
-        _chaosReconnectCts?.Cancel();
-        _chaosReconnectCts?.Dispose();
+        _disconnectCts?.Cancel();
+        _disconnectCts?.Dispose();
         DetachMqttHandler();
         _mqttClient?.Dispose();
 
@@ -202,12 +202,6 @@ public partial class VirtualAgv
             case SetSpeedCmd s:
                 _movementConfig.Speed = s.Speed;
                 _logger.LogInformation("AGV {SerialNumber} speed updated to {Speed} m/s", _config.SerialNumber, s.Speed);
-                break;
-
-            case SetChaosCmd c:
-                _chaosMinLatencyMs = Math.Max(0, c.MinMs);
-                _chaosMaxLatencyMs = Math.Max(0, c.MaxMs);
-                _chaosPacketLossPercent = Math.Clamp(c.LossPercent, 0, 100);
                 break;
 
             case AddErrorCmd a:

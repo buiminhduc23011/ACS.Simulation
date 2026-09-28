@@ -3,15 +3,10 @@ import * as signalR from '@microsoft/signalr';
 import { SIGNALR_URL } from '../../config/config';
 import type { ISimAgv } from '../../types/agv';
 import type { IFleetEvent, ILogMessage } from '../../types/events';
-import type { IScenarioRun, IStepResult } from '../../types/scenario';
 
 export interface SimulatorSignalRCallbacks {
   onFleetUpdated?: (agvs: ISimAgv[]) => void;
   onFleetEvent?: (event: IFleetEvent) => void;
-  onScenarioStarted?: (run: IScenarioRun) => void;
-  onScenarioStep?: (result: IStepResult) => void;
-  onScenarioProgress?: (run: IScenarioRun) => void;
-  onScenarioFinished?: (run: IScenarioRun) => void;
   onLogMessage?: (log: ILogMessage) => void;
 }
 
@@ -43,22 +38,6 @@ export function useSimulatorSignalR(
 
     connection.on('FleetEvent', (event: IFleetEvent) => {
       callbacksRef.current.onFleetEvent?.(event);
-    });
-
-    connection.on('ScenarioStarted', (run: IScenarioRun) => {
-      callbacksRef.current.onScenarioStarted?.(run);
-    });
-
-    connection.on('ScenarioStep', (result: IStepResult) => {
-      callbacksRef.current.onScenarioStep?.(result);
-    });
-
-    connection.on('ScenarioProgress', (run: IScenarioRun) => {
-      callbacksRef.current.onScenarioProgress?.(run);
-    });
-
-    connection.on('ScenarioFinished', (run: IScenarioRun) => {
-      callbacksRef.current.onScenarioFinished?.(run);
     });
 
     connection.on('LogMessage', (log: ILogMessage) => {

@@ -9,7 +9,7 @@ using System.Text.Json;
 namespace ACS.Simulator.API.Core.Services;
 
 /// <summary>
-/// VirtualAgv — MQTT connectivity: connect, subscribe, receive, publish, disconnect, network chaos.
+/// VirtualAgv — MQTT connectivity: connect, subscribe, receive, publish, disconnect.
 /// </summary>
 public partial class VirtualAgv
 {
@@ -300,32 +300,24 @@ public partial class VirtualAgv
         }
     }
 
-    // ── Network Chaos ──────────────────────────────────────────
-
-    /// <summary>Simulate MQTT latency. Pass (0,0) to disable.</summary>
-    public void SetChaosLatency(int minMs, int maxMs)
-        => _commandChannel.Writer.TryWrite(new SetChaosCmd(minMs, maxMs, _chaosPacketLossPercent));
-
-    /// <summary>Simulate packet loss. 0 = off, 100 = drop all state publishes.</summary>
-    public void SetPacketLoss(int percent)
-        => _commandChannel.Writer.TryWrite(new SetChaosCmd(_chaosMinLatencyMs, _chaosMaxLatencyMs, percent));
+    // ── Disconnect / Reconnect ──────────────────────────────────
 
     /// <summary>Force-disconnect from MQTT broker, automatically reconnect after durationMs.</summary>
     public async Task TriggerDisconnectAsync(int durationMs)
     {
         if (!_mqttClient.IsConnected) return;
 
-        _logger.LogWarning("AGV {SerialNumber} chaos disconnect triggered ({Duration}ms)", _config.SerialNumber, durationMs);
+        _logger.LogWarning("AGV {SerialNumber} temporary disconnect triggered ({Duration}ms)", _config.SerialNumber, durationMs);
 
-        _chaosReconnectCts?.Cancel();
-        _chaosReconnectCts?.Dispose();
-        _chaosReconnectCts = new CancellationTokenSource();
-        var ct = _chaosReconnectCts.Token;
+        _disconnectCts?.Cancel();
+        _disconnectCts?.Dispose();
+        _disconnectCts = new CancellationTokenSource();
+        var ct = _disconnectCts.Token;
 
         await _mqttClient.DisconnectAsync();
         DetachMqttHandler();
 
-        _chaosReconnectTask = Task.Run(async () =>
+        _disconnectTask = Task.Run(async () =>
         {
             try
             {
@@ -336,14 +328,14 @@ public partial class VirtualAgv
                 }
 
                 await ConnectAsync();
-                _logger.LogInformation("AGV {SerialNumber} chaos reconnected after {Duration}ms", _config.SerialNumber, durationMs);
+                _logger.LogInformation("AGV {SerialNumber} reconnected after {Duration}ms", _config.SerialNumber, durationMs);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "AGV {SerialNumber} failed to reconnect after chaos disconnect", _config.SerialNumber);
+                _logger.LogError(ex, "AGV {SerialNumber} failed to reconnect after disconnect", _config.SerialNumber);
             }
         });
     }
