@@ -46,6 +46,28 @@ public class SimulatorService
 
     public AgvMeta? GetMeta(string id) => _meta.TryGetValue(id, out var m) ? m : null;
 
+    /// <summary>Danh sách map graph sim đang nắm (đã load từ ACS).</summary>
+    public List<SimMapInfoDto> GetKnownMaps()
+    {
+        lock (_mapGraphLock)
+        {
+            return _knownMapGraphs.Values
+                .Select(graph => new SimMapInfoDto(graph.MapId, graph.MapName, graph.Nodes.Count, graph.Adjacency.Values.Sum(e => e.Count)))
+                .ToList();
+        }
+    }
+
+    /// <summary>Trả node list của map graph đã load; null khi map chưa có trong sim.</summary>
+    public List<SimNodeDto>? GetMapNodes(string mapId)
+    {
+        lock (_mapGraphLock)
+        {
+            return _knownMapGraphs.TryGetValue(mapId, out var graph)
+                ? graph.Nodes.Values.ToList()
+                : null;
+        }
+    }
+
     public async Task<AgvSummaryDto?> CreateAgvAsync(CreateAgvRequest req)
     {
         await _lock.WaitAsync();
@@ -97,6 +119,8 @@ public class SimulatorService
                 Id = id,
                 Manufacturer = req.Manufacturer,
                 Speed = 1.0,
+                VehicleShapeId = req.VehicleShapeId,
+                NavigationTechnologyId = req.NavigationTechnologyId,
                 MapMappings = agvConfig.MapMappings
                     .Select(mapping => new AgvMapMapping
                     {
@@ -173,6 +197,8 @@ public class SimulatorService
                 Id = newId,
                 Manufacturer = req.Manufacturer,
                 Speed = 1.0,
+                VehicleShapeId = req.VehicleShapeId,
+                NavigationTechnologyId = req.NavigationTechnologyId,
                 MapMappings = agvConfig.MapMappings
                     .Select(mapping => new AgvMapMapping
                     {
@@ -433,6 +459,8 @@ public class SimulatorService
             OperatingMode: state.OperatingMode,
             OrderId: state.OrderId ?? "",
             OrderUpdateId: state.OrderUpdateId,
+            VehicleShapeId: meta?.VehicleShapeId ?? 1,
+            NavigationTechnologyId: meta?.NavigationTechnologyId ?? 1,
             MapMappings: meta?.MapMappings
                 .Select(mapping => new AgvMapMappingDto(mapping.SourceMapId, mapping.TargetMapId))
                 .ToList()
@@ -541,6 +569,8 @@ public class SimulatorService
                     PosTheta = pos.Theta,
                     MapId = !string.IsNullOrEmpty(pos.MapId) ? pos.MapId : "",
                     Speed = meta?.Speed ?? 1.0,
+                    VehicleShapeId = meta?.VehicleShapeId ?? 1,
+                    NavigationTechnologyId = meta?.NavigationTechnologyId ?? 1,
                     AutoStart = agv.IsRunning,
                     MapMappings = meta?.MapMappings
                         .Select(mapping => new SavedAgvMapMapping
@@ -584,6 +614,8 @@ public class SimulatorService
                     PosY: saved.PosY,
                     PosTheta: saved.PosTheta,
                     MapId: saved.MapId,
+                    VehicleShapeId: saved.VehicleShapeId,
+                    NavigationTechnologyId: saved.NavigationTechnologyId,
                     MapMappings: saved.MapMappings
                         .Select(mapping => new AgvMapMappingDto(mapping.SourceMapId, mapping.TargetMapId))
                         .ToList()
@@ -647,5 +679,7 @@ public class AgvMeta
     public string Id { get; set; } = "";
     public string Manufacturer { get; set; } = "";
     public double Speed { get; set; } = 1.0;
+    public int VehicleShapeId { get; set; } = 1;
+    public int NavigationTechnologyId { get; set; } = 1;
     public List<AgvMapMapping> MapMappings { get; set; } = new();
 }

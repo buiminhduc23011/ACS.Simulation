@@ -11,6 +11,9 @@ public class AgvConfiguration
     public PositionInfo InitialPosition { get; set; } = new();
     public int VehicleShapeId { get; set; } = 1; // Default: CARRIER
     public int NavigationTechnologyId { get; set; } = 1; // Default: NATURAL
+    /// <summary>Xe bám line từ (NavigationTechnologyType.Magnetic trong ACS): báo lastNodeId bằng RFID tag.</summary>
+    public bool IsLineGuided => NavigationTechnologyId == MagneticNavTechId;
+    public const int MagneticNavTechId = 3;
     public List<AgvMapMapping> MapMappings { get; set; } = new();
 }
 

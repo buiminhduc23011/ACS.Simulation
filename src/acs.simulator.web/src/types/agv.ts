@@ -31,6 +31,8 @@ export interface ISimAgv {
   operatingMode?: string;
   orderId?: string;
   orderUpdateId?: number;
+  vehicleShapeId?: number; // 1=CARRIER, 2=FORKLIFT, 3=CONVEYOR, 4=TUGGER
+  navigationTechnologyId?: number; // 1=NATURAL, 2=LASER, 3=MAGNETIC, 4=QR
   errors?: IAgvError[];
   mapMappings?: IAgvMapMapping[];
 }
@@ -64,6 +66,21 @@ export interface IAgvError {
   errorType: string;
   errorLevel: string;
   description: string | null;
+}
+
+export interface ISimMapInfo {
+  mapId: string;
+  mapName?: string;
+  nodeCount: number;
+  edgeCount: number;
+}
+
+export interface ISimMapNode {
+  nodeId: string;
+  x: number;
+  y: number;
+  nodeDescription?: string | null;
+  rfidTag?: string | null;
 }
 
 export interface IAgvMapMapping {

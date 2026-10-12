@@ -56,6 +56,8 @@ public record AcsApiConfigRequest(string BaseUrl);
 public record MqttConfigDto(string Host, int Port);
 public record AcsApiConfigDto(string BaseUrl);
 
+public record SimMapInfoDto(string MapId, string MapName, int NodeCount, int EdgeCount);
+
 // Response DTOs
 
 public record AgvSummaryDto(
@@ -81,6 +83,8 @@ public record AgvSummaryDto(
     string OperatingMode = "AUTOMATIC",
     string OrderId = "",
     int OrderUpdateId = 0,
+    int VehicleShapeId = 1,
+    int NavigationTechnologyId = 1,
     List<AgvMapMappingDto>? MapMappings = null
 );
 

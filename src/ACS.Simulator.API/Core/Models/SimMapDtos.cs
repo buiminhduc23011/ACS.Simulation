@@ -70,6 +70,10 @@ public class SimNodeDto
 
     [JsonPropertyName("nodeDescription")]
     public string? NodeDescription { get; set; }
+
+    /// <summary>Mã tag RFID gắn với node; xe line từ đọc tag này khi đi qua node.</summary>
+    [JsonPropertyName("rfidTag")]
+    public string? RfidTag { get; set; }
 }
 
 public class SimEdgeDto
@@ -149,6 +153,8 @@ public class SimMapGraph
 {
     public string MapId { get; set; } = string.Empty;
 
+    public string MapName { get; set; } = string.Empty;
+
     /// <summary>nodeId → SimNodeDto lookup</summary>
     public Dictionary<string, SimNodeDto> Nodes { get; set; } = new();
 
@@ -157,7 +163,7 @@ public class SimMapGraph
 
     public static SimMapGraph Build(SimMapDetailDto map)
     {
-        var graph = new SimMapGraph { MapId = map.MapId };
+        var graph = new SimMapGraph { MapId = map.MapId, MapName = map.MapName };
 
         foreach (var node in map.Nodes)
             graph.Nodes[node.NodeId] = node;

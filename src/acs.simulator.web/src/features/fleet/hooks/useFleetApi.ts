@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { message } from 'antd';
 import apiClient from '../../../infrastructure/api/apiClient';
 import { ENDPOINTS } from '../../../infrastructure/api/endpoints';
-import type { ISimAgv, ICreateAgvRequest, IInboundMqttMessage } from '../../../types/agv';
+import type { ISimAgv, ICreateAgvRequest, IInboundMqttMessage, ISimMapInfo, ISimMapNode } from '../../../types/agv';
 import { useFleetStore } from '../../../store/fleetStore';
 
 export function useFleetApi() {
@@ -110,9 +110,19 @@ export function useFleetApi() {
     return res.data;
   }, []);
 
+  const fetchMapNodes = useCallback(async (): Promise<{ mapId: string; mapName: string; nodes: ISimMapNode[] }[]> => {
+    const maps = (await apiClient.get<ISimMapInfo[]>(ENDPOINTS.maps.list)).data ?? [];
+    const results = await Promise.all(maps.map(async (m) => ({
+      mapId: m.mapId,
+      mapName: m.mapName || m.mapId,
+      nodes: (await apiClient.get<ISimMapNode[]>(ENDPOINTS.maps.nodes(m.mapId))).data ?? [],
+    })));
+    return results;
+  }, []);
+
   return {
     fetchFleet, createAgv, updateAgv, deleteAgv, startAgv, stopAgv,
-    setPosition, setBattery, setSpeed, setOperatingMode, clearOrderState, fetchInboundMessages,
+    setPosition, setBattery, setSpeed, setOperatingMode, clearOrderState, fetchInboundMessages, fetchMapNodes,
     addError, clearErrors, injectTemplate, liftAgv, lowerAgv, clearLoads, disconnect,
   };
 

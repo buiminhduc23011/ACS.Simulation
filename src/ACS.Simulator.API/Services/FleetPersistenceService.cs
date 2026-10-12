@@ -116,6 +116,8 @@ public class SavedAgvConfig
     public double PosTheta { get; set; }
     public string MapId { get; set; } = "";
     public double Speed { get; set; } = 1.0;
+    public int VehicleShapeId { get; set; } = 1;
+    public int NavigationTechnologyId { get; set; } = 1;
     public bool AutoStart { get; set; } = true;
     public List<SavedAgvMapMapping> MapMappings { get; set; } = new();
 }

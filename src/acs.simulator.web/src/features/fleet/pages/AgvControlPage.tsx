@@ -9,13 +9,14 @@ import {
   ArrowLeftOutlined, PlayCircleOutlined, StopOutlined,
   VerticalAlignTopOutlined, VerticalAlignBottomOutlined,
   ThunderboltOutlined, DeleteOutlined, WarningOutlined,
-  ReloadOutlined, ControlOutlined, ApiOutlined,
+  ReloadOutlined, ControlOutlined, ApiOutlined, EnvironmentOutlined,
 } from '@ant-design/icons';
 import { useShallow } from 'zustand/react/shallow';
+import { message } from 'antd';
 import { useFleetStore } from '../../../store/fleetStore';
 import { useFleetApi } from '../hooks/useFleetApi';
 import { AGV_STATUS_COLORS } from '../../../types/agv';
-import type { IInboundMqttMessage } from '../../../types/agv';
+import type { IInboundMqttMessage, ISimMapNode } from '../../../types/agv';
 import { VirtualJoystick } from '../components/VirtualJoystick';
 import apiClient from '../../../infrastructure/api/apiClient';
 import { ENDPOINTS } from '../../../infrastructure/api/endpoints';
@@ -85,7 +86,8 @@ export const AgvControlPage: React.FC = () => {
   const agv = useFleetStore(useShallow((s) => (id ? s.agvs[id] : undefined)));
   const {
     fetchFleet, startAgv, stopAgv, setBattery, setSpeed, setOperatingMode,
-    fetchInboundMessages, addError, clearErrors, injectTemplate, liftAgv, lowerAgv, clearLoads, disconnect, clearOrderState,
+    fetchInboundMessages, fetchMapNodes, addError, clearErrors, injectTemplate,
+    liftAgv, lowerAgv, clearLoads, disconnect, clearOrderState, setPosition,
   } = useFleetApi();
 
   const [loading, setLoading] = useState<string | null>(null);
@@ -94,6 +96,10 @@ export const AgvControlPage: React.FC = () => {
   const [errForm] = Form.useForm();
   const [inboundMessages, setInboundMessages] = useState<IInboundMqttMessage[]>([]);
   const [selectedMessageIndex, setSelectedMessageIndex] = useState(0);
+  const [mapNodes, setMapNodes] = useState<{ mapId: string; mapName: string; nodes: ISimMapNode[] }[]>([]);
+  const [mapNodesFailed, setMapNodesFailed] = useState(false);
+  const [teleportMapId, setTeleportMapId] = useState<string | undefined>(undefined);
+  const [teleportNodeId, setTeleportNodeId] = useState<string | undefined>(undefined);
 
   const setHeaderLeft = useLayoutStore((s) => s.setHeaderLeft);
 
@@ -132,6 +138,37 @@ export const AgvControlPage: React.FC = () => {
       clearInterval(interval);
     };
   }, [id, fetchInboundMessages]);
+
+  // Load toàn bộ node của các map graph sim đang nắm; chọn map trước rồi chọn node trong map đó.
+  useEffect(() => {
+    let cancelled = false;
+    fetchMapNodes()
+      .then((maps) => {
+        if (cancelled) return;
+        setMapNodes(maps ?? []);
+        const preferred = maps?.find((m) => m.mapId === agv?.mapId)?.mapId ?? maps?.[0]?.mapId;
+        setTeleportMapId(preferred);
+      })
+      .catch(() => { if (!cancelled) setMapNodesFailed(true); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, fetchMapNodes]);
+
+  const handleTeleport = useCallback(async () => {
+    if (!id || !teleportMapId || !teleportNodeId) return;
+    const node = mapNodes.find((m) => m.mapId === teleportMapId)?.nodes.find((n) => n.nodeId === teleportNodeId);
+    if (!node) return;
+    setLoading('teleport');
+    try {
+      await setPosition(id, node.x, node.y, posRef.current.theta, teleportMapId);
+      posRef.current = { ...posRef.current, x: node.x, y: node.y, mapId: teleportMapId };
+      message.success(`${id} moved to node ${node.nodeId}`);
+    } catch {
+      /* interceptor handles toast */
+    } finally {
+      setLoading(null);
+    }
+  }, [id, teleportMapId, teleportNodeId, mapNodes, setPosition]);
 
   const run = async (key: string, fn: () => Promise<void>) => {
     setLoading(key);
@@ -407,6 +444,69 @@ export const AgvControlPage: React.FC = () => {
                 </div>
               </div>
             </div>
+          </Card>
+
+          {/* Teleport to Node — đặt xe lên node (xe line từ sẽ báo RFID tag làm lastNodeId) */}
+          <Card title={<Space><EnvironmentOutlined /> Set Position on Node</Space>} size="small" style={{ marginBottom: 16 }}>
+            {mapNodesFailed ? (
+              <Alert type="warning" showIcon message="No map graph loaded in simulator" />
+            ) : (
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Space.Compact style={{ width: '100%' }}>
+                  <Select
+                    showSearch
+                    placeholder="Map"
+                    style={{ width: '45%' }}
+                    value={teleportMapId}
+                    onChange={(v) => { setTeleportMapId(v); setTeleportNodeId(undefined); }}
+                    optionFilterProp="label"
+                    options={mapNodes.map((m) => ({
+                      value: m.mapId,
+                      label: `${m.mapName} (${m.mapId})`,
+                    }))}
+                  />
+                  <Select
+                    showSearch
+                    allowClear
+                    placeholder="Node / tag..."
+                    style={{ width: '55%' }}
+                    value={teleportNodeId}
+                    onChange={setTeleportNodeId}
+                    optionFilterProp="label"
+                    disabled={!teleportMapId}
+                    options={(mapNodes.find((m) => m.mapId === teleportMapId)?.nodes ?? []).map((n) => ({
+                      value: n.nodeId,
+                      label: n.rfidTag ? `${n.nodeId} · tag:${n.rfidTag}` : n.nodeId,
+                    }))}
+                    notFoundContent="No nodes on this map"
+                  />
+                  <Button
+                    type="primary"
+                    disabled={!teleportNodeId}
+                    loading={loading === 'teleport'}
+                    onClick={handleTeleport}
+                  >
+                    Set
+                  </Button>
+                </Space.Compact>
+                {(() => {
+                  const node = mapNodes.find((m) => m.mapId === teleportMapId)?.nodes.find((n) => n.nodeId === teleportNodeId);
+                  if (node && (agv.navigationTechnologyId ?? 1) === 3 && !node.rfidTag) {
+                    return (
+                      <Alert
+                        type="warning" showIcon
+                        message={`Node ${node.nodeId} has no RFID tag — line AGV will raise missingRfidTag FATAL`}
+                      />
+                    );
+                  }
+                  return (
+                    <Text type="secondary">
+                      Teleports onto the node position — line-guided AGVs report the node RFID tag as lastNodeId.
+                    </Text>
+                  );
+                })()}
+              </Space>
+            )}
           </Card>
 
           {/* Battery Control */}

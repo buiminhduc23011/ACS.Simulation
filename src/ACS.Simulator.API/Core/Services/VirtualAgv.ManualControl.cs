@@ -71,8 +71,47 @@ public partial class VirtualAgv
             }
         }
 
-        return nearestNodeId;
+        return ToReportedNodeId(nearestNodeId, graph);
     }
+
+    /// <summary>Đổi nodeId map sang giá trị xe báo ra ngoài; xe line từ báo RFID tag, thiếu tag → mất vị trí + lỗi.</summary>
+    private string? ToReportedNodeId(string? nodeId, SimMapGraph? graph = null)
+    {
+        if (!_config.IsLineGuided || string.IsNullOrWhiteSpace(nodeId))
+        {
+            return nodeId;
+        }
+        graph ??= ResolveCurrentMapGraph();
+        var tag = graph is not null && graph.Nodes.TryGetValue(nodeId, out var node)
+            ? node.RfidTag
+            : null;
+        if (!string.IsNullOrWhiteSpace(tag))
+        {
+            return tag;
+        }
+        RaiseMissingTagError(nodeId);
+        return null;
+    }
+
+    private void RaiseMissingTagError(string nodeId)
+    {
+        _logger.LogWarning(
+            "AGV {SerialNumber} cannot report node {NodeId}: no RFID tag configured on map {MapId}",
+            _config.SerialNumber, nodeId, _currentMapId);
+        var errors = _currentState?.Errors;
+        if (errors == null || errors.Any(e => e.ErrorType == MissingTagErrorType))
+        {
+            return;
+        }
+        errors.Add(new VdaError
+        {
+            ErrorType = MissingTagErrorType,
+            ErrorLevel = "FATAL",
+            ErrorDescription = $"Node {nodeId} has no RFID tag on map {_currentMapId}"
+        });
+    }
+
+    private const string MissingTagErrorType = "missingRfidTag";
 
     private SimMapGraph? ResolveCurrentMapGraph()
     {

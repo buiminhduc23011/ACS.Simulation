@@ -29,6 +29,8 @@ export const CreateAgvModal: React.FC<Props> = ({ open, onClose, onCreate, onUpd
         mapId: editingAgv.mapId,
         ipAddress: editingAgv.ipAddress,
         macAddress: editingAgv.macAddress,
+        vehicleShapeId: editingAgv.vehicleShapeId ?? 1,
+        navigationTechnologyId: editingAgv.navigationTechnologyId ?? 1,
         mapMappings: editingAgv.mapMappings ?? [],
       });
     } else if (open) {
@@ -144,26 +146,22 @@ export const CreateAgvModal: React.FC<Props> = ({ open, onClose, onCreate, onUpd
             <InputNumber min={0} max={100} style={{ width: '100%' }} />
           </Form.Item>
         )}
-        {!isEdit && (
-          <>
-            <Form.Item name="vehicleShapeId" label="Vehicle Shape" initialValue={1}>
-              <Select options={[
-                { label: 'Carrier (Default)', value: 1 },
-                { label: 'Forklift', value: 2 },
-                { label: 'Conveyor', value: 3 },
-                { label: 'Tugger', value: 4 },
-              ]} />
-            </Form.Item>
-            <Form.Item name="navigationTechnologyId" label="Navigation Technology" initialValue={1}>
-              <Select options={[
-                { label: 'Natural Navigation (Default)', value: 1 },
-                { label: 'Laser Navigation', value: 2 },
-                { label: 'Magnetic Tape', value: 3 },
-                { label: 'QR Code', value: 4 },
-              ]} />
-            </Form.Item>
-          </>
-        )}
+        <Form.Item name="vehicleShapeId" label="Vehicle Shape" initialValue={1} hidden={isEdit}>
+          <Select options={[
+            { label: 'Carrier (Default)', value: 1 },
+            { label: 'Forklift', value: 2 },
+            { label: 'Conveyor', value: 3 },
+            { label: 'Tugger', value: 4 },
+          ]} />
+        </Form.Item>
+        <Form.Item name="navigationTechnologyId" label="Navigation Technology" initialValue={1}>
+          <Select options={[
+            { label: 'Natural Navigation (Default)', value: 1 },
+            { label: 'Laser Navigation', value: 2 },
+            { label: 'Magnetic Tape', value: 3 },
+            { label: 'QR Code', value: 4 },
+          ]} />
+        </Form.Item>
         <Form.Item name="ipAddress" label="IP Address">
           <Input placeholder="e.g. 192.168.1.100 (optional)" />
         </Form.Item>

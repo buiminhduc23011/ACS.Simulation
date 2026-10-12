@@ -26,6 +26,11 @@ export const ENDPOINTS = {
     injectTemplate: (id: string) => `${BASE}/agvs/${id}/control/errors/inject`,
     disconnect: (id: string) => `${BASE}/agvs/${id}/control/disconnect`,
   },
+  // Map data (loaded graphs)
+  maps: {
+    list: `${BASE}/maps`,
+    nodes: (mapId: string) => `${BASE}/maps/${encodeURIComponent(mapId)}/nodes`,
+  },
   // Error Templates
   errorTemplates: `${BASE}/error-templates`,
   // Config

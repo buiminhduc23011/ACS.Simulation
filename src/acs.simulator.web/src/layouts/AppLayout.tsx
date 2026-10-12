@@ -88,7 +88,7 @@ export const AppLayout: React.FC<Props> = ({ children }) => {
               checked={!isDarkMode}
               onChange={toggleTheme}
             />
-            <Text style={{ color: token.colorPrimary, fontSize: 12 }}>ACS Simulator Web v1.3.1</Text>
+            <Text style={{ color: token.colorPrimary, fontSize: 12 }}>ACS Simulator Web v1.4.0</Text>
           </div>
         </Header>
 

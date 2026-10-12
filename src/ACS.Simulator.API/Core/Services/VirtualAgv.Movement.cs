@@ -62,7 +62,21 @@ public partial class VirtualAgv
             _currentY = _targetY;
 
             var currentNode = _currentOrder.Nodes[_currentNodeIndex];
-            _currentState.LastNodeId = currentNode.NodeId;
+            // Xe line từ: tới node phải đọc được tag RFID; thiếu tag → mất vị trí, dừng và báo lỗi.
+            var reportedNodeId = ToReportedNodeId(currentNode.NodeId);
+            if (_config.IsLineGuided && reportedNodeId is null)
+            {
+                _isMoving = false;
+                _isRotating = false;
+                _isReversing = false;
+                _arrivalTheta = null;
+                _currentState.Driving = false;
+                ZeroStoppedVelocities();
+                StopVisualizationTimer();
+                await PublishStateAsync(true);
+                return;
+            }
+            _currentState.LastNodeId = reportedNodeId ?? string.Empty;
             _currentState.LastNodeSequenceId = currentNode.SequenceId;
             _currentState.DistanceSinceLastNode = 0;
 
@@ -284,7 +298,7 @@ public partial class VirtualAgv
             return false;
         }
 
-        _currentState.LastNodeId = currentNode.NodeId;
+        _currentState.LastNodeId = ToReportedNodeId(currentNode.NodeId) ?? string.Empty;
         _currentState.LastNodeSequenceId = currentNode.SequenceId;
         _currentState.DistanceSinceLastNode = 0;
 
