@@ -17,6 +17,9 @@ public interface IVirtualAgv : IDisposable
     bool IsRunning { get; }
     Vda5050State CurrentState { get; }
 
+    /// <summary>Notification currently shown on the AGV screen; null when none or expired.</summary>
+    ScreenNotification? ActiveNotification { get; }
+
     Task TriggerDisconnectAsync(int durationMs);
 
     // Lifecycle
@@ -35,7 +38,7 @@ public interface IVirtualAgv : IDisposable
     Task LowerAsync();
     Task<int> ClearLoadsAsync();
 
-    /// <summary>Recent MQTT order / instantActions payloads received from ACS (debug).</summary>
+    /// <summary>Recent MQTT order / instantActions / notifications payloads received from ACS (debug).</summary>
     IReadOnlyList<InboundMqttMessage> GetRecentInboundMessages();
 
     // Error management

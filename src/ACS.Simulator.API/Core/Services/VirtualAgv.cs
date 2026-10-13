@@ -11,6 +11,7 @@ namespace ACS.Simulator.API.Core.Services;
 /// Virtual AGV - Simulates a real AGV with movement and action execution capabilities.
 /// Subscribe format: uagv/{manufacturer}/{serialNumber}/order
 ///                   uagv/{manufacturer}/{serialNumber}/instantActions
+///                   uagv/{manufacturer}/{serialNumber}/notifications
 /// Publish state:    3s periodic cycle + immediately on state change
 /// Publish viz:      configurable interval while moving
 /// Publish connect:  ONLINE on connect, OFFLINE on disconnect, Last Will = CONNECTIONBROKEN
@@ -110,12 +111,16 @@ public partial class VirtualAgv : IVirtualAgv
     private readonly object _inboundMessagesLock = new();
     private readonly LinkedList<InboundMqttMessage> _inboundMessages = new();
 
+    // Latest ACS screen notification (notifications topic); null after CLEAR or expiry.
+    private volatile ScreenNotification? _activeNotification;
+
     // Topics following custom format: uagv/{manufacturer}/{serialNumber}/{topicType}
     private string StateTopic         => $"uagv/v2/{_config.Manufacturer}/{_config.SerialNumber}/state";
     private string VisualizationTopic => $"uagv/v2/{_config.Manufacturer}/{_config.SerialNumber}/visualization";
     private string OrderTopic         => $"uagv/v2/{_config.Manufacturer}/{_config.SerialNumber}/order";
     private string ConnectionTopic    => $"uagv/v2/{_config.Manufacturer}/{_config.SerialNumber}/connection";
     private string InstantActionsTopic => $"uagv/v2/{_config.Manufacturer}/{_config.SerialNumber}/instantActions";
+    private string NotificationsTopic  => $"uagv/v2/{_config.Manufacturer}/{_config.SerialNumber}/notifications";
 
     public string SerialNumber => _config.SerialNumber;
     public string IpAddress    => _config.IpAddress;
@@ -123,6 +128,8 @@ public partial class VirtualAgv : IVirtualAgv
     public bool IsConnected    => _mqttClient?.IsConnected ?? false;
     public bool IsRunning      => _isRunning;
     public Vda5050State CurrentState => _currentState;
+    public ScreenNotification? ActiveNotification =>
+        _activeNotification is { } n && n.ExpiresAtUtc <= DateTime.UtcNow ? null : _activeNotification;
 
     public VirtualAgv(
         AgvConfiguration config,

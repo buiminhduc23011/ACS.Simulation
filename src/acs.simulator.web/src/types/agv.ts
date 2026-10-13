@@ -35,12 +35,20 @@ export interface ISimAgv {
   navigationTechnologyId?: number; // 1=NATURAL, 2=LASER, 3=MAGNETIC, 4=QR
   errors?: IAgvError[];
   mapMappings?: IAgvMapMapping[];
+  activeNotification?: IScreenNotification | null;
+}
+
+/** Notification currently shown on the AGV screen (ACS → notifications topic). */
+export interface IScreenNotification {
+  type: string;
+  message: string;
+  expiresAtUtc?: string | null;
 }
 
 /** ACS → AGV MQTT payload captured by simulator for control-page debug. */
 export interface IInboundMqttMessage {
   timestamp: string;
-  topicType: 'order' | 'instantActions' | string;
+  topicType: 'order' | 'instantActions' | 'notifications' | string;
   topic: string;
   payload: string;
   accepted: boolean;

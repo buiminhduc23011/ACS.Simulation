@@ -58,6 +58,13 @@ public partial class VirtualAgv
                 .Build());
             _logger.LogInformation("AGV {SerialNumber} subscribed to instantActions topic: {Topic}", _config.SerialNumber, InstantActionsTopic);
 
+            // Subscribe to notifications topic (ACS screen messages: INFO/WARNING/ERROR/CLEAR).
+            await _mqttClient.SubscribeAsync(new MqttTopicFilterBuilder()
+                .WithTopic(NotificationsTopic)
+                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
+                .Build());
+            _logger.LogInformation("AGV {SerialNumber} subscribed to notifications topic: {Topic}", _config.SerialNumber, NotificationsTopic);
+
             // Publish ONLINE connection state (retain=true)
             await PublishConnectionStateAsync(VDA5050ConnectionState.Online);
         }
@@ -236,10 +243,54 @@ public partial class VirtualAgv
                         topic);
                 }
             }
+            else if (topic == NotificationsTopic)
+            {
+                HandleNotificationMessage(topic, payload);
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing message for AGV {SerialNumber}", _config.SerialNumber);
+        }
+    }
+
+    /// <summary>Handle ACS screen notification {type,msg,duration}: update the simulated display.</summary>
+    private void HandleNotificationMessage(string topic, string payload)
+    {
+        _logger.LogInformation("AGV {SerialNumber} received notification on topic {Topic}",
+            _config.SerialNumber, topic);
+        try
+        {
+            using var document = JsonDocument.Parse(payload);
+            var root = document.RootElement;
+            var type = root.TryGetProperty("type", out var t) ? t.GetString() : null;
+            var msg = root.TryGetProperty("msg", out var m) ? m.GetString() : null;
+            var duration = root.TryGetProperty("duration", out var d) && d.TryGetInt32(out var v) ? v : 0;
+
+            if (string.IsNullOrWhiteSpace(type))
+            {
+                RecordInboundMqttMessage("notifications", topic, payload, accepted: false,
+                    note: "Rejected: missing type");
+                return;
+            }
+
+            // CLEAR wipes the screen; other types hold until CLEAR or duration expiry.
+            _activeNotification = string.Equals(type, "CLEAR", StringComparison.OrdinalIgnoreCase)
+                ? null
+                : new ScreenNotification(
+                    type,
+                    msg ?? string.Empty,
+                    duration > 0 ? DateTime.UtcNow.AddSeconds(duration) : null);
+
+            RecordInboundMqttMessage("notifications", topic, payload, accepted: true,
+                note: $"type={type}, duration={duration}s");
+        }
+        catch (JsonException ex)
+        {
+            RecordInboundMqttMessage("notifications", topic, payload, accepted: false,
+                note: $"Rejected: malformed JSON ({ex.Message})");
+            _logger.LogError(ex, "AGV {SerialNumber} rejected malformed notifications payload.",
+                _config.SerialNumber);
         }
     }
 

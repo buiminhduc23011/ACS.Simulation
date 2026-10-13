@@ -242,6 +242,25 @@ export const AgvControlPage: React.FC = () => {
 
   return (
     <div style={{ padding: '0 8px 32px 8px' }}>
+      {agv.activeNotification && (
+        <Alert
+          type={agv.activeNotification.type === 'ERROR' ? 'error'
+            : agv.activeNotification.type === 'WARNING' ? 'warning'
+            : 'info'}
+          showIcon
+          style={{ marginBottom: 16 }}
+          message={
+            <Space>
+              <Tag color={agv.activeNotification.type === 'ERROR' ? 'red'
+                : agv.activeNotification.type === 'WARNING' ? 'orange'
+                : 'blue'}>
+                SCREEN: {agv.activeNotification.type}
+              </Tag>
+              <span>{agv.activeNotification.message}</span>
+            </Space>
+          }
+        />
+      )}
       <Row gutter={[16, 16]}>
         {/* Left column: Status + Quick Actions */}
         <Col xs={24} lg={8}>
@@ -653,7 +672,7 @@ export const AgvControlPage: React.FC = () => {
                     }}
                   >
                     <Space wrap size={4}>
-                      <Tag color={msg.topicType === 'order' ? 'blue' : 'purple'}>{msg.topicType}</Tag>
+                      <Tag color={msg.topicType === 'order' ? 'blue' : msg.topicType === 'notifications' ? 'volcano' : 'purple'}>{msg.topicType}</Tag>
                       <Tag color={msg.accepted ? 'green' : 'red'}>{msg.accepted ? 'ACCEPTED' : 'IGNORED'}</Tag>
                       <Text type="secondary" style={{ fontSize: 12 }}>{formatTime(msg.timestamp)}</Text>
                     </Space>
@@ -671,7 +690,7 @@ export const AgvControlPage: React.FC = () => {
                 <div>
                   <Descriptions size="small" column={1} style={{ marginBottom: 8 }}>
                     <Descriptions.Item label="Type">
-                      <Tag color={selectedMessage.topicType === 'order' ? 'blue' : 'purple'}>
+                      <Tag color={selectedMessage.topicType === 'order' ? 'blue' : selectedMessage.topicType === 'notifications' ? 'volcano' : 'purple'}>
                         {selectedMessage.topicType}
                       </Tag>
                     </Descriptions.Item>

@@ -463,7 +463,10 @@ public class SimulatorService
             NavigationTechnologyId: meta?.NavigationTechnologyId ?? 1,
             MapMappings: meta?.MapMappings
                 .Select(mapping => new AgvMapMappingDto(mapping.SourceMapId, mapping.TargetMapId))
-                .ToList()
+                .ToList(),
+            ActiveNotification: agv.ActiveNotification is { } notification
+                ? new ScreenNotificationDto(notification.Type, notification.Message, notification.ExpiresAtUtc)
+                : null
         );
     }
 

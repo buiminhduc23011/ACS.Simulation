@@ -85,8 +85,12 @@ public record AgvSummaryDto(
     int OrderUpdateId = 0,
     int VehicleShapeId = 1,
     int NavigationTechnologyId = 1,
-    List<AgvMapMappingDto>? MapMappings = null
+    List<AgvMapMappingDto>? MapMappings = null,
+    ScreenNotificationDto? ActiveNotification = null
 );
+
+/// <summary>Notification currently shown on the AGV screen (ACS → notifications topic).</summary>
+public record ScreenNotificationDto(string Type, string Message, DateTime? ExpiresAtUtc);
 
 public record InboundMqttMessageDto(
     DateTime Timestamp,
