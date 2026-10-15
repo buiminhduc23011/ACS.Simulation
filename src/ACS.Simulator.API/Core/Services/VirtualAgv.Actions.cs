@@ -104,8 +104,11 @@ public partial class VirtualAgv
                     break;
 
                 default:
-                    _logger.LogWarning("AGV {SerialNumber} unknown action type {ActionType}",
+                    // Action tùy ý (finePositioning, vendor action...): giả lập chạy ~3-4s rồi FINISHED.
+                    _logger.LogInformation("AGV {SerialNumber} simulating generic action {ActionType}",
                         _config.SerialNumber, action.ActionType);
+                    var jitter = Random.Shared.Next(-500, 501);
+                    await Task.Delay(_actionsConfig.GenericActionDurationMs + jitter, ct);
                     break;
             }
 

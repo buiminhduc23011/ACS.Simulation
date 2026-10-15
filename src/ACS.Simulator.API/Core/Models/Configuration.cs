@@ -56,6 +56,8 @@ public class ActionsConfig
     public int LiftDurationMs { get; set; } = 2000;
     public int LowerDurationMs { get; set; } = 2000;
     public int LoadStateDelayMs { get; set; } = 250;
+    // Action tùy ý (finePositioning, vendor action...): mô phỏng thời gian chạy rồi FINISHED, không đụng movement.
+    public int GenericActionDurationMs { get; set; } = 3500;
 }
 
 public class BatteryConfig
