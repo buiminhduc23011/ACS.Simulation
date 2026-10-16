@@ -11,10 +11,10 @@ namespace ACS.Simulator.API.Services;
 /// </summary>
 public class SimulatorService
 {
-    private const double MinSeparationMeters = 1.50;
-    private const double FrontStopDistanceMeters = 2.50;
-    private const double FrontConeHalfAngleRad = Math.PI / 3.0; // 60 degrees
-    private const double RotateFrontConeHalfAngleRad = Math.PI / 4.0; // 45 degrees
+    private double MinSeparationMeters => _config.MinSeparationMeters;
+    private double FrontStopDistanceMeters => _config.FrontStopDistanceMeters;
+    private double FrontConeHalfAngleRad => _config.FrontConeHalfAngleDeg * Math.PI / 180.0;
+    private double RotateFrontConeHalfAngleRad => _config.RotateFrontConeHalfAngleDeg * Math.PI / 180.0;
 
     private readonly ILogger<SimulatorService> _logger;
     private readonly SimulatorConfig _config;
