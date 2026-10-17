@@ -263,7 +263,12 @@ public partial class VirtualAgv
             double actualMoved = Math.Sqrt(
                 (_currentX - prevX) * (_currentX - prevX) +
                 (_currentY - prevY) * (_currentY - prevY));
-            _batteryLevel = Math.Max(0, _batteryLevel - actualMoved * _batteryConfig.DrainRatePerMeter);
+            // Floor applies only when the level is still at/above it — a user-set level already
+            // below AutoDrainFloor stays there and keeps draining instead of jumping back up.
+            double drainFloor = _batteryLevel >= _batteryConfig.AutoDrainFloor
+                ? _batteryConfig.AutoDrainFloor
+                : 0.0;
+            _batteryLevel = Math.Max(drainFloor, _batteryLevel - actualMoved * _batteryConfig.DrainRatePerMeter);
             _currentState.BatteryState.BatteryCharge = _batteryLevel;
             _currentState.BatteryState.Reach = CalculateReach(_batteryLevel);
             await CheckBatteryWarningAsync();

@@ -68,6 +68,13 @@ public class BatteryConfig
     /// <summary>Phần trăm pin tiêu hao mỗi phút khi idle (default: 0.01%/min)</summary>
     public double DrainRateIdlePerMinute { get; set; } = 0.01;
 
+    /// <summary>
+    /// Sàn pin cho mô phỏng xả tự động (default: 18%). Pin không bao giờ tự tụt qua ngưỡng này
+    /// để tránh ACS báo FATAL. User set thủ công (SetBattery / InitialLevel) vẫn xuống thấp hơn
+    /// được — khi đã dưới sàn, pin tiếp tục tụt bình thường.
+    /// </summary>
+    public double AutoDrainFloor { get; set; } = 18.0;
+
     /// <summary>Phần trăm pin nạp mỗi phút khi charging (default: 2.0%/min)</summary>
     public double ChargeRatePerMinute { get; set; } = 2.0;
 
