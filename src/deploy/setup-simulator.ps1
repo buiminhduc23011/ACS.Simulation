@@ -15,15 +15,6 @@ function Read-Input {
     return $val.Trim()
 }
 
-function Read-YesNo {
-    param([string]$Prompt, [bool]$Default = $true)
-    $hint = if ($Default) { 'Y/n' } else { 'y/N' }
-    Write-Host "  $Prompt [$hint] : " -NoNewline -ForegroundColor White
-    $val = Read-Host
-    if ([string]::IsNullOrWhiteSpace($val)) { return $Default }
-    return $val -match '^[Yy]'
-}
-
 function Get-PrimaryIPv4 {
     try {
         $defaultRoute = Get-NetRoute -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue |
@@ -72,7 +63,6 @@ if ($resolvedSource -ne $resolvedInstall) {
 $SetupDir = $InstallDir
 $ServerDir = Join-Path $SetupDir 'server'
 $AppSettings = Join-Path $ServerDir 'appsettings.Production.json'
-$Executable = Join-Path $ServerDir 'ACS.Simulator.API.exe'
 
 if (-not (Test-Path $ServerDir)) {
     Write-Host "  [FAIL] Cannot find 'server' folder at: $ServerDir" -ForegroundColor Red
@@ -108,54 +98,21 @@ $mqttHost = Read-Input 'MQTT Broker Address' $defMqttHost
 $mqttPort = Read-Input 'MQTT Broker Port' $defMqttPort
 $acsApiBaseUrl = Read-Input 'ACS API Base URL' $defAcsApi
 
-$production = [ordered]@{
-    Urls = "http://*:$simPort"
-    Simulator = [ordered]@{
-        MqttHost = $mqttHost
-        MqttPort = [int]$mqttPort
-        AcsApiBaseUrl = $acsApiBaseUrl.TrimEnd('/')
-    }
+$installScript = Join-Path $SetupDir 'install-simulator-service.ps1'
+if (-not (Test-Path -LiteralPath $installScript)) {
+    Write-Host "  [FAIL] install-simulator-service.ps1 not found at: $installScript" -ForegroundColor Red
+    exit 1
 }
 
-Set-Content -Path $AppSettings -Value ($production | ConvertTo-Json -Depth 5) -Encoding UTF8
-Write-Host "  [OK] Written: $AppSettings" -ForegroundColor Green
-
-$service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
-if ($null -eq $service) {
-    if (Read-YesNo "Install '$serviceName' as a Windows Service?" $true) {
-        if (-not (Test-Path $Executable)) {
-            Write-Host "  [FAIL] Executable not found: $Executable" -ForegroundColor Red
-        } else {
-            sc.exe create $serviceName binPath= "`"$Executable`"" start= auto DisplayName= "ACS Simulator" | Out-Null
-            sc.exe description $serviceName 'ACS Simulator API and web UI' | Out-Null
-            Write-Host "  [OK] Service '$serviceName' installed." -ForegroundColor Green
-        }
-    }
-} else {
-    Write-Host "  [OK] Service '$serviceName' already exists." -ForegroundColor Green
-    if (Test-Path $Executable) {
-        sc.exe config $serviceName binPath= "`"$Executable`"" start= auto | Out-Null
-        sc.exe description $serviceName 'ACS Simulator API and web UI' | Out-Null
-        Write-Host "  [OK] Service '$serviceName' updated to use: $Executable" -ForegroundColor Green
-    }
-}
-
-$service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
-if ($service -and $service.Status -ne 'Running' -and (Read-YesNo "Start '$serviceName' service now?" $true)) {
-    try {
-        Start-Service -Name $serviceName -ErrorAction Stop
-        Start-Sleep -Seconds 2
-        $service.Refresh()
-        if ($service.Status -eq 'Running') {
-            Write-Host "  [OK] Service '$serviceName' is running." -ForegroundColor Green
-        } else {
-            Write-Host "  [WARN] Service status: $($service.Status)" -ForegroundColor Yellow
-        }
-    } catch {
-        Write-Host "  [FAIL] Could not start '$serviceName': $($_.Exception.Message)" -ForegroundColor Red
-        Write-Host "  Check details with: sc.exe qc $serviceName" -ForegroundColor DarkGray
-        Write-Host "                      Get-WinEvent -LogName Application -MaxEvents 30 | Select-Object TimeCreated,ProviderName,Id,LevelDisplayName,Message" -ForegroundColor DarkGray
-    }
+& powershell -NoProfile -ExecutionPolicy Bypass -File $installScript `
+    -InstallDir $InstallDir `
+    -SimPort $simPort `
+    -MqttHost $mqttHost `
+    -MqttPort $mqttPort `
+    -AcsApiBaseUrl $acsApiBaseUrl
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  [FAIL] Simulator service setup failed with exit code $LASTEXITCODE." -ForegroundColor Red
+    exit $LASTEXITCODE
 }
 
 $hostIp = Get-PrimaryIPv4
