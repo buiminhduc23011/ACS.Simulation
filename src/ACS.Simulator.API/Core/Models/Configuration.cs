@@ -48,7 +48,7 @@ public class MovementConfig
 public class StatePublishConfig
 {
     // This is the simulator's liveness guarantee while idle or blocked; movement publishes are additional.
-    public int PeriodicInterval { get; set; } = 1000;
+    public int PeriodicInterval { get; set; } = 2000;
 }
 
 public class ActionsConfig
