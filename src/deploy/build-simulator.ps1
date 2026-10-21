@@ -172,6 +172,14 @@ if ($env:OS -ne 'Windows_NT') {
     chmod +x (Join-Path $OutPath 'setup-simulator.sh')
 }
 
+$appIcon = Join-Path $ScriptDir 'installer\app.ico'
+if (Test-Path $appIcon) {
+    Copy-Item $appIcon -Destination (Join-Path $OutPath 'app.ico') -Force
+    Write-Host '      Copied app.ico' -ForegroundColor DarkGray
+} else {
+    Write-Warning "Icon not found, skipping: $appIcon"
+}
+
 $SetupExe = $null
 if (-not $SkipInstaller -and $Runtime -like 'win-*') {
     $iscc = @(

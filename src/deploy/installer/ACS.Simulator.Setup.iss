@@ -13,6 +13,7 @@
 #endif
 
 [Setup]
+AppId={{9AB6B725-3978-4EA2-B46A-53E414DE73E8}
 AppName=ACS Simulator
 AppVersion={#AppVersion}
 AppVerName=ACS Simulator {#AppVersion}
@@ -29,21 +30,23 @@ PrivilegesRequired=admin
 ArchitecturesInstallIn64BitMode=x64compatible
 ArchitecturesAllowed=x64compatible
 WizardStyle=modern
-SetupIconFile=compiler:SetupClassicIcon.ico
-UninstallDisplayIcon={app}\server\ACS.Simulator.API.exe
+SetupIconFile=app.ico
+UninstallDisplayIcon={app}\app.ico
 RestartIfNeededByRun=no
+CloseApplications=force
+RestartApplications=no
 AllowNoIcons=yes
 UninstallDisplayName=ACS Simulator {#AppVersion}
 CreateUninstallRegKey=yes
+UsePreviousAppDir=yes
+DirExistsWarning=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
-[Components]
-Name: "main"; Description: "ACS Simulator (Backend + Web UI)"; Flags: fixed
-
 [Files]
-Source: "{#PackagePath}\server\*"; DestDir: "{app}\server"; Components: main; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#PackagePath}\app.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#PackagePath}\server\*"; DestDir: "{app}\server"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#PackagePath}\setup-simulator.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#PackagePath}\install-simulator-service.ps1"; DestDir: "{app}"; Flags: ignoreversion
 
@@ -58,12 +61,12 @@ Name: "{app}\server\data"; Permissions: users-full
 
 [Icons]
 ; Start Menu
-Name: "{group}\ACS Simulator"; Filename: "{code:GetAppUrl}"; IconFilename: "{app}\server\ACS.Simulator.API.exe"; Comment: "Mở giao diện ACS Simulator"
-Name: "{group}\ACS Simulator - Configure"; Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -File ""{app}\setup-simulator.ps1"" -InstallDir ""{app}"""; WorkingDir: "{app}"; IconFilename: "{app}\server\ACS.Simulator.API.exe"
+Name: "{group}\ACS Simulator"; Filename: "{code:GetAppUrl}"; IconFilename: "{app}\app.ico"; Comment: "Mở giao diện ACS Simulator"
+Name: "{group}\ACS Simulator - Configure"; Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -File ""{app}\setup-simulator.ps1"" -InstallDir ""{app}"""; WorkingDir: "{app}"; IconFilename: "{app}\app.ico"
 Name: "{group}\Uninstall ACS Simulator"; Filename: "{uninstallexe}"
 
 ; Desktop: chỉ một icon mở Web UI.
-Name: "{commondesktop}\ACS Simulator"; Filename: "{code:GetAppUrl}"; IconFilename: "{app}\server\ACS.Simulator.API.exe"; Comment: "Mở giao diện ACS Simulator"
+Name: "{commondesktop}\ACS Simulator"; Filename: "{code:GetAppUrl}"; IconFilename: "{app}\app.ico"; Comment: "Mở giao diện ACS Simulator"
 
 [Run]
 Filename: "{code:GetAppUrl}"; Description: "Mở giao diện ACS Simulator trên trình duyệt"; Flags: postinstall shellexec nowait
@@ -158,23 +161,28 @@ begin
   end;
 end;
 
+function IsServiceInstalled(Name: String): Boolean;
+var
+  ResultCode: Integer;
+begin
+  Result := Exec('sc.exe', 'query "' + Name + '"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0);
+end;
+
 procedure StopSimulatorService();
 var
   ResultCode: Integer;
 begin
-  Exec('sc.exe', 'stop ACS.Simulator', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Sleep(3000);
+  if IsServiceInstalled('ACS.Simulator') then
+  begin
+    Exec('sc.exe', 'stop "ACS.Simulator"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Sleep(3000);
+  end;
 end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
   StopSimulatorService();
   Result := '';
-end;
-
-function GetPowerShellPath(): String;
-begin
-  Result := ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe');
 end;
 
 function GetInstallLogPath(): String;
@@ -186,9 +194,17 @@ procedure CurStepChanged(CurStep: TSetupStep);
 var
   ResultCode: Integer;
   Args: String;
+  ExePath: String;
 begin
   if CurStep = ssPostInstall then
   begin
+    { Đảm bảo file đã được chép trước khi chạy script (giống Z129: fail rõ ràng). }
+    ExePath := ExpandConstant('{app}\server\ACS.Simulator.API.exe');
+    if not FileExists(ExePath) then
+      RaiseException(
+        'Không tìm thấy file server sau khi chép: ' + ExePath + #13#10 +
+        'Hãy chạy Setup bằng quyền Admin và tắt antivirus khóa file.');
+
     Args :=
       '-NoProfile -ExecutionPolicy Bypass -File "' + ExpandConstant('{app}\install-simulator-service.ps1') + '"' +
       ' -InstallDir "' + ExpandConstant('{app}') + '"' +
@@ -197,7 +213,7 @@ begin
       ' -MqttPort ' + Trim(ConfigPage.Values[2]) +
       ' -AcsApiBaseUrl "' + Trim(ConfigPage.Values[3]) + '"';
 
-    if not Exec(GetPowerShellPath(), Args, ExpandConstant('{app}'), SW_SHOW, ewWaitUntilTerminated, ResultCode) or (ResultCode <> 0) then
+    if not Exec('powershell.exe', Args, '', SW_SHOW, ewWaitUntilTerminated, ResultCode) or (ResultCode <> 0) then
       RaiseException(
         'ACS Simulator service configuration failed.'#13#10 +
         'Log: ' + GetInstallLogPath());

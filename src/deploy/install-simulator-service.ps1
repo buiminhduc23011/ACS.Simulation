@@ -6,6 +6,9 @@
 .DESCRIPTION
     Dùng cho Setup.exe và wizard setup-simulator.ps1.
     Không hỏi tương tác; mọi giá trị nhận qua tham số.
+    Viết theo mẫu Z129 (deploy/windows/install-service.ps1): log file thay vì
+    Start-Transcript, New-Service trước + fallback sc.exe quote chuẩn,
+    mọi bước phụ đều try/catch để không làm fail oan.
 #>
 
 param(
@@ -19,6 +22,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $ServiceName = 'ACS.Simulator'
+$ServiceDisplayName = 'ACS Simulator'
 $ServerDir = Join-Path $InstallDir 'server'
 $AppSettings = Join-Path $ServerDir 'appsettings.Production.json'
 $PackagedSettings = Join-Path $ServerDir 'appsettings.json'
@@ -26,29 +30,27 @@ $Executable = Join-Path $ServerDir 'ACS.Simulator.API.exe'
 $LogDir = Join-Path $InstallDir 'logs'
 $InstallLogPath = Join-Path $LogDir 'install-service.log'
 
-function Stop-ServiceIfPresent {
-    param([string]$Name)
+New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
 
-    $service = Get-Service -Name $Name -ErrorAction SilentlyContinue
-    if ($null -eq $service -or $service.Status -eq 'Stopped') { return }
-
-    Stop-Service -Name $Name -Force -ErrorAction SilentlyContinue
-    try { $service.WaitForStatus('Stopped', [TimeSpan]::FromSeconds(30)) } catch { }
+function Write-InstallLog([string]$Message) {
+    $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+    $line = "[$timestamp] $Message"
+    Write-Host $line
+    try {
+        Add-Content -LiteralPath $InstallLogPath -Value $line -Encoding UTF8 -ErrorAction SilentlyContinue
+    } catch { }
 }
 
-function Invoke-Sc {
-    param(
-        [string[]]$Arguments,
-        [switch]$AllowFailure
-    )
-
-    $output = & sc.exe @Arguments 2>&1
-    $exitCode = $LASTEXITCODE
-    if ($null -ne $output) { $output | ForEach-Object { Write-Host $_ } }
-    if ($exitCode -ne 0 -and -not $AllowFailure) {
-        throw "sc.exe $($Arguments -join ' ') failed with exit code $exitCode."
-    }
-}
+Write-InstallLog '=========================================================='
+Write-InstallLog ' Installing ACS Simulator Windows Service'
+Write-InstallLog " Time: $(Get-Date)"
+Write-InstallLog " InstallDir: $InstallDir"
+Write-InstallLog " ServiceName: $ServiceName"
+Write-InstallLog " SimPort: $SimPort"
+Write-InstallLog " MqttHost: $MqttHost"
+Write-InstallLog " MqttPort: $MqttPort"
+Write-InstallLog " ServerExe: $Executable"
+Write-InstallLog '=========================================================='
 
 function Set-ConfigProperty {
     param(
@@ -72,7 +74,7 @@ function Write-ProductionConfig {
             $config = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
             break
         } catch {
-            Write-Warning "Could not parse $path; trying the next config source."
+            Write-InstallLog "WARNING: Could not parse $path; trying the next config source."
         }
     }
 
@@ -91,16 +93,7 @@ function Write-ProductionConfig {
     Set-ConfigProperty -Object $config.Simulator -Name 'AcsApiBaseUrl' -Value $AcsApiBaseUrl.TrimEnd('/')
 
     $config | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $AppSettings -Encoding UTF8
-    Write-Host "Wrote simulator config: $AppSettings"
-}
-
-New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
-$transcriptStarted = $false
-try {
-    Start-Transcript -Path $InstallLogPath -Force | Out-Null
-    $transcriptStarted = $true
-} catch {
-    Write-Warning "Could not start transcript at '$InstallLogPath': $_"
+    Write-InstallLog "Wrote simulator config: $AppSettings"
 }
 
 try {
@@ -119,37 +112,88 @@ try {
     New-Item -ItemType Directory -Force -Path (Join-Path $ServerDir 'logs') | Out-Null
 
     Write-ProductionConfig
-    Stop-ServiceIfPresent $ServiceName
 
-    $binPath = "`"$Executable`""
+    # 1. Stop existing service if present (do not fail if it is stuck).
     $existing = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
     if ($null -ne $existing) {
-        Invoke-Sc @('config', $ServiceName, 'binPath=', $binPath, 'start=', 'auto') -AllowFailure
+        Write-InstallLog "Existing service '$ServiceName' found. Status: $($existing.Status). Stopping..."
+        try {
+            Stop-Service -Name $ServiceName -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds 2
+        } catch {
+            Write-InstallLog "WARNING stopping service: $_"
+        }
+
+        # Update ImagePath directly (giống Z129), fallback sc config quote chuẩn.
+        try {
+            Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Services\$ServiceName" -Name ImagePath -Value "`"$Executable`"" -Type ExpandString
+            Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Services\$ServiceName" -Name Description -Value 'ACS Simulator API and web UI' -ErrorAction SilentlyContinue
+            Write-InstallLog 'Updated service binary path in registry.'
+        } catch {
+            Write-InstallLog "Registry update failed ($_); falling back to sc config..."
+            cmd.exe /c "sc config `"$ServiceName`" binPath= `"\`"$Executable\`"`" start= auto DisplayName= `"$ServiceDisplayName`""
+        }
     } else {
-        Invoke-Sc @('create', $ServiceName, 'binPath=', $binPath, 'start=', 'auto', 'DisplayName=', 'ACS Simulator')
+        # 2. Register new service: New-Service trước, fallback sc create (DisplayName có quote).
+        Write-InstallLog "Registering new Windows Service '$ServiceName'..."
+        try {
+            New-Service -Name $ServiceName `
+                -BinaryPathName "`"$Executable`"" `
+                -DisplayName $ServiceDisplayName `
+                -Description 'ACS Simulator API and web UI' `
+                -StartupType Automatic | Out-Null
+            Write-InstallLog 'New-Service registered successfully.'
+        } catch {
+            Write-InstallLog "New-Service failed ($_); falling back to sc create..."
+            cmd.exe /c "sc create `"$ServiceName`" binPath= `"\`"$Executable\`"`" start= auto DisplayName= `"$ServiceDisplayName`""
+            if ($LASTEXITCODE -ne 0) { throw "sc create failed with exit code $LASTEXITCODE." }
+        }
     }
 
-    Invoke-Sc @('description', $ServiceName, 'ACS Simulator API and web UI') -AllowFailure
-    Invoke-Sc @('failure', $ServiceName, 'reset=', '86400', 'actions=', 'restart/5000/restart/10000/restart/30000/restart/60000/restart/120000') -AllowFailure
-    Invoke-Sc @('failureflag', $ServiceName, '1') -AllowFailure
-
-    Invoke-Sc @('start', $ServiceName) -AllowFailure
-    Start-Sleep -Seconds 2
-    $service = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
-    if ($service -and $service.Status -eq 'Running') {
-        Write-Host "Service '$ServiceName' is running."
-    } else {
-        $status = if ($service) { $service.Status } else { 'Missing' }
-        Write-Warning "Service status after start: $status. Check $InstallLogPath and $ServerDir\logs."
+    # 3. Description + recovery actions (không fail installer nếu lỗi).
+    try {
+        cmd.exe /c "sc description `"$ServiceName`" `"ACS Simulator API and web UI`"" | Out-Null
+    } catch {
+        Write-InstallLog "WARNING setting description: $_"
+    }
+    try {
+        cmd.exe /c "sc failure `"$ServiceName`" reset= 86400 actions= restart/5000/restart/10000/restart/60000" | Out-Null
+        Write-InstallLog 'Configured service failure recovery actions.'
+    } catch {
+        Write-InstallLog "WARNING setting failure actions: $_"
     }
 
-    Write-Host "Simulator URL: http://localhost:$SimPort"
+    # 4. Firewall (parity với Z129, không fail installer).
+    try {
+        netsh advfirewall firewall delete rule name="$ServiceDisplayName HTTP" 2>$null | Out-Null
+        netsh advfirewall firewall add rule name="$ServiceDisplayName HTTP" dir=in action=allow protocol=TCP localport=$SimPort | Out-Null
+        Write-InstallLog "Configured Windows Firewall rule for TCP port $SimPort."
+    } catch {
+        Write-InstallLog "WARNING adding firewall rule: $_"
+    }
+
+    # 5. Start service (warn-only để installer không lỗi oan khi cổng bận).
+    Write-InstallLog "Starting service '$ServiceName'..."
+    try {
+        Start-Service -Name $ServiceName -ErrorAction Stop
+        Start-Sleep -Seconds 2
+        $service = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+        if ($service -and $service.Status -eq 'Running') {
+            Write-InstallLog "Service '$ServiceName' is running."
+        } else {
+            $status = if ($service) { $service.Status } else { 'Missing' }
+            Write-InstallLog "WARNING: Service status after start: $status. Check $InstallLogPath and $ServerDir\logs."
+        }
+    } catch {
+        Write-InstallLog "WARNING: Could not start service (installer continues): $_"
+        Write-InstallLog "Start it manually: Start-Service -Name '$ServiceName'. Check $ServerDir\logs."
+    }
+
+    Write-InstallLog "Simulator URL: http://localhost:$SimPort"
+    Write-InstallLog 'Installation completed successfully.'
     exit 0
 } catch {
-    Write-Error $_
+    Write-InstallLog "FATAL ERROR during service installation: $_"
+    Write-InstallLog "Stack trace: $($_.ScriptStackTrace)"
     exit 1
-} finally {
-    if ($transcriptStarted) {
-        try { Stop-Transcript | Out-Null } catch { }
-    }
 }
