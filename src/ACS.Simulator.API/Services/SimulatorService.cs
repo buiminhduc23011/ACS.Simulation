@@ -505,6 +505,9 @@ public class SimulatorService
         double nextX, double nextY,
         double headingRad, bool isRotating, string mapId)
     {
+        // Tắt blocking để xe đi xuyên nhau — ACS một mình chịu trách nhiệm cấp đường.
+        if (!_config.CollisionBlockingEnabled) return null;
+
         // ConcurrentDictionary — safe to enumerate without locking
         var moveDx = nextX - currentX;
         var moveDy = nextY - currentY;

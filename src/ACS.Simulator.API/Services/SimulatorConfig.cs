@@ -6,6 +6,9 @@ public class SimulatorConfig
     public int MqttPort { get; set; } = 1883;
     public string AcsApiBaseUrl { get; set; } = "http://localhost:9050";
 
+    /// <summary>Tắt để AGV đi xuyên qua nhau — test thuần logic cấp đường của ACS.</summary>
+    public bool CollisionBlockingEnabled { get; set; } = true;
+
     /// <summary>Khoảng cách tối thiểu tới AGV khác (m) — dưới ngưỡng này luôn dừng.</summary>
     public double MinSeparationMeters { get; set; } = 1.0;
 

@@ -32,6 +32,7 @@ public class SimulatorRuntimeConfigStore
                 MqttHost = config.MqttHost,
                 MqttPort = config.MqttPort,
                 AcsApiBaseUrl = config.AcsApiBaseUrl,
+                CollisionBlockingEnabled = config.CollisionBlockingEnabled,
                 MinSeparationMeters = config.MinSeparationMeters,
                 FrontStopDistanceMeters = config.FrontStopDistanceMeters,
                 FrontConeHalfAngleDeg = config.FrontConeHalfAngleDeg,

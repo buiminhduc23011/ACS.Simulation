@@ -22,8 +22,17 @@ public class ConfigController : ControllerBase
     {
         return Ok(new SimulatorConfigDto(
             new MqttConfigDto(_config.MqttHost, _config.MqttPort),
-            new AcsApiConfigDto(_config.AcsApiBaseUrl)
+            new AcsApiConfigDto(_config.AcsApiBaseUrl),
+            _config.CollisionBlockingEnabled
         ));
+    }
+
+    [HttpPut("collision-blocking")]
+    public async Task<IActionResult> SetCollisionBlocking([FromBody] CollisionBlockingConfigRequest req, CancellationToken cancellationToken)
+    {
+        _config.CollisionBlockingEnabled = req.Enabled;
+        await _runtimeConfigStore.SaveAsync(_config, cancellationToken);
+        return Ok(new { message = req.Enabled ? "Collision blocking enabled" : "Collision blocking disabled - AGVs pass through each other" });
     }
 
     [HttpPut("mqtt")]

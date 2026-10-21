@@ -132,9 +132,12 @@ public record LogMessageDto(
     DateTime Timestamp
 );
 
+public record CollisionBlockingConfigRequest(bool Enabled);
+
 public record SimulatorConfigDto(
     MqttConfigDto Mqtt,
-    AcsApiConfigDto AcsApi
+    AcsApiConfigDto AcsApi,
+    bool CollisionBlockingEnabled
 );
 
 public record MapSummaryProxyDto(
