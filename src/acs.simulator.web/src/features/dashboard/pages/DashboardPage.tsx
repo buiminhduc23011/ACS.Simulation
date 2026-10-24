@@ -97,20 +97,18 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div>
-      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+      <Flex gap={16} wrap style={{ marginBottom: 16 }}>
         {statCards.map((s) => (
-          <Col key={s.title} xs={12} sm={8} lg={4} flex="1">
-            <SectionCard uiVariant="compact">
-              <Statistic
-                title={<Text className="stat-title">{s.title}</Text>}
-                value={s.value}
-                prefix={<span style={{ color: s.color, marginRight: 4 }}>{s.icon}</span>}
-                valueStyle={{ fontSize: 22, fontWeight: 700, color: 'var(--text-main)' }}
-              />
-            </SectionCard>
-          </Col>
+          <SectionCard key={s.title} uiVariant="compact" style={{ flex: '1 1 160px' }}>
+            <Statistic
+              title={<Text className="stat-title">{s.title}</Text>}
+              value={s.value}
+              prefix={<span style={{ color: s.color, marginRight: 4 }}>{s.icon}</span>}
+              valueStyle={{ fontSize: 22, fontWeight: 700, color: 'var(--text-main)' }}
+            />
+          </SectionCard>
         ))}
-      </Row>
+      </Flex>
 
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         <Col xs={24} lg={8}>

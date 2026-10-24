@@ -8,6 +8,7 @@ import {
   PlusOutlined, EditOutlined, ControlOutlined, PlayCircleOutlined, StopOutlined,
   DeleteOutlined, RobotOutlined, SearchOutlined, MoreOutlined,
   ImportOutlined, ExportOutlined, AppstoreAddOutlined, ClearOutlined,
+  VerticalAlignTopOutlined, VerticalAlignBottomOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
@@ -29,7 +30,7 @@ type StatusFilter = 'all' | 'online' | 'offline' | 'error';
 export const FleetPage: React.FC = () => {
   const agvs = useFleetStore(useShallow((s) => Object.values(s.agvs).sort((a, b) => a.id.localeCompare(b.id))));
   const {
-    fetchFleet, createAgv, updateAgv, deleteAgv, startAgv, stopAgv,
+    fetchFleet, createAgv, updateAgv, deleteAgv, startAgv, stopAgv, liftAgv, lowerAgv,
     bulkCreate, startMany, stopMany, deleteMany, importAgvs,
   } = useFleetApi();
   const navigate = useNavigate();
@@ -256,7 +257,7 @@ export const FleetPage: React.FC = () => {
         : <Text type="secondary">—</Text>,
     },
     {
-      title: 'Actions', key: 'actions', width: 140, align: 'right',
+      title: 'Actions', key: 'actions', width: 170, align: 'right',
       render: (_, rec) => (
         <Space size={4} align="center">
           <Tooltip title={rec.isRunning ? 'Stop' : 'Start'}>
@@ -265,6 +266,24 @@ export const FleetPage: React.FC = () => {
               checked={rec.isRunning}
               loading={busy === `sw_${rec.id}`}
               onChange={(checked) => runBulk(`sw_${rec.id}`, () => checked ? startAgv(rec.id) : stopAgv(rec.id))}
+            />
+          </Tooltip>
+          <Tooltip title="Lift (pick load)">
+            <Button
+              type="text" size="small"
+              icon={<VerticalAlignTopOutlined />}
+              disabled={!rec.isRunning}
+              loading={busy === `lift_${rec.id}`}
+              onClick={() => runBulk(`lift_${rec.id}`, () => liftAgv(rec.id))}
+            />
+          </Tooltip>
+          <Tooltip title="Lower (drop load)">
+            <Button
+              type="text" size="small"
+              icon={<VerticalAlignBottomOutlined />}
+              disabled={!rec.isRunning}
+              loading={busy === `lower_${rec.id}`}
+              onClick={() => runBulk(`lower_${rec.id}`, () => lowerAgv(rec.id))}
             />
           </Tooltip>
           <Tooltip title="Control">
