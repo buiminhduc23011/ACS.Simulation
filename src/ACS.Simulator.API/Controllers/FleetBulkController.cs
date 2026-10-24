@@ -2,6 +2,7 @@ using ACS.Simulator.API.Core.Models;
 using ACS.Simulator.API.Models;
 using ACS.Simulator.API.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace ACS.Simulator.API.Controllers;
 
@@ -73,51 +74,60 @@ public class FleetBulkController : ControllerBase
     }
 
     /// <summary>
-    /// Start (connect + start) all AGVs in the fleet in parallel.
+    /// Start (connect + start) AGVs in parallel. Body { ids } optional — empty = toàn bộ fleet.
     /// POST /api/fleet/bulk-start
     /// </summary>
     [HttpPost("start")]
-    public async Task<IActionResult> BulkStart()
+    public async Task<IActionResult> BulkStart([FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] BulkOperationRequest? req)
     {
-        var all = _simulator.GetAll().Select(a => a.SerialNumber).ToList();
-        _logger.LogInformation("BulkStart: starting {Count} AGVs in parallel", all.Count);
+        var ids = ResolveIds(req);
+        _logger.LogInformation("BulkStart: starting {Count} AGVs in parallel", ids.Count);
 
-        var results = await Task.WhenAll(all.Select(async id =>
+        var results = await Task.WhenAll(ids.Select(async id =>
         {
             try { return await _simulator.StartAgvAsync(id) ? id : null; }
             catch { return null; }
         }));
 
         var started = results.Where(r => r != null).ToList();
-        return Ok(new { Started = started.Count, Total = all.Count });
+        return Ok(new { Started = started.Count, Total = ids.Count });
     }
 
     /// <summary>
-    /// Stop all AGVs in the fleet in parallel.
+    /// Stop AGVs in parallel. Body { ids } optional — empty = toàn bộ fleet.
     /// POST /api/fleet/bulk-stop
     /// </summary>
     [HttpPost("stop")]
-    public async Task<IActionResult> BulkStop()
+    public async Task<IActionResult> BulkStop([FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] BulkOperationRequest? req)
     {
-        var all = _simulator.GetAll().Select(a => a.SerialNumber).ToList();
-        _logger.LogInformation("BulkStop: stopping {Count} AGVs in parallel", all.Count);
+        var ids = ResolveIds(req);
+        _logger.LogInformation("BulkStop: stopping {Count} AGVs in parallel", ids.Count);
 
-        await Task.WhenAll(all.Select(id => _simulator.StopAgvAsync(id)));
-        return Ok(new { Stopped = all.Count });
+        await Task.WhenAll(ids.Select(id => _simulator.StopAgvAsync(id)));
+        return Ok(new { Stopped = ids.Count });
     }
 
     /// <summary>
-    /// Delete all AGVs in the fleet.
+    /// Delete AGVs. Body { ids } optional — empty = toàn bộ fleet.
     /// POST /api/fleet/bulk-delete
     /// </summary>
     [HttpPost("delete")]
-    public async Task<IActionResult> BulkDelete()
+    public async Task<IActionResult> BulkDelete([FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] BulkOperationRequest? req)
     {
-        var all = _simulator.GetAll().Select(a => a.SerialNumber).ToList();
-        _logger.LogWarning("BulkDelete: deleting {Count} AGVs", all.Count);
+        var ids = ResolveIds(req);
+        _logger.LogWarning("BulkDelete: deleting {Count} AGVs", ids.Count);
 
-        await Task.WhenAll(all.Select(id => _simulator.DeleteAgvAsync(id)));
-        return Ok(new { Deleted = all.Count });
+        await Task.WhenAll(ids.Select(id => _simulator.DeleteAgvAsync(id)));
+        return Ok(new { Deleted = ids.Count });
+    }
+
+    /// <summary>Ids trong body; null/rỗng = toàn bộ fleet hiện có.</summary>
+    private List<string> ResolveIds(BulkOperationRequest? req)
+    {
+        if (req?.Ids is { Count: > 0 } ids)
+            return ids;
+
+        return _simulator.GetAll().Select(a => a.SerialNumber).ToList();
     }
 }
 
@@ -136,3 +146,6 @@ public record BulkCreateRequest(
     int Columns = 0,   // 0 = auto (sqrt)
     int SerialNumberPadWidth = 3 // default 3 => AGV-001 style serials
 );
+
+/// <summary>Danh sách AGV ids cho bulk op; null/rỗng = toàn bộ fleet.</summary>
+public record BulkOperationRequest(List<string>? Ids);

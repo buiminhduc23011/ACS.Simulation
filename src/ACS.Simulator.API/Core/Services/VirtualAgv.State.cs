@@ -81,6 +81,9 @@ public partial class VirtualAgv
 
     private async Task PublishStateAsync(bool immediate)
     {
+        // Command còn trong channel sau khi disconnect (stop) — bỏ qua, tránh log lỗi rác.
+        if (!_mqttClient.IsConnected) return;
+
         try
         {
             SyncOrderStates();
@@ -394,6 +397,9 @@ public partial class VirtualAgv
 
     private async Task PublishVisualizationAsync()
     {
+        // Command còn trong channel sau khi disconnect (stop) — bỏ qua, tránh log lỗi rác.
+        if (!_mqttClient.IsConnected) return;
+
         try
         {
             _currentVisualization.HeaderId = GetNextHeaderId();

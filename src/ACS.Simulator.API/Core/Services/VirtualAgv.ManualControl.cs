@@ -143,7 +143,30 @@ public partial class VirtualAgv
 
     public void SetSpeed(double speed)         => _commandChannel.Writer.TryWrite(new SetSpeedCmd(speed));
     public void SetBatteryLevel(double level)  => _commandChannel.Writer.TryWrite(new SetBatteryCmd(level));
-    public void SetOperatingMode(string mode)  => _commandChannel.Writer.TryWrite(new SetOperatingModeCmd(mode));
+    /// <summary>Đổi operatingMode qua event loop; false = bị từ chối (đang có order/action chưa xong).</summary>
+    public async Task<bool> SetOperatingModeAsync(string mode)
+    {
+        var normalized = NormalizeOperatingMode(mode);
+
+        // Check "đang bận" ngoài loop: held action block loop nên không thể chờ command để biết reject.
+        if (!string.Equals(normalized, "AUTOMATIC", StringComparison.OrdinalIgnoreCase) && HasActiveMissionOrActions())
+            return false;
+
+        // AGV stop: loop không chạy — ghi trực tiếp để preset mode cho lần start sau.
+        if (!_isRunning)
+        {
+            _currentState.OperatingMode = normalized;
+            return true;
+        }
+
+        var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        if (!_commandChannel.Writer.TryWrite(new SetOperatingModeCmd(mode, completion)))
+            return false;
+
+        // Loop có thể kẹt trong action dài — giới hạn chờ thay vì treo caller.
+        try { return await completion.Task.WaitAsync(TimeSpan.FromSeconds(5)); }
+        catch (TimeoutException) { return false; }
+    }
     public void ClearOrderState() => _commandChannel.Writer.TryWrite(new ClearOrderStateCmd());
     public async Task LiftAsync()              { _commandChannel.Writer.TryWrite(new LiftCmd()); await Task.CompletedTask; }
     public async Task LowerAsync()             { _commandChannel.Writer.TryWrite(new LowerCmd()); await Task.CompletedTask; }
@@ -200,13 +223,17 @@ public partial class VirtualAgv
     }
     public async Task<int> ClearLoadsAsync()
     {
+        // Loop không chạy thì command chỉ nằm chờ trong channel — trả -1 thay vì treo caller.
+        if (!_isRunning) return -1;
+
         var completion = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
         if (!_commandChannel.Writer.TryWrite(new ClearLoadsCmd(completion)))
         {
             return -1;
         }
 
-        return await completion.Task;
+        try { return await completion.Task.WaitAsync(TimeSpan.FromSeconds(5)); }
+        catch (TimeoutException) { return -1; }
     }
 
     // ── Manual Position (Joystick) Control ───────────────────────────────

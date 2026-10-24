@@ -221,7 +221,9 @@ public class SimulatorService
     public async Task<bool> StartAgvAsync(string id)
     {
         if (!_fleet.TryGetValue(id, out var agv)) return false;
-        await agv.ConnectAsync();
+        // Idempotent: start lặp không reconnect/spam event.
+        if (agv.IsRunning && agv.IsConnected) return true;
+        if (!agv.IsConnected) await agv.ConnectAsync();
         await agv.StartAsync();
         _ = SaveFleetAsync(); // fire-and-forget persist
         EmitEvent(id, "Started", $"AGV {id} started");
@@ -231,6 +233,7 @@ public class SimulatorService
     public async Task<bool> StopAgvAsync(string id)
     {
         if (!_fleet.TryGetValue(id, out var agv)) return false;
+        if (!agv.IsRunning) return true;
         await agv.StopAsync();
         _ = SaveFleetAsync(); // fire-and-forget persist
         EmitEvent(id, "Stopped", $"AGV {id} stopped");
@@ -285,12 +288,13 @@ public class SimulatorService
         return true;
     }
 
-    public bool SetOperatingMode(string id, string mode)
+    /// <summary>null = không tìm thấy AGV; false = bị từ chối (đang có order/action); true = đã đổi.</summary>
+    public async Task<bool?> SetOperatingModeAsync(string id, string mode)
     {
-        if (!_fleet.TryGetValue(id, out var agv)) return false;
-        agv.SetOperatingMode(mode);
-        EmitEvent(id, "OperatingModeChanged", $"AGV {id} operatingMode → {mode}");
-        return true;
+        if (!_fleet.TryGetValue(id, out var agv)) return null;
+        var applied = await agv.SetOperatingModeAsync(mode);
+        if (applied) EmitEvent(id, "OperatingModeChanged", $"AGV {id} operatingMode → {mode}");
+        return applied;
     }
 
     public bool SetActionHold(string id, bool enabled)

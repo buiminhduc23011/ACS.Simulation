@@ -15,6 +15,9 @@ public partial class VirtualAgv
 {
     public async Task ConnectAsync()
     {
+        // Start lại gọi ConnectAsync lần nữa — bỏ qua nếu đã kết nối.
+        if (_mqttClient.IsConnected) return;
+
         try
         {
             // Prepare Last Will message (CONNECTIONBROKEN) - published by broker if client disconnects ungracefully

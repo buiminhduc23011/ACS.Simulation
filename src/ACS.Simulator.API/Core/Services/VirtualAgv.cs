@@ -61,8 +61,9 @@ public partial class VirtualAgv : IVirtualAgv
     private bool _isRunning = false;
     private bool _disposed = false;
 
-    // Actor-loop: all state mutations serialized through bounded channel
-    private readonly Channel<AgvCommand> _commandChannel;
+    // Actor-loop: all state mutations serialized through bounded channel.
+    // Không readonly: StopAsync complete channel rồi tạo lại để Start sau đó hoạt động.
+    private Channel<AgvCommand> _commandChannel;
     private CancellationTokenSource? _loopCts;
     private Task? _eventLoopTask;
     private CancellationTokenSource? _disconnectCts;
@@ -242,14 +243,16 @@ public partial class VirtualAgv : IVirtualAgv
         _mqttClient = factory.CreateMqttClient();
 
         // Bounded channel for actor loop; never drop commands (especially ProcessOrderCmd).
-        _commandChannel = Channel.CreateBounded<AgvCommand>(
-            new BoundedChannelOptions(512)
-            {
-                FullMode = BoundedChannelFullMode.Wait,
-                SingleReader = true,
-                SingleWriter = false
-            });
+        _commandChannel = CreateCommandChannel();
     }
+
+    private static Channel<AgvCommand> CreateCommandChannel() => Channel.CreateBounded<AgvCommand>(
+        new BoundedChannelOptions(512)
+        {
+            FullMode = BoundedChannelFullMode.Wait,
+            SingleReader = true,
+            SingleWriter = false
+        });
 
     private int CalculateReach(double batteryLevel)
     {

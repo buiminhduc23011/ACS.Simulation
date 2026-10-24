@@ -43,6 +43,8 @@ public partial class VirtualAgv
         if (!_isRunning) return;
         _isRunning = false;
 
+        // Huỷ action đang chạy để event loop thoát nhanh, không chờ hết action.
+        _actionCts?.Cancel();
         _disconnectCts?.Cancel();
         var reconnectTask = _disconnectTask;
         if (reconnectTask is { IsCompleted: false })
@@ -81,7 +83,51 @@ public partial class VirtualAgv
         _disconnectCts?.Dispose(); _disconnectCts = null;
         _disconnectTask = null;
         _eventLoopTask = null;
+
+        ResetRuntimeStateOnStop();
+
+        // Channel cũ đã TryComplete — tạo lại để lần Start sau không chết event loop ngay.
+        _commandChannel = CreateCommandChannel();
         _logger.LogInformation("AGV {SerialNumber} stopped", _config.SerialNumber);
+    }
+
+    /// <summary>Reset movement/order về trạng thái parked — xe start lại không tự chạy order cũ.</summary>
+    private void ResetRuntimeStateOnStop()
+    {
+        _isMoving = false;
+        _isRotating = false;
+        _isReversing = false;
+        _arrivalTheta = null;
+        _activeTrajectoryPoints = null;
+        _currentTrajectorySegmentIndex = 0;
+        _currentNodeIndex = -1;
+        _currentOrder = null;
+        _pauseLatched = false;
+        _currentMovementBlocker = null;
+        _actionHoldBlocking = false;
+        _actionCts?.Dispose();
+        _actionCts = null;
+
+        _currentState.Driving = false;
+        _currentState.Paused = false;
+        _currentState.NewBaseRequest = false;
+        _currentState.OrderId = string.Empty;
+        _currentState.OrderUpdateId = 0;
+        _currentState.ActionStates.Clear();
+        _currentState.NodeStates.Clear();
+        _currentState.EdgeStates.Clear();
+        if (_currentState.Velocity != null)
+        {
+            _currentState.Velocity.Vx = 0;
+            _currentState.Velocity.Vy = 0;
+            _currentState.Velocity.Omega = 0;
+        }
+        if (_currentVisualization.Velocity != null)
+        {
+            _currentVisualization.Velocity.Vx = 0;
+            _currentVisualization.Velocity.Vy = 0;
+            _currentVisualization.Velocity.Omega = 0;
+        }
     }
 
     public void Dispose()
@@ -185,7 +231,7 @@ public partial class VirtualAgv
                 break;
 
             case SetOperatingModeCmd m:
-                await SetOperatingModeInternalAsync(m.Mode);
+                m.Completion.TrySetResult(await SetOperatingModeInternalAsync(m.Mode));
                 break;
 
             case ClearOrderStateCmd:

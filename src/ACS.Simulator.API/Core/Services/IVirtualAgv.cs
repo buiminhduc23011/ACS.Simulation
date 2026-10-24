@@ -33,7 +33,7 @@ public interface IVirtualAgv : IDisposable
     void SetPosition(double x, double y, double theta, string mapId);
     void SetSpeed(double speed);
     void SetBatteryLevel(double level);
-    void SetOperatingMode(string mode);
+    Task<bool> SetOperatingModeAsync(string mode);
     void SetHoldActions(bool enabled);
     void ClearOrderState();
     Task LiftAsync();

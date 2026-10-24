@@ -68,8 +68,8 @@ public sealed record ManualPositionStopCmd : AgvCommand
     public static readonly ManualPositionStopCmd Instance = new();
 }
 
-/// <summary>Enqueued by SetOperatingMode() HTTP call (AUTOMATIC / MANUAL).</summary>
-public sealed record SetOperatingModeCmd(string Mode) : AgvCommand;
+/// <summary>Enqueued by SetOperatingMode() HTTP call. Completion=true khi mode được áp dụng.</summary>
+public sealed record SetOperatingModeCmd(string Mode, TaskCompletionSource<bool> Completion) : AgvCommand;
 
 /// <summary>Enqueued by ClearOrderState() HTTP call.</summary>
 public sealed record ClearOrderStateCmd() : AgvCommand;

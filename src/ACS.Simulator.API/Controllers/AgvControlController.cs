@@ -35,15 +35,18 @@ public class AgvControlController : ControllerBase
 
     /// <summary>
     /// Switch VDA5050 operatingMode (AUTOMATIC / MANUAL).
-    /// MANUAL clears order/nodes/edges/actions so the AGV waits for ACS to re-send after AUTOMATIC.
+    /// Chặn khi xe còn order/action chưa xong; MANUAL lúc rảnh sẽ xoá mission để chờ ACS gửi lại.
     /// </summary>
     [HttpPost("operating-mode")]
-    public IActionResult SetOperatingMode(string id, [FromBody] SetOperatingModeRequest req)
+    public async Task<IActionResult> SetOperatingMode(string id, [FromBody] SetOperatingModeRequest req)
     {
         if (string.IsNullOrWhiteSpace(req.Mode))
             return BadRequest(new { message = "Mode is required (AUTOMATIC or MANUAL)" });
-        if (_sim.SetOperatingMode(id, req.Mode)) return Ok(new { mode = req.Mode });
-        return NotFound();
+        var applied = await _sim.SetOperatingModeAsync(id, req.Mode);
+        if (applied is null) return NotFound();
+        if (applied == false)
+            return Conflict(new { message = "AGV still has an active order/action — finish or cancel it before switching operating mode" });
+        return Ok(new { mode = req.Mode });
     }
 
     /// <summary>
