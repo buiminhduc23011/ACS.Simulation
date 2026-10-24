@@ -64,12 +64,7 @@ export const AppLayout: React.FC<Props> = ({ children }) => {
         }}
       >
         <Flex align="center" gap={10} style={{ height: 56, padding: collapsed ? '0 16px' : '0 20px', borderBottom: '1px solid var(--border-subtle)' }}>
-          <Flex align="center" justify="center" style={{
-            width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-            background: 'var(--primary-color)', color: '#fff', fontSize: 16,
-          }}>
-            <RobotOutlined />
-          </Flex>
+          <img src="/logo.png" alt="STI" style={{ width: 32, height: 32, objectFit: 'contain', flexShrink: 0 }} />
           {!collapsed && (
             <div style={{ lineHeight: 1.15, overflow: 'hidden' }}>
               <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-main)', whiteSpace: 'nowrap' }}>ACS Simulator</div>
