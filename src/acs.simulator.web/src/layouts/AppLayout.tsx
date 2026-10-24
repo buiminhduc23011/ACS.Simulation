@@ -53,14 +53,13 @@ export const AppLayout: React.FC<Props> = ({ children }) => {
         trigger={null}
         width={220}
         collapsedWidth={64}
+        className="app-sider"
         style={{
           background: 'var(--bg-container)',
           borderRight: '1px solid var(--border-color)',
           position: 'sticky',
           top: 0,
           height: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
         }}
       >
         <Flex align="center" gap={10} style={{ height: 56, padding: collapsed ? '0 16px' : '0 20px', borderBottom: '1px solid var(--border-subtle)' }}>
@@ -93,10 +92,10 @@ export const AppLayout: React.FC<Props> = ({ children }) => {
           />
         </div>
 
-        <div style={{ padding: collapsed ? '12px 8px' : '12px 16px', borderTop: '1px solid var(--border-subtle)' }}>
+        <div style={{ padding: collapsed ? '12px 8px' : '12px 16px', borderTop: '1px solid var(--border-subtle)', flexShrink: 0 }}>
           {!collapsed && (
             <Text style={{ fontSize: 10, color: 'var(--text-quaternary)', letterSpacing: '0.05em' }}>
-              v1.4.2 · VDA5050
+              v1.4.3 · VDA5050
             </Text>
           )}
         </div>

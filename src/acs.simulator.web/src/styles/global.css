@@ -154,6 +154,12 @@ body,
 }
 
 /* ── Ant Design overrides ─────────────────────────────────────────── */
+/* Flex cột trên children wrapper để đẩy footer (version) xuống đáy sider. */
+.app-sider .ant-layout-sider-children {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
 .ant-layout-sider-trigger {
   border-top: 1px solid var(--border-color);
 }
