@@ -10,12 +10,14 @@ Write-Host ""
 # 1. Build the Simulator
 Write-Host "[1/3] Building Simulator for Linux..." -ForegroundColor Yellow
 $buildScript = Join-Path $ScriptDir 'build-simulator.ps1'
-& $buildScript -SelfContained -Runtime linux-x64 -OutputDir dist-simulator-linux
+& $buildScript -SelfContained $true -Runtime linux-x64 -OutputDir dist-simulator-linux
 if ($LASTEXITCODE -ne 0) { throw "Build failed!" }
 
 # 2. SCP to home-server
 Write-Host "`n[2/3] Transferring package to home-server..." -ForegroundColor Yellow
 $distPath = Join-Path $ScriptDir '..\dist-simulator-linux'
+ssh -o BatchMode=yes home-server "rm -rf /tmp/simulator-update"
+if ($LASTEXITCODE -ne 0) { throw "Could not clean remote staging directory!" }
 scp -r -o BatchMode=yes "$distPath" home-server:/tmp/simulator-update
 if ($LASTEXITCODE -ne 0) { throw "SCP transfer failed!" }
 
