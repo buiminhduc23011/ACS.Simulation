@@ -88,7 +88,7 @@ export const AppLayout: React.FC<Props> = ({ children }) => {
           />
         </div>
 
-        <div style={{ padding: collapsed ? '12px 4px' : '12px 16px', borderTop: '1px solid var(--border-subtle)', flexShrink: 0, textAlign: collapsed ? 'center' : 'left' }}>
+        <div style={{ padding: '12px 8px', borderTop: '1px solid var(--border-subtle)', flexShrink: 0, textAlign: 'center' }}>
           <Text style={{ fontSize: 10, color: 'var(--text-quaternary)', letterSpacing: '0.05em' }}>
             v{__APP_VERSION__}
           </Text>
