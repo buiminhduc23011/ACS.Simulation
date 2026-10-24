@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Form, Input, InputNumber, Button, Row, Col, Typography, message, Divider } from 'antd';
+import { Form, Input, InputNumber, Button, Row, Col, Typography, message } from 'antd';
+import { SettingOutlined, ApiOutlined, CloudServerOutlined } from '@ant-design/icons';
 import apiClient from '../../../infrastructure/api/apiClient';
 import { ENDPOINTS } from '../../../infrastructure/api/endpoints';
 import { useConfigStore } from '../../../store/configStore';
+import { PageHeader } from '../../../shared/ui/PageHeader';
+import { SectionCard } from '../../../shared/ui/SectionCard';
 
-const { Title } = Typography;
+const { Text } = Typography;
 
 export const SettingsPage: React.FC = () => {
   const { mqtt, acsApi, setConfig } = useConfigStore();
@@ -21,6 +24,7 @@ export const SettingsPage: React.FC = () => {
         acsForm.setFieldsValue(data.acsApi);
       })
       .catch(console.error);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const saveMqtt = async () => {
@@ -43,10 +47,14 @@ export const SettingsPage: React.FC = () => {
 
   return (
     <div>
-      <Title level={4} style={{ marginBottom: 16 }}>Settings</Title>
-      <Row gutter={[24, 24]}>
+      <PageHeader
+        icon={<SettingOutlined />}
+        title="Settings"
+        subtitle="Simulator connection configuration"
+      />
+      <Row gutter={[16, 16]}>
         <Col xs={24} md={12}>
-          <Card title="MQTT Broker">
+          <SectionCard title={<><CloudServerOutlined /> MQTT Broker</>}>
             <Form form={mqttForm} layout="vertical" initialValues={mqtt}>
               <Form.Item name="host" label="Host" rules={[{ required: true }]}>
                 <Input placeholder="127.0.0.1" />
@@ -56,24 +64,25 @@ export const SettingsPage: React.FC = () => {
               </Form.Item>
               <Button type="primary" onClick={saveMqtt} loading={loading}>Save MQTT</Button>
             </Form>
-          </Card>
+            <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 12 }}>
+              Broker that simulated AGVs publish VDA5050 state/connection topics to.
+            </Text>
+          </SectionCard>
         </Col>
 
         <Col xs={24} md={12}>
-          <Card title="ACS API">
+          <SectionCard title={<><ApiOutlined /> ACS API</>}>
             <Form form={acsForm} layout="vertical" initialValues={acsApi}>
               <Form.Item name="baseUrl" label="Base URL" rules={[{ required: true }]}>
                 <Input placeholder="http://localhost:9050" />
               </Form.Item>
               <Button type="primary" onClick={saveAcsApi} loading={loading}>Save ACS API</Button>
             </Form>
-
-            <Divider />
-            <Typography.Text type="secondary">
+            <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 12 }}>
               The ACS API is used to fetch available maps from the main system.
               Make sure the ACS backend is running on the configured URL.
-            </Typography.Text>
-          </Card>
+            </Text>
+          </SectionCard>
         </Col>
       </Row>
     </div>

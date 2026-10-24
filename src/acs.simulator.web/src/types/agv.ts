@@ -110,3 +110,31 @@ export interface ICreateAgvRequest {
   navigationTechnologyId?: number; // 1=NATURAL, 2=LASER, 3=MAGNETIC, 4=QR
   mapMappings?: IAgvMapMapping[];
 }
+
+export interface IBulkCreateRequest {
+  count: number;
+  serialPrefix: string;
+  startIndex?: number;
+  manufacturer?: string;
+  mapId?: string;
+  originX?: number;
+  originY?: number;
+  theta?: number;
+  spacing?: number;
+  columns?: number;
+  serialNumberPadWidth?: number;
+}
+
+export interface IBulkCreateResult {
+  created: number;
+  failed: number;
+  serials: string[];
+  errors: string[];
+}
+
+export interface IBulkOperationResult {
+  started?: number;
+  stopped?: number;
+  deleted?: number;
+  total?: number;
+}

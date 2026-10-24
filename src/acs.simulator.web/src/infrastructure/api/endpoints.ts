@@ -10,6 +10,13 @@ export const ENDPOINTS = {
     start: (id: string) => `${BASE}/agvs/${id}/start`,
     stop: (id: string) => `${BASE}/agvs/${id}/stop`,
   },
+  // Fleet bulk ops — body { ids? }: rỗng/không body = toàn bộ fleet
+  fleet: {
+    bulkCreate: '/api/fleet/bulk/create',
+    bulkStart: '/api/fleet/bulk/start',
+    bulkStop: '/api/fleet/bulk/stop',
+    bulkDelete: '/api/fleet/bulk/delete',
+  },
   // AGV Control
   control: {
     position: (id: string) => `${BASE}/agvs/${id}/control/position`,

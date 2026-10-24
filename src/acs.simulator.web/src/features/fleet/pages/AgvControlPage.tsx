@@ -1,28 +1,29 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Card, Button, Space, Tag, Slider, InputNumber, Form, Input, Select,
+  Button, Space, Tag, Slider, InputNumber, Form, Input, Select,
   Row, Col, Typography, Progress, Alert, Descriptions, Badge, Switch,
-  Collapse, Empty,
+  Collapse, Empty, Tooltip, Flex,
 } from 'antd';
 import {
   ArrowLeftOutlined, PlayCircleOutlined, StopOutlined,
   VerticalAlignTopOutlined, VerticalAlignBottomOutlined,
   ThunderboltOutlined, DeleteOutlined, WarningOutlined,
-  ReloadOutlined, ControlOutlined, ApiOutlined, EnvironmentOutlined,
+  ReloadOutlined, ApiOutlined, EnvironmentOutlined,
 } from '@ant-design/icons';
 import { useShallow } from 'zustand/react/shallow';
 import { message } from 'antd';
 import { useFleetStore } from '../../../store/fleetStore';
 import { useFleetApi } from '../hooks/useFleetApi';
-import { AGV_STATUS_COLORS } from '../../../types/agv';
 import type { IInboundMqttMessage, ISimMapNode } from '../../../types/agv';
 import { VirtualJoystick } from '../components/VirtualJoystick';
 import apiClient from '../../../infrastructure/api/apiClient';
 import { ENDPOINTS } from '../../../infrastructure/api/endpoints';
-import { useLayoutStore } from '../../../store/layoutStore';
+import { PageHeader } from '../../../shared/ui/PageHeader';
+import { SectionCard } from '../../../shared/ui/SectionCard';
+import { StatusBadge } from '../../../shared/ui/StatusBadge';
 
-const { Title, Text, Paragraph } = Typography;
+const { Text, Paragraph } = Typography;
 
 const ERROR_TEMPLATES = [
   { name: 'SENSOR_FAILURE', label: 'Sensor Failure', color: '#faad14' },
@@ -100,8 +101,6 @@ export const AgvControlPage: React.FC = () => {
   const [mapNodesFailed, setMapNodesFailed] = useState(false);
   const [teleportMapId, setTeleportMapId] = useState<string | undefined>(undefined);
   const [teleportNodeId, setTeleportNodeId] = useState<string | undefined>(undefined);
-
-  const setHeaderLeft = useLayoutStore((s) => s.setHeaderLeft);
 
   // Keep a ref to the latest AGV position for joystick delta calculations
   const posRef = useRef({ x: 0, y: 0, theta: 0, mapId: '' });
@@ -198,36 +197,29 @@ export const AgvControlPage: React.FC = () => {
     setDriveDirection('IDLE');
   }, []);
 
-  const isManual = agv ? (agv.operatingMode ?? 'AUTOMATIC').toUpperCase() === 'MANUAL' : false;
+  const postPosition = useCallback((theta: number) => {
+    if (!id) return;
+    apiClient.post(ENDPOINTS.control.position(id), {
+      x: posRef.current.x, y: posRef.current.y, theta, mapId: '',
+    }).catch(() => {});
+  }, [id]);
 
-  useEffect(() => {
-    if (agv) {
-      setHeaderLeft(
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/fleet')} type="text" />
-          <Title level={4} style={{ margin: 0 }}>AGV Control: {agv.serialNumber}</Title>
-          <Tag color={AGV_STATUS_COLORS[agv.status]} style={{ fontSize: 14, padding: '2px 12px' }}>{agv.status}</Tag>
-          <Tag color={isManual ? 'orange' : 'blue'}>{agv.operatingMode ?? 'AUTOMATIC'}</Tag>
-          {agv.holdActions && <Tag color="gold">ACTION HOLD</Tag>}
-          {agv.hasErrors && <Badge count={agv.errorCount} style={{ marginLeft: 4 }} />}
-        </div>
-      );
-    }
-    return () => setHeaderLeft(null);
-  }, [agv, isManual, navigate, setHeaderLeft]);
+  const isManual = agv ? (agv.operatingMode ?? 'AUTOMATIC').toUpperCase() === 'MANUAL' : false;
+  // Xe còn order/action thì chặn sang MANUAL — backend cũng reject, đây là lớp UX báo trước.
+  const hasActiveMission = !!agv?.orderId || agv?.status === 'DRIVING';
 
   if (!id) return <div>No AGV ID specified</div>;
   if (!agv) {
     return (
-      <div style={{ padding: 24 }}>
+      <div>
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/fleet')}>Back to Fleet</Button>
         <Alert type="warning" message={`AGV "${id}" not found. It may not have been created yet.`} style={{ marginTop: 16 }} />
       </div>
     );
   }
 
-  const batteryColor = agv.batteryLevel > 50 ? '#52c41a' : agv.batteryLevel > 20 ? '#faad14' : '#ff4d4f';
-  const loadCount = agv.loadCount ?? (agv as any).loads?.length ?? 0;
+  const batteryColor = (agv.batteryLevel ?? 0) > 50 ? 'var(--success-color)' : (agv.batteryLevel ?? 0) > 20 ? 'var(--warning-color)' : 'var(--error-color)';
+  const loadCount = agv.loadCount ?? 0;
   const hasLoad = loadCount > 0;
   const planarSpeed = Math.hypot(agv.speedX ?? 0, agv.speedY ?? 0);
   const driveTagColor =
@@ -242,7 +234,47 @@ export const AgvControlPage: React.FC = () => {
     : [];
 
   return (
-    <div style={{ padding: '0 8px 32px 8px' }}>
+    <div>
+      <PageHeader
+        backNode={<Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/fleet')} />}
+        title={agv.serialNumber}
+        subtitle={`${agv.manufacturer || 'N/A'} · ${agv.mapId || 'no map'} · ${agv.ipAddress}`}
+        stats={[
+          { title: 'Battery', value: `${Math.round(agv.batteryLevel ?? 0)}%`, color: batteryColor },
+          { title: 'Speed', value: `${planarSpeed.toFixed(2)} m/s` },
+          { title: 'Load', value: loadCount },
+          { title: 'Errors', value: agv.errorCount, color: agv.errorCount > 0 ? 'var(--error-color)' : undefined },
+        ]}
+        actions={(
+          <Space size={8}>
+            <StatusBadge status={agv.status} />
+            <StatusBadge
+              variant={isManual ? 'warning' : 'neutral'}
+              text={agv.operatingMode ?? 'AUTOMATIC'}
+            />
+            {agv.holdActions && <StatusBadge variant="warning" text="ACTION HOLD" dot={false} />}
+            <Button
+              type="primary"
+              icon={<PlayCircleOutlined />}
+              disabled={agv.isRunning}
+              loading={loading === 'start'}
+              onClick={() => run('start', () => startAgv(id))}
+            >
+              Start
+            </Button>
+            <Button
+              danger
+              icon={<StopOutlined />}
+              disabled={!agv.isRunning}
+              loading={loading === 'stop'}
+              onClick={() => run('stop', () => stopAgv(id))}
+            >
+              Stop
+            </Button>
+          </Space>
+        )}
+      />
+
       {agv.activeNotification && (
         <Alert
           type={agv.activeNotification.type === 'ERROR' ? 'error'
@@ -262,37 +294,68 @@ export const AgvControlPage: React.FC = () => {
           }
         />
       )}
-      <Row gutter={[16, 16]}>
-        {/* Left column: Status + Quick Actions */}
-        <Col xs={24} lg={8}>
-          {/* Operating Mode */}
-          <Card
-            title={<Space><ControlOutlined /> Operating Mode</Space>}
-            size="small"
-            style={{ marginBottom: 16 }}
-          >
-            <Space direction="vertical" style={{ width: '100%' }} size="middle">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <Text strong>Mode: </Text>
-                  <Tag color={isManual ? 'orange' : 'blue'}>{agv.operatingMode ?? 'AUTOMATIC'}</Tag>
-                </div>
-                <Space>
-                  <Text type="secondary">AUTOMATIC</Text>
-                  <Switch
-                    checked={isManual}
-                    checkedChildren="MANUAL"
-                    unCheckedChildren="AUTO"
-                    loading={loading === 'mode'}
-                    onChange={(checked) =>
-                      run('mode', () => setOperatingMode(id, checked ? 'MANUAL' : 'AUTOMATIC'))
-                    }
-                  />
-                  <Text type="secondary">MANUAL</Text>
-                </Space>
-              </div>
 
-              <Descriptions column={1} size="small">
+      <Row gutter={[16, 16]}>
+        {/* Left: status + lifecycle + operating mode */}
+        <Col xs={24} lg={8}>
+          <SectionCard title="AGV Status" style={{ marginBottom: 16 }}>
+            <Descriptions column={1} size="small">
+              <Descriptions.Item label="Status"><StatusBadge status={agv.status} /></Descriptions.Item>
+              <Descriptions.Item label="Connected">
+                <StatusBadge variant={agv.isConnected ? 'success' : 'error'} text={agv.isConnected ? 'ONLINE' : 'OFFLINE'} />
+              </Descriptions.Item>
+              <Descriptions.Item label="Running">
+                <StatusBadge variant={agv.isRunning ? 'info' : 'neutral'} text={agv.isRunning ? 'RUNNING' : 'STOPPED'} />
+              </Descriptions.Item>
+              <Descriptions.Item label="Position">
+                <Text style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: 12 }}>
+                  {agv.posX?.toFixed(2)}, {agv.posY?.toFixed(2)} · θ {agv.posTheta?.toFixed(2)}
+                </Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Battery">
+                <Progress percent={Math.round(agv.batteryLevel)} size="small" strokeColor={batteryColor} style={{ width: 140, margin: 0 }} />
+              </Descriptions.Item>
+              <Descriptions.Item label="Charging">
+                <StatusBadge variant={agv.isCharging ? 'info' : 'neutral'} text={agv.isCharging ? 'CHARGING' : 'NO'} dot={false} />
+              </Descriptions.Item>
+              <Descriptions.Item label="Velocity">
+                <Text style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: 12 }}>
+                  {(agv.speedX ?? 0).toFixed(2)}, {(agv.speedY ?? 0).toFixed(2)} m/s
+                </Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Load">
+                <StatusBadge variant={hasLoad ? 'warning' : 'neutral'} text={hasLoad ? `LOADED (${loadCount})` : 'EMPTY'} dot={false} />
+              </Descriptions.Item>
+            </Descriptions>
+          </SectionCard>
+
+          <SectionCard title="Operating Mode" style={{ marginBottom: 16 }}>
+            <Space direction="vertical" style={{ width: '100%' }} size="middle">
+              <Flex align="center" justify="space-between">
+                <StatusBadge
+                  variant={isManual ? 'warning' : 'info'}
+                  text={agv.operatingMode ?? 'AUTOMATIC'}
+                />
+                <Space>
+                  <Text type="secondary" style={{ fontSize: 12 }}>AUTO</Text>
+                  <Tooltip
+                    title={!isManual && hasActiveMission
+                      ? 'AGV has an active order/action — finish or cancel it before switching to MANUAL'
+                      : undefined}
+                  >
+                    <Switch
+                      checked={isManual}
+                      loading={loading === 'mode'}
+                      disabled={!isManual && hasActiveMission}
+                      onChange={(checked) =>
+                        run('mode', () => setOperatingMode(id, checked ? 'MANUAL' : 'AUTOMATIC'))
+                      }
+                    />
+                  </Tooltip>
+                  <Text type="secondary" style={{ fontSize: 12 }}>MANUAL</Text>
+                </Space>
+              </Flex>
+              <Descriptions column={1} size="small" style={{ marginBottom: 0 }}>
                 <Descriptions.Item label="OrderId">
                   <Space>
                     <Text code>{orderId}</Text>
@@ -313,180 +376,152 @@ export const AgvControlPage: React.FC = () => {
                   {agv.orderUpdateId ?? 0}
                 </Descriptions.Item>
               </Descriptions>
-            </Space>
-          </Card>
-
-          {/* Status Card */}
-          <Card title="AGV Status" size="small" style={{ marginBottom: 16 }}>
-            <Descriptions column={1} size="small">
-              <Descriptions.Item label="Status">
-                <Tag color={AGV_STATUS_COLORS[agv.status]}>{agv.status}</Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Connected">
-                <Tag color={agv.isConnected ? 'green' : 'red'}>{agv.isConnected ? 'YES' : 'NO'}</Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Running">
-                <Tag color={agv.isRunning ? 'green' : 'default'}>{agv.isRunning ? 'YES' : 'NO'}</Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Position">
-                X: {agv.posX?.toFixed(2)}, Y: {agv.posY?.toFixed(2)}, Theta: {agv.posTheta?.toFixed(2)}
-              </Descriptions.Item>
-              <Descriptions.Item label="Battery">
-                <Progress percent={Math.round(agv.batteryLevel)} size="small" strokeColor={batteryColor} style={{ width: 120 }} />
-              </Descriptions.Item>
-              <Descriptions.Item label="Charging">
-                <Tag color={agv.isCharging ? 'blue' : 'default'}>{agv.isCharging ? 'YES' : 'NO'}</Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Speed">
-                {planarSpeed.toFixed(2)} m/s
-                <Text type="secondary"> ({(agv.speedX ?? 0).toFixed(2)}, {(agv.speedY ?? 0).toFixed(2)})</Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Load">
-                <Tag color={hasLoad ? 'orange' : 'default'}>{hasLoad ? `LOADED (${loadCount})` : 'EMPTY'}</Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Errors">
-                {agv.errorCount > 0 ? <Badge count={agv.errorCount} /> : <Text type="secondary">None</Text>}
-              </Descriptions.Item>
-            </Descriptions>
-          </Card>
-
-          {/* Lifecycle */}
-          <Card title="Lifecycle" size="small" style={{ marginBottom: 16 }}>
-            <Space wrap>
-              <Button
-                type="primary"
-                icon={<PlayCircleOutlined />}
-                loading={loading === 'start'}
-                onClick={() => run('start', () => startAgv(id))}
-              >
-                Start
-              </Button>
-              <Button
-                danger
-                icon={<StopOutlined />}
-                loading={loading === 'stop'}
-                onClick={() => run('stop', () => stopAgv(id))}
-              >
-                Stop
-              </Button>
-              <Button
-                loading={loading === 'disc'}
-                onClick={() => run('disc', () => disconnect(id))}
-              >
-                Disconnect
-              </Button>
-            </Space>
-          </Card>
-
-          {/* Action Hold (test) */}
-          <Card title="Action Hold (Test)" size="small" style={{ marginBottom: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-              <div>
-                <Text strong>Never finish actions</Text>
+              <Flex align="center" justify="space-between">
                 <div>
-                  <Text type="secondary">
-                    Keep PICK / DROP / WAIT at WAITING until turned off.
-                  </Text>
+                  <Text strong style={{ fontSize: 13 }}>Action hold</Text>
+                  <div><Text type="secondary" style={{ fontSize: 12 }}>Keep PICK / DROP / WAIT at WAITING.</Text></div>
                 </div>
-              </div>
-              <Switch
-                checked={agv.holdActions === true}
-                loading={loading === 'action-hold'}
-                onChange={(checked) => run('action-hold', () => setActionHold(id, checked))}
-              />
-            </div>
-          </Card>
-
-          {/* Load Control */}
-          <Card title="Load Control" size="small" style={{ marginBottom: 16 }}>
-            <Space>
-              <Button
-                icon={<VerticalAlignTopOutlined />}
-                loading={loading === 'lift'}
-                onClick={() => run('lift', () => liftAgv(id))}
-                style={{ background: '#177ddc', borderColor: '#177ddc', color: '#fff' }}
-              >
-                Lift
-              </Button>
-              <Button
-                icon={<VerticalAlignBottomOutlined />}
-                loading={loading === 'lower'}
-                onClick={() => run('lower', () => lowerAgv(id))}
-              >
-                Lower
-              </Button>
-              <Button
-                danger
-                icon={<DeleteOutlined />}
-                loading={loading === 'clearLoads'}
-                onClick={() => run('clearLoads', () => clearLoads(id))}
-              >
-                Clear Shelf
-              </Button>
+                <Switch
+                  checked={agv.holdActions === true}
+                  loading={loading === 'action-hold'}
+                  onChange={(checked) => run('action-hold', () => setActionHold(id, checked))}
+                />
+              </Flex>
             </Space>
-          </Card>
+          </SectionCard>
+
+          <SectionCard title="Lifecycle & Load" style={{ marginBottom: 16 }}>
+            <Space direction="vertical" style={{ width: '100%' }} size={12}>
+              <Space wrap>
+                <Button
+                  type="primary"
+                  icon={<PlayCircleOutlined />}
+                  disabled={agv.isRunning}
+                  loading={loading === 'start'}
+                  onClick={() => run('start', () => startAgv(id))}
+                >
+                  Start
+                </Button>
+                <Button
+                  danger
+                  icon={<StopOutlined />}
+                  disabled={!agv.isRunning}
+                  loading={loading === 'stop'}
+                  onClick={() => run('stop', () => stopAgv(id))}
+                >
+                  Stop
+                </Button>
+                <Tooltip title="Force-disconnect MQTT, auto-reconnect after 30s">
+                  <Button loading={loading === 'disc'} onClick={() => run('disc', () => disconnect(id))}>
+                    Disconnect 30s
+                  </Button>
+                </Tooltip>
+              </Space>
+              <Space wrap>
+                <Button
+                  icon={<VerticalAlignTopOutlined />}
+                  loading={loading === 'lift'}
+                  onClick={() => run('lift', () => liftAgv(id))}
+                >
+                  Lift
+                </Button>
+                <Button
+                  icon={<VerticalAlignBottomOutlined />}
+                  loading={loading === 'lower'}
+                  onClick={() => run('lower', () => lowerAgv(id))}
+                >
+                  Lower
+                </Button>
+                <Button
+                  danger
+                  icon={<DeleteOutlined />}
+                  loading={loading === 'clearLoads'}
+                  onClick={() => run('clearLoads', () => clearLoads(id))}
+                >
+                  Clear Shelf
+                </Button>
+              </Space>
+            </Space>
+          </SectionCard>
+
+          {/* Battery + Speed */}
+          <SectionCard title="Battery" style={{ marginBottom: 16 }}>
+            <Form layout="inline" initialValues={{ batteryLevel: agv.batteryLevel, charging: agv.isCharging }}
+              onFinish={(v) => run('bat', () => setBattery(id, v.batteryLevel, v.charging))}>
+              <Form.Item name="batteryLevel" label="Level %" style={{ marginBottom: 0 }}>
+                <InputNumber min={0} max={100} style={{ width: 80 }} />
+              </Form.Item>
+              <Form.Item name="charging" label="Charging" style={{ marginBottom: 0 }}>
+                <Select style={{ width: 80 }} options={[
+                  { label: 'Yes', value: true },
+                  { label: 'No', value: false },
+                ]} />
+              </Form.Item>
+              <Button htmlType="submit" type="primary" loading={loading === 'bat'}>Set</Button>
+            </Form>
+          </SectionCard>
+
+          <SectionCard title="Speed" style={{ marginBottom: 16 }}>
+            <Form layout="inline" initialValues={{ speed: planarSpeed }}
+              onFinish={(v) => run('spd', () => setSpeed(id, v.speed))}>
+              <Form.Item name="speed" label="Speed m/s" style={{ marginBottom: 0 }}>
+                <InputNumber min={0} max={10} step={0.1} style={{ width: 80 }} />
+              </Form.Item>
+              <Button htmlType="submit" type="primary" loading={loading === 'spd'}>Set</Button>
+            </Form>
+          </SectionCard>
         </Col>
 
-        {/* Middle column: Joystick + Battery/Speed */}
+        {/* Middle: joystick + teleport */}
         <Col xs={24} lg={8}>
-          {/* Joystick */}
-          <Card title="Movement Joystick" size="small" style={{ marginBottom: 16 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+          <SectionCard title="Movement Joystick" style={{ marginBottom: 16 }}>
+            <Flex vertical align="center" gap={16}>
               <VirtualJoystick
                 onMove={handleJoystickMove}
                 onEnd={handleJoystickEnd}
                 disabled={!agv.isConnected}
               />
               <Tag color={driveTagColor}>Manual Drive: {driveDirection}</Tag>
-              <Text type="secondary" style={{ textAlign: 'center' }}>
+              <Text type="secondary" style={{ textAlign: 'center', fontSize: 12 }}>
                 Push up to go forward, pull down to reverse, and move left or right to steer without auto-rotating the body toward the travel vector.
               </Text>
               <div style={{ width: '100%' }}>
-                <Text type="secondary">Drive Speed: {moveSpeed.toFixed(1)} m/s</Text>
-                <Slider
-                  min={0.1}
-                  max={5}
-                  step={0.1}
-                  value={moveSpeed}
-                  onChange={setMoveSpeed}
-                />
+                <Text type="secondary" style={{ fontSize: 12 }}>Drive Speed: {moveSpeed.toFixed(1)} m/s</Text>
+                <Slider min={0.1} max={5} step={0.1} value={moveSpeed} onChange={setMoveSpeed} />
               </div>
               <div style={{ width: '100%' }}>
-                <Text type="secondary">Theta: {(agv.posTheta * 180 / Math.PI).toFixed(1)}deg ({agv.posTheta?.toFixed(2)} rad)</Text>
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Theta: {(agv.posTheta * 180 / Math.PI).toFixed(1)}deg ({agv.posTheta?.toFixed(2)} rad)
+                </Text>
+                <Flex gap={8} style={{ marginTop: 8 }}>
                   <Button
                     style={{ flex: 1 }}
                     onClick={() => {
                       const newTheta = posRef.current.theta - Math.PI / 4;
                       posRef.current.theta = newTheta;
-                      apiClient.post(ENDPOINTS.control.position(id), {
-                        x: posRef.current.x, y: posRef.current.y, theta: newTheta, mapId: '',
-                      }).catch(() => {});
+                      postPosition(newTheta);
                     }}
                     disabled={!agv.isConnected}
                   >
-                    Rotate Left -45deg
+                    Rotate Left -45°
                   </Button>
                   <Button
                     style={{ flex: 1 }}
                     onClick={() => {
                       const newTheta = posRef.current.theta + Math.PI / 4;
                       posRef.current.theta = newTheta;
-                      apiClient.post(ENDPOINTS.control.position(id), {
-                        x: posRef.current.x, y: posRef.current.y, theta: newTheta, mapId: '',
-                      }).catch(() => {});
+                      postPosition(newTheta);
                     }}
                     disabled={!agv.isConnected}
                   >
-                    Rotate Right +45deg
+                    Rotate Right +45°
                   </Button>
-                </div>
+                </Flex>
               </div>
-            </div>
-          </Card>
+            </Flex>
+          </SectionCard>
 
-          {/* Teleport to Node — đặt xe lên node (xe line từ sẽ báo RFID tag làm lastNodeId) */}
-          <Card title={<Space><EnvironmentOutlined /> Set Position on Node</Space>} size="small" style={{ marginBottom: 16 }}>
+          <SectionCard title={<Space><EnvironmentOutlined /> Set Position on Node</Space>} style={{ marginBottom: 16 }}>
             {mapNodesFailed ? (
               <Alert type="warning" showIcon message="No map graph loaded in simulator" />
             ) : (
@@ -519,12 +554,7 @@ export const AgvControlPage: React.FC = () => {
                     }))}
                     notFoundContent="No nodes on this map"
                   />
-                  <Button
-                    type="primary"
-                    disabled={!teleportNodeId}
-                    loading={loading === 'teleport'}
-                    onClick={handleTeleport}
-                  >
+                  <Button type="primary" disabled={!teleportNodeId} loading={loading === 'teleport'} onClick={handleTeleport}>
                     Set
                   </Button>
                 </Space.Compact>
@@ -539,50 +569,20 @@ export const AgvControlPage: React.FC = () => {
                     );
                   }
                   return (
-                    <Text type="secondary">
+                    <Text type="secondary" style={{ fontSize: 12 }}>
                       Teleports onto the node position — line-guided AGVs report the node RFID tag as lastNodeId.
                     </Text>
                   );
                 })()}
               </Space>
             )}
-          </Card>
+          </SectionCard>
+        </Col>
 
-          {/* Battery Control */}
-          <Card title="Battery Control" size="small" style={{ marginBottom: 16 }}>
-            <Form layout="inline" initialValues={{ batteryLevel: agv.batteryLevel, charging: agv.isCharging }}
-              onFinish={(v) => run('bat', () => setBattery(id, v.batteryLevel, v.charging))}>
-              <Form.Item name="batteryLevel" label="Level %">
-                <InputNumber min={0} max={100} style={{ width: 80 }} />
-              </Form.Item>
-              <Form.Item name="charging" label="Charging">
-                <Select style={{ width: 80 }} options={[
-                  { label: 'Yes', value: true },
-                  { label: 'No', value: false },
-                ]} />
-              </Form.Item>
-              <Form.Item>
-                <Button htmlType="submit" type="primary" loading={loading === 'bat'}>Set</Button>
-              </Form.Item>
-            </Form>
-          </Card>
-
-          {/* Speed Control */}
-          <Card title="Speed Control" size="small" style={{ marginBottom: 16 }}>
-            <Form layout="inline" initialValues={{ speed: planarSpeed }}
-              onFinish={(v) => run('spd', () => setSpeed(id, v.speed))}>
-              <Form.Item name="speed" label="Speed m/s">
-                <InputNumber min={0} max={10} step={0.1} style={{ width: 80 }} />
-              </Form.Item>
-              <Form.Item>
-                <Button htmlType="submit" type="primary" loading={loading === 'spd'}>Set</Button>
-              </Form.Item>
-            </Form>
-          </Card>
-
-{/* Error Templates */}
-          <Card title="Error Injection (Templates)" size="small" style={{ marginBottom: 16 }}>
-            <Space wrap>
+        {/* Right: errors + MQTT debug */}
+        <Col xs={24} lg={8}>
+          <SectionCard title="Error Injection" style={{ marginBottom: 16 }}>
+            <Space wrap style={{ marginBottom: 12 }}>
               {ERROR_TEMPLATES.map((t) => (
                 <Button
                   key={t.name}
@@ -596,23 +596,21 @@ export const AgvControlPage: React.FC = () => {
                 </Button>
               ))}
             </Space>
-          </Card>
-
-          {/* Custom Error */}
-          <Card title="Custom Error" size="small" style={{ marginBottom: 16 }}>
-            <Form form={errForm} layout="vertical"
+            <Form form={errForm} layout="vertical" size="small"
               onFinish={(v) => run('err', () => addError(id, v.errorType, v.errorDescription, v.errorLevel))}>
-              <Form.Item name="errorType" label="Error Type" rules={[{ required: true }]}>
-                <Input placeholder="e.g. EMERGENCY_STOP" />
-              </Form.Item>
-              <Form.Item name="errorDescription" label="Description" rules={[{ required: true }]}>
+              <Flex gap={8}>
+                <Form.Item name="errorType" label="Type" rules={[{ required: true }]} style={{ flex: 1, marginBottom: 8 }}>
+                  <Input placeholder="e.g. EMERGENCY_STOP" />
+                </Form.Item>
+                <Form.Item name="errorLevel" label="Level" initialValue="WARNING" style={{ width: 120, marginBottom: 8 }}>
+                  <Select options={[
+                    { label: 'WARNING', value: 'WARNING' },
+                    { label: 'FATAL', value: 'FATAL' },
+                  ]} />
+                </Form.Item>
+              </Flex>
+              <Form.Item name="errorDescription" label="Description" rules={[{ required: true }]} style={{ marginBottom: 8 }}>
                 <Input placeholder="Description..." />
-              </Form.Item>
-              <Form.Item name="errorLevel" label="Level" initialValue="WARNING">
-                <Select options={[
-                  { label: 'WARNING', value: 'WARNING' },
-                  { label: 'FATAL', value: 'FATAL' },
-                ]} />
               </Form.Item>
               <Space>
                 <Button htmlType="submit" type="primary" icon={<ThunderboltOutlined />} loading={loading === 'err'}>
@@ -620,15 +618,14 @@ export const AgvControlPage: React.FC = () => {
                 </Button>
                 <Button danger icon={<DeleteOutlined />} loading={loading === 'clr'}
                   onClick={() => run('clr', () => clearErrors(id))}>
-                  Clear All Errors
+                  Clear All
                 </Button>
               </Space>
             </Form>
-          </Card>
+          </SectionCard>
 
-          {/* Active Errors */}
           {agv.hasErrors && (
-            <Card title={`Active Errors (${agv.errorCount})`} size="small" style={{ marginBottom: 16 }}>
+            <SectionCard title={`Active Errors (${agv.errorCount})`} style={{ marginBottom: 16 }}>
               {agv.errors?.map((e, i) => (
                 <Alert
                   key={i}
@@ -639,134 +636,124 @@ export const AgvControlPage: React.FC = () => {
                   showIcon
                 />
               ))}
-            </Card>
+            </SectionCard>
           )}
-        </Col>
 
-        {/* Right column: ACS debug */}
-        <Col xs={24} lg={8}>
-          {/* ACS Inbound MQTT debug panel (Right Column) */}
-      <Card
-        title={
-          <Space>
-            <ApiOutlined />
-            ACS Inbound MQTT (order / instantActions)
-            <Badge count={inboundMessages.length} style={{ backgroundColor: '#1677ff' }} />
-          </Space>
-        }
-        size="small"
-        style={{ marginBottom: 16 }}
-        extra={
-          <Button
-            size="small"
-            icon={<ReloadOutlined />}
-            onClick={() => {
-              if (!id) return;
-              void fetchInboundMessages(id).then((msgs) => setInboundMessages(msgs ?? []));
-            }}
+          <SectionCard
+            title={
+              <Space>
+                <ApiOutlined />
+                ACS Inbound MQTT
+                <Badge count={inboundMessages.length} color="var(--primary-color)" />
+              </Space>
+            }
+            style={{ marginBottom: 16 }}
+            extra={
+              <Button
+                size="small"
+                type="text"
+                icon={<ReloadOutlined />}
+                onClick={() => {
+                  if (!id) return;
+                  void fetchInboundMessages(id).then((msgs) => setInboundMessages(msgs ?? []));
+                }}
+              />
+            }
           >
-            Refresh
-          </Button>
-        }
-      >
-        <Paragraph type="secondary" style={{ marginBottom: 12 }}>
-          Raw payloads ACS publishes to this AGV. Polls every {INBOUND_POLL_MS / 1000}s. Use this to verify order / instantAction content while debugging.
-        </Paragraph>
-        {inboundMessages.length === 0 ? (
-          <Empty description="No order or instantActions received yet" />
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div>
-              <div style={{ maxHeight: 250, overflowY: 'auto' }}>
-                {inboundMessages.map((msg, index) => (
-                  <div
-                    key={`${msg.timestamp}-${index}`}
-                    onClick={() => setSelectedMessageIndex(index)}
-                    style={{
-                      padding: '8px 10px',
-                      marginBottom: 6,
-                      borderRadius: 6,
-                      cursor: 'pointer',
-                      border: index === selectedMessageIndex ? '1px solid #1677ff' : '1px solid rgba(128, 128, 128, 0.2)',
-                      background: index === selectedMessageIndex ? 'rgba(22, 119, 255, 0.15)' : 'transparent',
-                    }}
-                  >
-                    <Space wrap size={4}>
-                      <Tag color={msg.topicType === 'order' ? 'blue' : msg.topicType === 'notifications' ? 'volcano' : 'purple'}>{msg.topicType}</Tag>
-                      <Tag color={msg.accepted ? 'green' : 'red'}>{msg.accepted ? 'ACCEPTED' : 'IGNORED'}</Tag>
-                      <Text type="secondary" style={{ fontSize: 12 }}>{formatTime(msg.timestamp)}</Text>
-                    </Space>
-                    {msg.note && (
-                      <div style={{ marginTop: 4 }}>
-                        <Text style={{ fontSize: 12 }}>{msg.note}</Text>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div>
-              {selectedMessage ? (
-                <div>
-                  <Descriptions size="small" column={1} style={{ marginBottom: 8 }}>
-                    <Descriptions.Item label="Type">
-                      <Tag color={selectedMessage.topicType === 'order' ? 'blue' : selectedMessage.topicType === 'notifications' ? 'volcano' : 'purple'}>
-                        {selectedMessage.topicType}
-                      </Tag>
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Topic">
-                      <Text code style={{ fontSize: 12 }}>{selectedMessage.topic}</Text>
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Status">
-                      <Tag color={selectedMessage.accepted ? 'green' : 'red'}>
-                        {selectedMessage.accepted ? 'ACCEPTED' : 'IGNORED / REJECTED'}
-                      </Tag>
-                    </Descriptions.Item>
-                    {selectedMessage.note && (
-                      <Descriptions.Item label="Note">{selectedMessage.note}</Descriptions.Item>
-                    )}
-                    {selectedSafetyActions.length > 0 && (
-                      <Descriptions.Item label="Safety actions">
-                        <Space wrap>
-                          {selectedSafetyActions.map((action, index) => (
-                            <Tag color="gold" key={`${action.nodeId}-${action.label}-${index}`}>
-                              {action.label} @ {action.nodeId}
-                            </Tag>
-                          ))}
-                        </Space>
-                      </Descriptions.Item>
-                    )}
-                    <Descriptions.Item label="Time">{selectedMessage.timestamp}</Descriptions.Item>
-                  </Descriptions>
-                  <Collapse
-                    size="small"
-                    defaultActiveKey={['payload']}
-                    items={[{
-                      key: 'payload',
-                      label: 'JSON Payload',
-                      children: (
-                        <pre style={{
-                          margin: 0,
-                          maxHeight: 250,
-                          overflow: 'auto',
-                          background: '#1e1e1e',
-                          color: '#d4d4d4',
-                          padding: 12,
-                          borderRadius: 6,
-                          fontSize: 12,
-                          lineHeight: 1.45,
-                        }}>
-                          {formatJsonPayload(selectedMessage.payload)}
-                        </pre>
-                      ),
-                    }]}
-                  />
+            <Paragraph type="secondary" style={{ marginBottom: 12, fontSize: 12 }}>
+              Raw order / instantActions payloads ACS publishes to this AGV. Polls every {INBOUND_POLL_MS / 1000}s.
+            </Paragraph>
+            {inboundMessages.length === 0 ? (
+              <Empty description="No order or instantActions received yet" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            ) : (
+              <Flex vertical gap={12}>
+                <div style={{ maxHeight: 240, overflowY: 'auto' }}>
+                  {inboundMessages.map((msg, index) => (
+                    <div
+                      key={`${msg.timestamp}-${index}`}
+                      onClick={() => setSelectedMessageIndex(index)}
+                      style={{
+                        padding: '8px 10px',
+                        marginBottom: 6,
+                        borderRadius: 6,
+                        cursor: 'pointer',
+                        border: index === selectedMessageIndex
+                          ? '1px solid var(--primary-color)'
+                          : '1px solid var(--border-color)',
+                        background: index === selectedMessageIndex ? 'var(--primary-bg)' : 'transparent',
+                      }}
+                    >
+                      <Space wrap size={4}>
+                        <StatusBadge
+                          variant={msg.topicType === 'order' ? 'info' : msg.topicType === 'notifications' ? 'warning' : 'neutral'}
+                          text={msg.topicType}
+                          dot={false}
+                        />
+                        <StatusBadge
+                          variant={msg.accepted ? 'success' : 'error'}
+                          text={msg.accepted ? 'ACCEPTED' : 'IGNORED'}
+                          dot={false}
+                        />
+                        <Text type="secondary" style={{ fontSize: 11 }}>{formatTime(msg.timestamp)}</Text>
+                      </Space>
+                      {msg.note && (
+                        <div style={{ marginTop: 4 }}>
+                          <Text style={{ fontSize: 12 }}>{msg.note}</Text>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ) : null}
-            </div>
-          </div>
-        )}
-      </Card>
+                {selectedMessage && (
+                  <div>
+                    <Descriptions size="small" column={1} style={{ marginBottom: 8 }}>
+                      <Descriptions.Item label="Topic">
+                        <Text code style={{ fontSize: 11 }}>{selectedMessage.topic}</Text>
+                      </Descriptions.Item>
+                      {selectedMessage.note && (
+                        <Descriptions.Item label="Note">{selectedMessage.note}</Descriptions.Item>
+                      )}
+                      {selectedSafetyActions.length > 0 && (
+                        <Descriptions.Item label="Safety actions">
+                          <Space wrap>
+                            {selectedSafetyActions.map((action, index) => (
+                              <Tag color="gold" key={`${action.nodeId}-${action.label}-${index}`}>
+                                {action.label} @ {action.nodeId}
+                              </Tag>
+                            ))}
+                          </Space>
+                        </Descriptions.Item>
+                      )}
+                      <Descriptions.Item label="Time">{selectedMessage.timestamp}</Descriptions.Item>
+                    </Descriptions>
+                    <Collapse
+                      size="small"
+                      defaultActiveKey={['payload']}
+                      items={[{
+                        key: 'payload',
+                        label: 'JSON Payload',
+                        children: (
+                          <pre style={{
+                            margin: 0,
+                            maxHeight: 250,
+                            overflow: 'auto',
+                            background: '#1e1e1e',
+                            color: '#d4d4d4',
+                            padding: 12,
+                            borderRadius: 6,
+                            fontSize: 12,
+                            lineHeight: 1.45,
+                          }}>
+                            {formatJsonPayload(selectedMessage.payload)}
+                          </pre>
+                        ),
+                      }]}
+                    />
+                  </div>
+                )}
+              </Flex>
+            )}
+          </SectionCard>
         </Col>
       </Row>
     </div>

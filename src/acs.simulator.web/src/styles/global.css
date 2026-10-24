@@ -2,51 +2,164 @@
   box-sizing: border-box;
 }
 
+/* ── Design tokens (CSS vars) — đồng bộ ACS slate palette ─────────── */
+:root {
+  --primary-color: #2563eb;
+  --primary-bg: #eff6ff;
+  --primary-border: #dbeafe;
+
+  --success-color: #16a34a;
+  --success-bg: #dcfce7;
+  --warning-color: #d97706;
+  --warning-bg: #fef3c7;
+  --error-color: #dc2626;
+  --error-bg: #fee2e2;
+  --info-color: #2563eb;
+  --info-bg: #eff6ff;
+  --neutral-color: #475569;
+  --neutral-bg: #f1f5f9;
+
+  --bg-layout: #f8fafc;
+  --bg-container: #ffffff;
+  --bg-elevated: #ffffff;
+  --text-main: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+  --text-quaternary: #94a3b8;
+  --border-color: #e2e8f0;
+  --border-subtle: #f1f5f9;
+
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px 0 rgb(0 0 0 / 0.06);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --primary-color: #3b82f6;
+  --primary-bg: rgba(59, 130, 246, 0.15);
+  --primary-border: rgba(59, 130, 246, 0.35);
+
+  --success-color: #4ade80;
+  --success-bg: rgba(34, 197, 94, 0.15);
+  --warning-color: #fbbf24;
+  --warning-bg: rgba(217, 119, 6, 0.18);
+  --error-color: #f87171;
+  --error-bg: rgba(220, 38, 38, 0.18);
+  --info-color: #60a5fa;
+  --info-bg: rgba(59, 130, 246, 0.15);
+  --neutral-color: #94a3b8;
+  --neutral-bg: rgba(148, 163, 184, 0.12);
+
+  --bg-layout: #0f172a;
+  --bg-container: #1e293b;
+  --bg-elevated: #1e293b;
+  --text-main: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
+  --text-quaternary: #64748b;
+  --border-color: #334155;
+  --border-subtle: #27364a;
+
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
+
+  color-scheme: dark;
+}
+
 html,
 body,
 #root {
   height: 100%;
   margin: 0;
   padding: 0;
-  background-color: #0d1117;
-  color: #c9d1d9;
+  background-color: var(--bg-layout);
+  color: var(--text-main);
 }
 
 /* Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #161b22;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #30363d;
-  border-radius: 3px;
+  background: var(--border-color);
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #484f58;
+  background: var(--text-quaternary);
 }
 
-/* Table row states */
+/* ── Status badge pill ────────────────────────────────────────────── */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.status-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.status-badge.success { background: var(--success-bg); color: var(--success-color); }
+.status-badge.info    { background: var(--info-bg);    color: var(--info-color); }
+.status-badge.warning { background: var(--warning-bg); color: var(--warning-color); }
+.status-badge.error   { background: var(--error-bg);   color: var(--error-color); }
+.status-badge.neutral { background: var(--neutral-bg); color: var(--neutral-color); }
+
+/* ── Stat title (PageHeader) ──────────────────────────────────────── */
+.stat-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+/* ── Table states ─────────────────────────────────────────────────── */
 .row-error td {
-  background: rgba(248, 81, 73, 0.08) !important;
+  background: var(--error-bg) !important;
 }
 .row-offline td {
-  background: rgba(139, 148, 158, 0.08) !important;
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
-/* Ant Design overrides */
+/* ── Section card ─────────────────────────────────────────────────── */
+.section-card {
+  border: 1px solid var(--border-color);
+}
+
+/* Batch action bar khi chọn nhiều AGV trong fleet table */
+.batch-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  background: var(--primary-bg);
+  border: 1px solid var(--primary-border);
+}
+
+/* ── Ant Design overrides ─────────────────────────────────────────── */
 .ant-layout-sider-trigger {
-  background: #21262d !important;
-}
-.ant-menu-dark {
-  background: #0d1117 !important;
-}
-.ant-menu-dark .ant-menu-item-selected {
-  background-color: #1d2333 !important;
+  border-top: 1px solid var(--border-color);
 }
 .ant-card {
-  border-color: #21262d !important;
+  border-color: var(--border-color);
+}
+.ant-table-thead > tr > th {
+  font-weight: 600;
 }

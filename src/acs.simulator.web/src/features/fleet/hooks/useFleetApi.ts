@@ -2,7 +2,10 @@ import { useCallback } from 'react';
 import { message } from 'antd';
 import apiClient from '../../../infrastructure/api/apiClient';
 import { ENDPOINTS } from '../../../infrastructure/api/endpoints';
-import type { ISimAgv, ICreateAgvRequest, IInboundMqttMessage, ISimMapInfo, ISimMapNode } from '../../../types/agv';
+import type {
+  ISimAgv, ICreateAgvRequest, IInboundMqttMessage, ISimMapInfo, ISimMapNode,
+  IBulkCreateRequest, IBulkCreateResult,
+} from '../../../types/agv';
 import { useFleetStore } from '../../../store/fleetStore';
 
 export function useFleetApi() {
@@ -94,9 +97,14 @@ export function useFleetApi() {
   }, []);
 
   const setOperatingMode = useCallback(async (id: string, mode: string) => {
-    await apiClient.post(ENDPOINTS.control.operatingMode(id), { mode });
-    message.success(`AGV ${id} → ${mode}`);
-    await fetchFleet();
+    try {
+      await apiClient.post(ENDPOINTS.control.operatingMode(id), { mode });
+      message.success(`AGV ${id} → ${mode}`);
+      await fetchFleet();
+    } catch (err) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      message.warning(msg ?? `AGV ${id} operating mode change rejected`);
+    }
   }, [fetchFleet]);
 
   const clearOrderState = useCallback(async (id: string) => {
@@ -126,10 +134,55 @@ export function useFleetApi() {
     return results;
   }, []);
 
+  // ── Bulk ops: ids = undefined → toàn bộ fleet ──────────────────────
+
+  const bulkCreate = useCallback(async (req: IBulkCreateRequest): Promise<IBulkCreateResult> => {
+    const res = await apiClient.post<IBulkCreateResult>(ENDPOINTS.fleet.bulkCreate, req);
+    await fetchFleet();
+    return res.data;
+  }, [fetchFleet]);
+
+  const startMany = useCallback(async (ids?: string[]) => {
+    const res = await apiClient.post<{ started: number; total: number }>(
+      ENDPOINTS.fleet.bulkStart, ids?.length ? { ids } : undefined);
+    message.success(`Started ${res.data.started}/${res.data.total} AGVs`);
+  }, []);
+
+  const stopMany = useCallback(async (ids?: string[]) => {
+    const res = await apiClient.post<{ stopped: number }>(
+      ENDPOINTS.fleet.bulkStop, ids?.length ? { ids } : undefined);
+    message.success(`Stopped ${res.data.stopped} AGVs`);
+  }, []);
+
+  const deleteMany = useCallback(async (ids?: string[]) => {
+    const res = await apiClient.post<{ deleted: number }>(
+      ENDPOINTS.fleet.bulkDelete, ids?.length ? { ids } : undefined);
+    message.success(`Deleted ${res.data.deleted} AGVs`);
+    await fetchFleet();
+  }, [fetchFleet]);
+
+  /** Import tạo lần lượt từng AGV — trả về số thành công + lỗi theo serial. */
+  const importAgvs = useCallback(async (reqs: ICreateAgvRequest[]) => {
+    const created: string[] = [];
+    const failed: { serial: string; message: string }[] = [];
+    for (const req of reqs) {
+      try {
+        await apiClient.post(ENDPOINTS.agvs.create, req);
+        created.push(req.serialNumber);
+      } catch (err: unknown) {
+        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+        failed.push({ serial: req.serialNumber, message: msg ?? 'request failed' });
+      }
+    }
+    await fetchFleet();
+    return { created, failed };
+  }, [fetchFleet]);
+
   return {
     fetchFleet, createAgv, updateAgv, deleteAgv, startAgv, stopAgv,
     setPosition, setBattery, setSpeed, setOperatingMode, clearOrderState, setActionHold, fetchInboundMessages, fetchMapNodes,
     addError, clearErrors, injectTemplate, liftAgv, lowerAgv, clearLoads, disconnect,
+    bulkCreate, startMany, stopMany, deleteMany, importAgvs,
   };
 
 }
