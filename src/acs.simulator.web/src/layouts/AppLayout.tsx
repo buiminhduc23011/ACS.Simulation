@@ -90,7 +90,7 @@ export const AppLayout: React.FC<Props> = ({ children }) => {
 
         <div style={{ padding: collapsed ? '12px 4px' : '12px 16px', borderTop: '1px solid var(--border-subtle)', flexShrink: 0, textAlign: collapsed ? 'center' : 'left' }}>
           <Text style={{ fontSize: 10, color: 'var(--text-quaternary)', letterSpacing: '0.05em' }}>
-            {collapsed ? 'v1.4.3' : 'v1.4.3 · VDA5050'}
+            {collapsed ? `v${__APP_VERSION__}` : `v${__APP_VERSION__} · VDA5050`}
           </Text>
         </div>
       </Sider>

@@ -1,5 +1,5 @@
 <Project>
   <PropertyGroup>
-    <AcsSimulatorVersion>1.4.3</AcsSimulatorVersion>
+    <AcsSimulatorVersion>1.5.0</AcsSimulatorVersion>
   </PropertyGroup>
 </Project>
