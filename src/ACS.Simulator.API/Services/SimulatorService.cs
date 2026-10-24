@@ -328,6 +328,10 @@ public class SimulatorService
             .ToList();
     }
 
+    /// <summary>Gói state VDA5050 hiện tại của AGV (wire format, hiển thị tab Outbound).</summary>
+    public Vda5050State? GetPublishedState(string id) =>
+        _fleet.TryGetValue(id, out var agv) ? agv.CurrentState : null;
+
     public async Task<bool> LiftAsync(string id)
     {
         if (!_fleet.TryGetValue(id, out var agv)) return false;

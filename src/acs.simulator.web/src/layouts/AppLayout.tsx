@@ -88,12 +88,10 @@ export const AppLayout: React.FC<Props> = ({ children }) => {
           />
         </div>
 
-        <div style={{ padding: collapsed ? '12px 8px' : '12px 16px', borderTop: '1px solid var(--border-subtle)', flexShrink: 0 }}>
-          {!collapsed && (
-            <Text style={{ fontSize: 10, color: 'var(--text-quaternary)', letterSpacing: '0.05em' }}>
-              v1.4.3 · VDA5050
-            </Text>
-          )}
+        <div style={{ padding: collapsed ? '12px 4px' : '12px 16px', borderTop: '1px solid var(--border-subtle)', flexShrink: 0, textAlign: collapsed ? 'center' : 'left' }}>
+          <Text style={{ fontSize: 10, color: 'var(--text-quaternary)', letterSpacing: '0.05em' }}>
+            {collapsed ? 'v1.4.3' : 'v1.4.3 · VDA5050'}
+          </Text>
         </div>
       </Sider>
 

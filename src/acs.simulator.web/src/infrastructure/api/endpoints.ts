@@ -26,6 +26,7 @@ export const ENDPOINTS = {
     clearOrder: (id: string) => `${BASE}/agvs/${id}/control/clear-order`,
     actionHold: (id: string) => `${BASE}/agvs/${id}/control/action-hold`,
     inboundMessages: (id: string) => `${BASE}/agvs/${id}/control/inbound-messages`,
+    statePayload: (id: string) => `${BASE}/agvs/${id}/control/state-payload`,
     lift: (id: string) => `${BASE}/agvs/${id}/control/lift`,
     lower: (id: string) => `${BASE}/agvs/${id}/control/lower`,
     clearLoads: (id: string) => `${BASE}/agvs/${id}/control/loads`,

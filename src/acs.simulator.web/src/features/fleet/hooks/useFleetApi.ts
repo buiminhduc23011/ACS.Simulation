@@ -124,6 +124,16 @@ export function useFleetApi() {
     return res.data;
   }, []);
 
+  // Gói state VDA5050 AGV đang publish — raw JSON cho tab Outbound
+  const fetchOutboundState = useCallback(async (id: string): Promise<Record<string, unknown> | null> => {
+    try {
+      const res = await apiClient.get(ENDPOINTS.control.statePayload(id));
+      return res.data;
+    } catch {
+      return null;
+    }
+  }, []);
+
   const fetchMapNodes = useCallback(async (): Promise<{ mapId: string; mapName: string; nodes: ISimMapNode[] }[]> => {
     const maps = (await apiClient.get<ISimMapInfo[]>(ENDPOINTS.maps.list)).data ?? [];
     const results = await Promise.all(maps.map(async (m) => ({
@@ -180,7 +190,7 @@ export function useFleetApi() {
 
   return {
     fetchFleet, createAgv, updateAgv, deleteAgv, startAgv, stopAgv,
-    setPosition, setBattery, setSpeed, setOperatingMode, clearOrderState, setActionHold, fetchInboundMessages, fetchMapNodes,
+    setPosition, setBattery, setSpeed, setOperatingMode, clearOrderState, setActionHold, fetchInboundMessages, fetchOutboundState, fetchMapNodes,
     addError, clearErrors, injectTemplate, liftAgv, lowerAgv, clearLoads, disconnect,
     bulkCreate, startMany, stopMany, deleteMany, importAgvs,
   };

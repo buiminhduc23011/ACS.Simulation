@@ -80,6 +80,17 @@ public class AgvControlController : ControllerBase
         return Ok(messages);
     }
 
+    /// <summary>
+    /// Outbound state payload (VDA5050 wire format) the AGV is currently publishing.
+    /// </summary>
+    [HttpGet("state-payload")]
+    public IActionResult GetStatePayload(string id)
+    {
+        var state = _sim.GetPublishedState(id);
+        if (state == null) return NotFound();
+        return Ok(state);
+    }
+
     [HttpPost("lift")]
     public async Task<IActionResult> Lift(string id)
     {

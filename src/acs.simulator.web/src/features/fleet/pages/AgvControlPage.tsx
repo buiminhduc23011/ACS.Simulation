@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Button, Space, Tag, Slider, InputNumber, Form, Input, Select,
   Row, Col, Typography, Alert, Descriptions, Badge, Switch,
-  Collapse, Empty, Tooltip, Flex,
+  Collapse, Empty, Tooltip, Flex, Tabs,
 } from 'antd';
 import {
   ArrowLeftOutlined, PlayCircleOutlined, StopOutlined,
@@ -14,12 +14,12 @@ import {
 import { useShallow } from 'zustand/react/shallow';
 import { message } from 'antd';
 import { useFleetStore } from '../../../store/fleetStore';
+import { useLayoutStore } from '../../../store/layoutStore';
 import { useFleetApi } from '../hooks/useFleetApi';
 import type { IInboundMqttMessage, ISimMapNode } from '../../../types/agv';
 import { VirtualJoystick } from '../components/VirtualJoystick';
 import apiClient from '../../../infrastructure/api/apiClient';
 import { ENDPOINTS } from '../../../infrastructure/api/endpoints';
-import { PageHeader } from '../../../shared/ui/PageHeader';
 import { SectionCard } from '../../../shared/ui/SectionCard';
 import { StatusBadge } from '../../../shared/ui/StatusBadge';
 
@@ -81,13 +81,21 @@ function extractDebugSafetyActions(payload: string): { nodeId: string; label: st
   }
 }
 
+// Stat nhỏ gọn nhúng trong global header
+const HeaderStat: React.FC<{ label: string; value: React.ReactNode; color?: string }> = ({ label, value, color }) => (
+  <div style={{ textAlign: 'right', lineHeight: 1.15 }}>
+    <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-tertiary)' }}>{label}</div>
+    <div style={{ fontSize: 13, fontWeight: 600, color: color ?? 'var(--text-main)' }}>{value}</div>
+  </div>
+);
+
 export const AgvControlPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const agv = useFleetStore(useShallow((s) => (id ? s.agvs[id] : undefined)));
   const {
     fetchFleet, startAgv, stopAgv, setBattery, setSpeed, setOperatingMode,
-    fetchInboundMessages, fetchMapNodes, addError, clearErrors, injectTemplate,
+    fetchInboundMessages, fetchOutboundState, fetchMapNodes, addError, clearErrors, injectTemplate,
     liftAgv, lowerAgv, clearLoads, disconnect, clearOrderState, setPosition, setActionHold,
   } = useFleetApi();
 
@@ -96,6 +104,7 @@ export const AgvControlPage: React.FC = () => {
   const [driveDirection, setDriveDirection] = useState<'IDLE' | 'FORWARD' | 'REVERSE' | 'TURNING'>('IDLE');
   const [errForm] = Form.useForm();
   const [inboundMessages, setInboundMessages] = useState<IInboundMqttMessage[]>([]);
+  const [outboundState, setOutboundState] = useState<Record<string, unknown> | null>(null);
   const [selectedMessageIndex, setSelectedMessageIndex] = useState(0);
   const [mapNodes, setMapNodes] = useState<{ mapId: string; mapName: string; nodes: ISimMapNode[] }[]>([]);
   const [mapNodesFailed, setMapNodesFailed] = useState(false);
@@ -118,14 +127,16 @@ export const AgvControlPage: React.FC = () => {
     return () => clearInterval(interval);
   }, [fetchFleet]);
 
-  // Poll ACS inbound MQTT messages for debug panel
+  // Poll MQTT monitor: inbound payloads ACS gửi + outbound state AGV publish
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
     const load = async () => {
       try {
-        const msgs = await fetchInboundMessages(id);
-        if (!cancelled) setInboundMessages(msgs ?? []);
+        const [msgs, state] = await Promise.all([fetchInboundMessages(id), fetchOutboundState(id)]);
+        if (cancelled) return;
+        setInboundMessages(msgs ?? []);
+        setOutboundState(state);
       } catch {
         /* interceptor handles toast */
       }
@@ -136,7 +147,7 @@ export const AgvControlPage: React.FC = () => {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [id, fetchInboundMessages]);
+  }, [id, fetchInboundMessages, fetchOutboundState]);
 
   // Load toàn bộ node của các map graph sim đang nắm; chọn map trước rồi chọn node trong map đó.
   useEffect(() => {
@@ -208,6 +219,44 @@ export const AgvControlPage: React.FC = () => {
   // Xe còn order/action thì chặn sang MANUAL — backend cũng reject, đây là lớp UX báo trước.
   const hasActiveMission = !!agv?.orderId || agv?.status === 'DRIVING';
 
+  // Đưa info + lifecycle actions của AGV lên global header (giống Fleet page)
+  const setHeaderLeft = useLayoutStore((s) => s.setHeaderLeft);
+  const setHeaderRight = useLayoutStore((s) => s.setHeaderRight);
+  useEffect(() => {
+    if (!agv || !id) { setHeaderLeft(null); setHeaderRight(null); return; }
+    const batColor = (agv.batteryLevel ?? 0) > 50 ? 'var(--success-color)' : (agv.batteryLevel ?? 0) > 20 ? 'var(--warning-color)' : 'var(--error-color)';
+    setHeaderLeft(
+      <Flex align="center" gap={10}>
+        <Button type="text" size="small" icon={<ArrowLeftOutlined />} onClick={() => navigate('/fleet')} />
+        <div style={{ lineHeight: 1.2 }}>
+          <div><Text strong style={{ fontSize: 14 }}>{agv.serialNumber}</Text></div>
+          <Text type="secondary" style={{ fontSize: 11 }}>
+            {agv.manufacturer || 'N/A'} · {agv.ipAddress} · map {agv.mapId || '—'} · pos {agv.posX?.toFixed(1)}, {agv.posY?.toFixed(1)}
+          </Text>
+        </div>
+        <StatusBadge variant={agv.isConnected ? 'success' : 'error'} text={agv.isConnected ? 'ONLINE' : 'OFFLINE'} />
+        <StatusBadge status={agv.status} />
+        <StatusBadge variant={isManual ? 'warning' : 'neutral'} text={agv.operatingMode ?? 'AUTOMATIC'} dot={false} />
+        {agv.holdActions && <StatusBadge variant="warning" text="HOLD" dot={false} />}
+      </Flex>
+    );
+    setHeaderRight(
+      <Flex align="center" gap={14}>
+        <HeaderStat label="Battery" value={`${Math.round(agv.batteryLevel ?? 0)}%${agv.isCharging ? ' ⚡' : ''}`} color={batColor} />
+        <HeaderStat label="Speed" value={`${Math.hypot(agv.speedX ?? 0, agv.speedY ?? 0).toFixed(2)} m/s`} />
+        <HeaderStat label="Load" value={agv.loadCount ?? 0} />
+        <HeaderStat label="Errors" value={agv.errorCount ?? 0} color={agv.errorCount > 0 ? 'var(--error-color)' : undefined} />
+        <Button size="small" type="primary" icon={<PlayCircleOutlined />} disabled={agv.isRunning}
+          loading={loading === 'start'} onClick={() => run('start', () => startAgv(id))}>Start</Button>
+        <Button size="small" danger icon={<StopOutlined />} disabled={!agv.isRunning}
+          loading={loading === 'stop'} onClick={() => run('stop', () => stopAgv(id))}>Stop</Button>
+      </Flex>
+    );
+    return () => { setHeaderLeft(null); setHeaderRight(null); };
+    // run/startAgv/stopAgv là closure ổn định, chỉ deps dữ liệu hiển thị
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agv, id, loading, isManual, hasActiveMission, navigate, setHeaderLeft, setHeaderRight]);
+
   if (!id) return <div>No AGV ID specified</div>;
   if (!agv) {
     return (
@@ -218,8 +267,6 @@ export const AgvControlPage: React.FC = () => {
     );
   }
 
-  const batteryColor = (agv.batteryLevel ?? 0) > 50 ? 'var(--success-color)' : (agv.batteryLevel ?? 0) > 20 ? 'var(--warning-color)' : 'var(--error-color)';
-  const loadCount = agv.loadCount ?? 0;
   const planarSpeed = Math.hypot(agv.speedX ?? 0, agv.speedY ?? 0);
   const driveTagColor =
     driveDirection === 'FORWARD' ? 'green' :
@@ -234,47 +281,6 @@ export const AgvControlPage: React.FC = () => {
 
   return (
     <div>
-      <PageHeader
-        backNode={<Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/fleet')} />}
-        title={agv.serialNumber}
-        subtitle={`${agv.manufacturer || 'N/A'} · ${agv.ipAddress} · map ${agv.mapId || '—'} · pos ${agv.posX?.toFixed(1)}, ${agv.posY?.toFixed(1)}`}
-        stats={[
-          { title: 'Battery', value: `${Math.round(agv.batteryLevel ?? 0)}%${agv.isCharging ? ' ⚡' : ''}`, color: batteryColor },
-          { title: 'Speed', value: `${planarSpeed.toFixed(2)} m/s` },
-          { title: 'Load', value: loadCount },
-          { title: 'Errors', value: agv.errorCount, color: agv.errorCount > 0 ? 'var(--error-color)' : undefined },
-        ]}
-        actions={(
-          <Space size={8}>
-            <StatusBadge variant={agv.isConnected ? 'success' : 'error'} text={agv.isConnected ? 'ONLINE' : 'OFFLINE'} />
-            <StatusBadge status={agv.status} />
-            <StatusBadge
-              variant={isManual ? 'warning' : 'neutral'}
-              text={agv.operatingMode ?? 'AUTOMATIC'}
-            />
-            {agv.holdActions && <StatusBadge variant="warning" text="ACTION HOLD" dot={false} />}
-            <Button
-              type="primary"
-              icon={<PlayCircleOutlined />}
-              disabled={agv.isRunning}
-              loading={loading === 'start'}
-              onClick={() => run('start', () => startAgv(id))}
-            >
-              Start
-            </Button>
-            <Button
-              danger
-              icon={<StopOutlined />}
-              disabled={!agv.isRunning}
-              loading={loading === 'stop'}
-              onClick={() => run('stop', () => stopAgv(id))}
-            >
-              Stop
-            </Button>
-          </Space>
-        )}
-      />
-
       {agv.activeNotification && (
         <Alert
           type={agv.activeNotification.type === 'ERROR' ? 'error'
@@ -359,57 +365,35 @@ export const AgvControlPage: React.FC = () => {
             </Space>
           </SectionCard>
 
-          <SectionCard title="Lifecycle & Load" style={{ marginBottom: 16 }}>
-            <Space direction="vertical" style={{ width: '100%' }} size={12}>
-              <Space wrap>
-                <Button
-                  type="primary"
-                  icon={<PlayCircleOutlined />}
-                  disabled={agv.isRunning}
-                  loading={loading === 'start'}
-                  onClick={() => run('start', () => startAgv(id))}
-                >
-                  Start
+          <SectionCard title="Connection & Load" style={{ marginBottom: 16 }}>
+            <Space wrap>
+              <Tooltip title="Force-disconnect MQTT, auto-reconnect after 30s">
+                <Button loading={loading === 'disc'} onClick={() => run('disc', () => disconnect(id))}>
+                  Disconnect 30s
                 </Button>
-                <Button
-                  danger
-                  icon={<StopOutlined />}
-                  disabled={!agv.isRunning}
-                  loading={loading === 'stop'}
-                  onClick={() => run('stop', () => stopAgv(id))}
-                >
-                  Stop
-                </Button>
-                <Tooltip title="Force-disconnect MQTT, auto-reconnect after 30s">
-                  <Button loading={loading === 'disc'} onClick={() => run('disc', () => disconnect(id))}>
-                    Disconnect 30s
-                  </Button>
-                </Tooltip>
-              </Space>
-              <Space wrap>
-                <Button
-                  icon={<VerticalAlignTopOutlined />}
-                  loading={loading === 'lift'}
-                  onClick={() => run('lift', () => liftAgv(id))}
-                >
-                  Lift
-                </Button>
-                <Button
-                  icon={<VerticalAlignBottomOutlined />}
-                  loading={loading === 'lower'}
-                  onClick={() => run('lower', () => lowerAgv(id))}
-                >
-                  Lower
-                </Button>
-                <Button
-                  danger
-                  icon={<DeleteOutlined />}
-                  loading={loading === 'clearLoads'}
-                  onClick={() => run('clearLoads', () => clearLoads(id))}
-                >
-                  Clear Shelf
-                </Button>
-              </Space>
+              </Tooltip>
+              <Button
+                icon={<VerticalAlignTopOutlined />}
+                loading={loading === 'lift'}
+                onClick={() => run('lift', () => liftAgv(id))}
+              >
+                Lift
+              </Button>
+              <Button
+                icon={<VerticalAlignBottomOutlined />}
+                loading={loading === 'lower'}
+                onClick={() => run('lower', () => lowerAgv(id))}
+              >
+                Lower
+              </Button>
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                loading={loading === 'clearLoads'}
+                onClick={() => run('clearLoads', () => clearLoads(id))}
+              >
+                Clear Shelf
+              </Button>
             </Space>
           </SectionCard>
 
@@ -612,8 +596,7 @@ export const AgvControlPage: React.FC = () => {
             title={
               <Space>
                 <ApiOutlined />
-                ACS Inbound MQTT
-                <Badge count={inboundMessages.length} color="var(--primary-color)" />
+                MQTT Monitor
               </Space>
             }
             style={{ marginBottom: 16 }}
@@ -625,10 +608,23 @@ export const AgvControlPage: React.FC = () => {
                 onClick={() => {
                   if (!id) return;
                   void fetchInboundMessages(id).then((msgs) => setInboundMessages(msgs ?? []));
+                  void fetchOutboundState(id).then(setOutboundState);
                 }}
               />
             }
           >
+            <Tabs
+              size="small"
+              items={[
+                {
+                  key: 'inbound',
+                  label: (
+                    <span>
+                      Inbound <Badge count={inboundMessages.length} size="small" color="var(--primary-color)" />
+                    </span>
+                  ),
+                  children: (
+                    <>
             <Paragraph type="secondary" style={{ marginBottom: 12, fontSize: 12 }}>
               Raw order / instantActions payloads ACS publishes to this AGV. Polls every {INBOUND_POLL_MS / 1000}s.
             </Paragraph>
@@ -722,6 +718,43 @@ export const AgvControlPage: React.FC = () => {
                 )}
               </Flex>
             )}
+                    </>
+                  ),
+                },
+                {
+                  key: 'outbound',
+                  label: 'Outbound State',
+                  children: (
+                    <Flex vertical gap={8}>
+                      <Paragraph type="secondary" style={{ marginBottom: 4, fontSize: 12 }}>
+                        State payload this AGV publishes to{' '}
+                        <Text code style={{ fontSize: 11 }}>
+                          uagv/v2/{agv.manufacturer}/{agv.serialNumber}/state
+                        </Text>{' '}
+                        — polls every {INBOUND_POLL_MS / 1000}s.
+                      </Paragraph>
+                      {outboundState ? (
+                        <pre style={{
+                          margin: 0,
+                          maxHeight: 360,
+                          overflow: 'auto',
+                          background: '#1e1e1e',
+                          color: '#d4d4d4',
+                          padding: 12,
+                          borderRadius: 6,
+                          fontSize: 12,
+                          lineHeight: 1.45,
+                        }}>
+                          {JSON.stringify(outboundState, null, 2)}
+                        </pre>
+                      ) : (
+                        <Empty description="No state published yet" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                      )}
+                    </Flex>
+                  ),
+                },
+              ]}
+            />
           </SectionCard>
         </Col>
       </Row>

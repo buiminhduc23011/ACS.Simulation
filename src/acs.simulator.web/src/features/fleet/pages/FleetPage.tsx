@@ -169,27 +169,21 @@ export const FleetPage: React.FC = () => {
 
   const columns: ColumnsType<ISimAgv> = [
     {
-      title: 'AGV', key: 'agv', width: 230,
+      title: 'AGV', key: 'agv', width: 140,
       sorter: (a, b) => a.id.localeCompare(b.id),
       defaultSortOrder: 'ascend',
       render: (_, rec) => (
         <Space size={10} align="center">
           <Flex align="center" justify="center" style={{
-            width: 32, height: 32, borderRadius: 8, flexShrink: 0, fontSize: 15,
-            background: rec.isConnected ? 'var(--primary-bg)' : 'var(--neutral-bg)',
-            color: rec.isConnected ? 'var(--primary-color)' : 'var(--neutral-color)',
+            width: 30, height: 30, borderRadius: 6, flexShrink: 0, fontSize: 14,
+            background: 'var(--neutral-bg)', color: 'var(--text-secondary)',
           }}>
             <RobotOutlined />
           </Flex>
-          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-            <Button type="link" onClick={() => navigate(`/fleet/${rec.id}/control`)}
-              style={{ padding: 0, height: 'auto', fontWeight: 600, fontSize: 13 }}>
-              {rec.serialNumber}
-            </Button>
-            <Text style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
-              {rec.manufacturer || 'N/A'} · {rec.ipAddress}
-            </Text>
-          </div>
+          <Button type="link" onClick={() => navigate(`/fleet/${rec.id}/control`)}
+            style={{ padding: 0, height: 'auto', fontWeight: 600, fontSize: 13, color: 'var(--text-main)' }}>
+            {rec.serialNumber}
+          </Button>
         </Space>
       ),
     },
@@ -220,14 +214,12 @@ export const FleetPage: React.FC = () => {
       ),
     },
     {
-      title: 'Position', key: 'position', width: 170,
+      title: 'Position', key: 'position', width: 210,
       render: (_, rec) => (
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <Text style={{ fontSize: 12, fontFamily: 'var(--font-mono, monospace)', whiteSpace: 'nowrap' }}>
-            {rec.posX?.toFixed(2)}, {rec.posY?.toFixed(2)} · θ {rec.posTheta?.toFixed(2)}
-          </Text>
-          <Text style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{rec.mapId || '—'}</Text>
-        </div>
+        <Text style={{ fontSize: 12, fontFamily: 'var(--font-mono, monospace)', whiteSpace: 'nowrap' }}>
+          {rec.posX?.toFixed(2)}, {rec.posY?.toFixed(2)} · θ {rec.posTheta?.toFixed(2)}
+          <Text style={{ fontSize: 11, color: 'var(--text-tertiary)' }}> · {rec.mapId || '—'}</Text>
+        </Text>
       ),
     },
     {
