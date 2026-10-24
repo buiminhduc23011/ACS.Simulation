@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Button, Space, Tag, Slider, InputNumber, Form, Input, Select,
   Row, Col, Typography, Alert, Descriptions, Badge, Switch,
-  Empty, Tooltip, Flex, Tabs, Modal,
+  Empty, Tooltip, Flex, Tabs, Modal, Divider,
 } from 'antd';
 import {
   ArrowLeftOutlined, PlayCircleOutlined, StopOutlined,
@@ -288,117 +288,125 @@ export const AgvControlPage: React.FC = () => {
       <Row gutter={[16, 16]}>
         {/* Left: status + lifecycle + operating mode */}
         <Col xs={24} lg={8}>
-          <SectionCard title="Operating Mode" style={{ marginBottom: 16 }}>
-            <Space direction="vertical" style={{ width: '100%' }} size="middle">
-              <Flex align="center" justify="space-between">
-                <StatusBadge
-                  variant={isManual ? 'warning' : 'info'}
-                  text={agv.operatingMode ?? 'AUTOMATIC'}
-                />
-                <Space>
-                  <Text type="secondary" style={{ fontSize: 12 }}>AUTO</Text>
+          <SectionCard title="Vehicle Control" style={{ marginBottom: 16 }}>
+            <Flex vertical gap={10}>
+              {/* Mode + mission state */}
+              <Flex align="center" justify="space-between" gap={8}>
+                <Flex align="center" gap={8}>
+                  <Text className="stat-title" style={{ width: 52 }}>Mode</Text>
+                  <StatusBadge variant={isManual ? 'warning' : 'info'} text={agv.operatingMode ?? 'AUTOMATIC'} />
+                </Flex>
+                <Space size={6}>
+                  <Text type="secondary" style={{ fontSize: 11 }}>AUTO</Text>
                   <Switch
+                    size="small"
                     checked={isManual}
                     loading={loading === 'mode'}
                     onChange={(checked) =>
                       run('mode', () => setOperatingMode(id, checked ? 'MANUAL' : 'AUTOMATIC'))
                     }
                   />
-                  <Text type="secondary" style={{ fontSize: 12 }}>MANUAL</Text>
+                  <Text type="secondary" style={{ fontSize: 11 }}>MANUAL</Text>
                 </Space>
               </Flex>
-              <Descriptions column={1} size="small" style={{ marginBottom: 0 }}>
-                <Descriptions.Item label="OrderId">
-                  <Space>
-                    <Text code>{orderId}</Text>
-                    {orderId !== '(none)' && (
-                      <Button
-                        size="small"
-                        type="text"
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => run('clear-order', () => clearOrderState(id))}
-                        loading={loading === 'clear-order'}
-                        title="Clear Order"
-                      />
-                    )}
-                  </Space>
-                </Descriptions.Item>
-                <Descriptions.Item label="OrderUpdateId">
-                  {agv.orderUpdateId ?? 0}
-                </Descriptions.Item>
-              </Descriptions>
-              <Flex align="center" justify="space-between">
-                <div>
-                  <Text strong style={{ fontSize: 13 }}>Action hold</Text>
-                  <div><Text type="secondary" style={{ fontSize: 12 }}>Keep PICK / DROP / WAIT at WAITING.</Text></div>
-                </div>
+              <Flex align="center" gap={8} wrap>
+                <Text className="stat-title" style={{ width: 52 }}>Order</Text>
+                <Text code style={{ fontSize: 11 }}>{orderId}</Text>
+                {orderId !== '(none)' && (
+                  <Button
+                    size="small"
+                    type="text"
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={() => run('clear-order', () => clearOrderState(id))}
+                    loading={loading === 'clear-order'}
+                    title="Clear Order"
+                  />
+                )}
+                <Text type="secondary" style={{ fontSize: 11 }}>upd {agv.orderUpdateId ?? 0}</Text>
+              </Flex>
+              <Flex align="center" justify="space-between" gap={8}>
+                <Flex align="center" gap={8}>
+                  <Text className="stat-title" style={{ width: 52 }}>Hold</Text>
+                  <Text type="secondary" style={{ fontSize: 11 }}>Keep PICK / DROP / WAIT at WAITING</Text>
+                </Flex>
                 <Switch
+                  size="small"
                   checked={agv.holdActions === true}
                   loading={loading === 'action-hold'}
                   onChange={(checked) => run('action-hold', () => setActionHold(id, checked))}
                 />
               </Flex>
-            </Space>
-          </SectionCard>
 
-          <SectionCard title="Connection & Load" style={{ marginBottom: 16 }}>
-            <Space wrap>
-              <Tooltip title="Force-disconnect MQTT, auto-reconnect after 30s">
-                <Button loading={loading === 'disc'} onClick={() => run('disc', () => disconnect(id))}>
-                  Disconnect 30s
-                </Button>
-              </Tooltip>
-              <Button
-                icon={<VerticalAlignTopOutlined />}
-                loading={loading === 'lift'}
-                onClick={() => run('lift', () => liftAgv(id))}
-              >
-                Lift
-              </Button>
-              <Button
-                icon={<VerticalAlignBottomOutlined />}
-                loading={loading === 'lower'}
-                onClick={() => run('lower', () => lowerAgv(id))}
-              >
-                Lower
-              </Button>
-              <Button
-                danger
-                icon={<DeleteOutlined />}
-                loading={loading === 'clearLoads'}
-                onClick={() => run('clearLoads', () => clearLoads(id))}
-              >
-                Clear Shelf
-              </Button>
-            </Space>
-          </SectionCard>
+              <Divider style={{ margin: '4px 0' }} />
 
-          {/* Battery + Speed */}
-          <SectionCard title="Battery" style={{ marginBottom: 16 }}>
-            <Form layout="inline" initialValues={{ batteryLevel: agv.batteryLevel, charging: agv.isCharging }}
-              onFinish={(v) => run('bat', () => setBattery(id, v.batteryLevel, v.charging))}>
-              <Form.Item name="batteryLevel" label="Level %" style={{ marginBottom: 0 }}>
-                <InputNumber min={0} max={100} style={{ width: 80 }} />
-              </Form.Item>
-              <Form.Item name="charging" label="Charging" style={{ marginBottom: 0 }}>
-                <Select style={{ width: 80 }} options={[
-                  { label: 'Yes', value: true },
-                  { label: 'No', value: false },
-                ]} />
-              </Form.Item>
-              <Button htmlType="submit" type="primary" loading={loading === 'bat'}>Set</Button>
-            </Form>
-          </SectionCard>
+              {/* Connection + load */}
+              <Flex align="center" gap={8} wrap>
+                <Text className="stat-title" style={{ width: 52 }}>Load</Text>
+                <Space wrap size={6}>
+                  <Tooltip title="Force-disconnect MQTT, auto-reconnect after 30s">
+                    <Button size="small" loading={loading === 'disc'} onClick={() => run('disc', () => disconnect(id))}>
+                      Disconnect 30s
+                    </Button>
+                  </Tooltip>
+                  <Button
+                    size="small"
+                    icon={<VerticalAlignTopOutlined />}
+                    loading={loading === 'lift'}
+                    onClick={() => run('lift', () => liftAgv(id))}
+                  >
+                    Lift
+                  </Button>
+                  <Button
+                    size="small"
+                    icon={<VerticalAlignBottomOutlined />}
+                    loading={loading === 'lower'}
+                    onClick={() => run('lower', () => lowerAgv(id))}
+                  >
+                    Lower
+                  </Button>
+                  <Button
+                    size="small"
+                    danger
+                    icon={<DeleteOutlined />}
+                    loading={loading === 'clearLoads'}
+                    onClick={() => run('clearLoads', () => clearLoads(id))}
+                  >
+                    Clear Shelf
+                  </Button>
+                </Space>
+              </Flex>
 
-          <SectionCard title="Speed" style={{ marginBottom: 16 }}>
-            <Form layout="inline" initialValues={{ speed: planarSpeed }}
-              onFinish={(v) => run('spd', () => setSpeed(id, v.speed))}>
-              <Form.Item name="speed" label="Speed m/s" style={{ marginBottom: 0 }}>
-                <InputNumber min={0} max={10} step={0.1} style={{ width: 80 }} />
-              </Form.Item>
-              <Button htmlType="submit" type="primary" loading={loading === 'spd'}>Set</Button>
-            </Form>
+              <Divider style={{ margin: '4px 0' }} />
+
+              {/* Battery + speed */}
+              <Flex align="center" gap={8} wrap>
+                <Text className="stat-title" style={{ width: 52 }}>Battery</Text>
+                <Form layout="inline" size="small" initialValues={{ batteryLevel: agv.batteryLevel, charging: agv.isCharging }}
+                  onFinish={(v) => run('bat', () => setBattery(id, v.batteryLevel, v.charging))}>
+                  <Form.Item name="batteryLevel" style={{ marginBottom: 0 }}>
+                    <InputNumber min={0} max={100} style={{ width: 110 }} addonAfter="%" />
+                  </Form.Item>
+                  <Form.Item name="charging" style={{ marginBottom: 0 }}>
+                    <Select size="small" style={{ width: 116 }} options={[
+                      { label: '⚡ Charging', value: true },
+                      { label: 'Not charging', value: false },
+                    ]} />
+                  </Form.Item>
+                  <Button htmlType="submit" size="small" type="primary" loading={loading === 'bat'}>Set</Button>
+                </Form>
+              </Flex>
+              <Flex align="center" gap={8} wrap>
+                <Text className="stat-title" style={{ width: 52 }}>Speed</Text>
+                <Form layout="inline" size="small" initialValues={{ speed: planarSpeed }}
+                  onFinish={(v) => run('spd', () => setSpeed(id, v.speed))}>
+                  <Form.Item name="speed" style={{ marginBottom: 0 }}>
+                    <InputNumber min={0} max={10} step={0.1} style={{ width: 110 }} addonAfter="m/s" />
+                  </Form.Item>
+                  <Button htmlType="submit" size="small" type="primary" loading={loading === 'spd'}>Set</Button>
+                </Form>
+              </Flex>
+            </Flex>
           </SectionCard>
         </Col>
 
