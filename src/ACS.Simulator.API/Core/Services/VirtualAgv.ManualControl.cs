@@ -143,14 +143,14 @@ public partial class VirtualAgv
 
     public void SetSpeed(double speed)         => _commandChannel.Writer.TryWrite(new SetSpeedCmd(speed));
     public void SetBatteryLevel(double level)  => _commandChannel.Writer.TryWrite(new SetBatteryCmd(level));
-    /// <summary>Đổi operatingMode qua event loop; false = bị từ chối (đang có order/action chưa xong).</summary>
+    /// <summary>Đổi operatingMode qua event loop; false = loop không xử lý kịp (timeout/channel đóng).</summary>
     public async Task<bool> SetOperatingModeAsync(string mode)
     {
         var normalized = NormalizeOperatingMode(mode);
 
-        // Check "đang bận" ngoài loop: held action block loop nên không thể chờ command để biết reject.
-        if (!string.Equals(normalized, "AUTOMATIC", StringComparison.OrdinalIgnoreCase) && HasActiveMissionOrActions())
-            return false;
+        // Cùng mode — no-op idempotent.
+        if (string.Equals(_currentState.OperatingMode, normalized, StringComparison.OrdinalIgnoreCase))
+            return true;
 
         // AGV stop: loop không chạy — ghi trực tiếp để preset mode cho lần start sau.
         if (!_isRunning)
@@ -158,6 +158,11 @@ public partial class VirtualAgv
             _currentState.OperatingMode = normalized;
             return true;
         }
+
+        // Takeover khỏi AUTOMATIC: hủy action đang chạy để event loop thoát block
+        // và xử lý lệnh mode ngay, thay vì xếp hàng sau held action.
+        if (!string.Equals(normalized, "AUTOMATIC", StringComparison.OrdinalIgnoreCase))
+            _actionCts?.Cancel();
 
         var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         if (!_commandChannel.Writer.TryWrite(new SetOperatingModeCmd(mode, completion)))

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Button, Space, Tag, Slider, InputNumber, Form, Input, Select,
   Row, Col, Typography, Alert, Descriptions, Badge, Switch,
-  Collapse, Empty, Tooltip, Flex, Tabs,
+  Empty, Tooltip, Flex, Tabs, Modal,
 } from 'antd';
 import {
   ArrowLeftOutlined, PlayCircleOutlined, StopOutlined,
@@ -105,7 +105,7 @@ export const AgvControlPage: React.FC = () => {
   const [errForm] = Form.useForm();
   const [inboundMessages, setInboundMessages] = useState<IInboundMqttMessage[]>([]);
   const [outboundState, setOutboundState] = useState<Record<string, unknown> | null>(null);
-  const [selectedMessageIndex, setSelectedMessageIndex] = useState(0);
+  const [modalMessage, setModalMessage] = useState<IInboundMqttMessage | null>(null);
   const [mapNodes, setMapNodes] = useState<{ mapId: string; mapName: string; nodes: ISimMapNode[] }[]>([]);
   const [mapNodesFailed, setMapNodesFailed] = useState(false);
   const [teleportMapId, setTeleportMapId] = useState<string | undefined>(undefined);
@@ -216,8 +216,6 @@ export const AgvControlPage: React.FC = () => {
   }, [id]);
 
   const isManual = agv ? (agv.operatingMode ?? 'AUTOMATIC').toUpperCase() === 'MANUAL' : false;
-  // Xe còn order/action thì chặn sang MANUAL — backend cũng reject, đây là lớp UX báo trước.
-  const hasActiveMission = !!agv?.orderId || agv?.status === 'DRIVING';
 
   // Đưa info + lifecycle actions của AGV lên global header (giống Fleet page)
   const setHeaderLeft = useLayoutStore((s) => s.setHeaderLeft);
@@ -225,19 +223,26 @@ export const AgvControlPage: React.FC = () => {
   useEffect(() => {
     if (!agv || !id) { setHeaderLeft(null); setHeaderRight(null); return; }
     const batColor = (agv.batteryLevel ?? 0) > 50 ? 'var(--success-color)' : (agv.batteryLevel ?? 0) > 20 ? 'var(--warning-color)' : 'var(--error-color)';
+    const notif = agv.activeNotification;
+    const notifColor = notif?.type === 'ERROR' ? 'var(--error-color)' : notif?.type === 'WARNING' ? 'var(--warning-color)' : 'var(--info-color)';
     setHeaderLeft(
       <Flex align="center" gap={10}>
         <Button type="text" size="small" icon={<ArrowLeftOutlined />} onClick={() => navigate('/fleet')} />
-        <div style={{ lineHeight: 1.2 }}>
-          <div><Text strong style={{ fontSize: 14 }}>{agv.serialNumber}</Text></div>
-          <Text type="secondary" style={{ fontSize: 11 }}>
-            {agv.manufacturer || 'N/A'} · {agv.ipAddress} · map {agv.mapId || '—'} · pos {agv.posX?.toFixed(1)}, {agv.posY?.toFixed(1)}
-          </Text>
-        </div>
+        <Text strong style={{ fontSize: 14 }}>{agv.serialNumber}</Text>
+        <Text type="secondary" style={{ fontSize: 11, whiteSpace: 'nowrap' }}>
+          {agv.manufacturer || 'N/A'} · {agv.ipAddress} · map {agv.mapId || '—'} · pos {agv.posX?.toFixed(1)}, {agv.posY?.toFixed(1)}
+        </Text>
         <StatusBadge variant={agv.isConnected ? 'success' : 'error'} text={agv.isConnected ? 'ONLINE' : 'OFFLINE'} />
         <StatusBadge status={agv.status} />
         <StatusBadge variant={isManual ? 'warning' : 'neutral'} text={agv.operatingMode ?? 'AUTOMATIC'} dot={false} />
         {agv.holdActions && <StatusBadge variant="warning" text="HOLD" dot={false} />}
+        {notif && (
+          <Tooltip title={`SCREEN ${notif.type}: ${notif.message}`}>
+            <Text ellipsis style={{ fontSize: 12, fontWeight: 600, color: notifColor, maxWidth: 280 }}>
+              ⚠ {notif.message}
+            </Text>
+          </Tooltip>
+        )}
       </Flex>
     );
     setHeaderRight(
@@ -255,7 +260,7 @@ export const AgvControlPage: React.FC = () => {
     return () => { setHeaderLeft(null); setHeaderRight(null); };
     // run/startAgv/stopAgv là closure ổn định, chỉ deps dữ liệu hiển thị
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agv, id, loading, isManual, hasActiveMission, navigate, setHeaderLeft, setHeaderRight]);
+  }, [agv, id, loading, isManual, navigate, setHeaderLeft, setHeaderRight]);
 
   if (!id) return <div>No AGV ID specified</div>;
   if (!agv) {
@@ -274,33 +279,12 @@ export const AgvControlPage: React.FC = () => {
     driveDirection === 'TURNING' ? 'blue' :
     'default';
   const orderId = agv.orderId || '(none)';
-  const selectedMessage = inboundMessages[selectedMessageIndex] ?? inboundMessages[0];
-  const selectedSafetyActions = selectedMessage?.topicType === 'order'
-    ? extractDebugSafetyActions(selectedMessage.payload)
+  const modalSafetyActions = modalMessage?.topicType === 'order'
+    ? extractDebugSafetyActions(modalMessage.payload)
     : [];
 
   return (
     <div>
-      {agv.activeNotification && (
-        <Alert
-          type={agv.activeNotification.type === 'ERROR' ? 'error'
-            : agv.activeNotification.type === 'WARNING' ? 'warning'
-            : 'info'}
-          showIcon
-          style={{ marginBottom: 16 }}
-          message={
-            <Space>
-              <Tag color={agv.activeNotification.type === 'ERROR' ? 'red'
-                : agv.activeNotification.type === 'WARNING' ? 'orange'
-                : 'blue'}>
-                SCREEN: {agv.activeNotification.type}
-              </Tag>
-              <span>{agv.activeNotification.message}</span>
-            </Space>
-          }
-        />
-      )}
-
       <Row gutter={[16, 16]}>
         {/* Left: status + lifecycle + operating mode */}
         <Col xs={24} lg={8}>
@@ -313,20 +297,13 @@ export const AgvControlPage: React.FC = () => {
                 />
                 <Space>
                   <Text type="secondary" style={{ fontSize: 12 }}>AUTO</Text>
-                  <Tooltip
-                    title={!isManual && hasActiveMission
-                      ? 'AGV has an active order/action — finish or cancel it before switching to MANUAL'
-                      : undefined}
-                  >
-                    <Switch
-                      checked={isManual}
-                      loading={loading === 'mode'}
-                      disabled={!isManual && hasActiveMission}
-                      onChange={(checked) =>
-                        run('mode', () => setOperatingMode(id, checked ? 'MANUAL' : 'AUTOMATIC'))
-                      }
-                    />
-                  </Tooltip>
+                  <Switch
+                    checked={isManual}
+                    loading={loading === 'mode'}
+                    onChange={(checked) =>
+                      run('mode', () => setOperatingMode(id, checked ? 'MANUAL' : 'AUTOMATIC'))
+                    }
+                  />
                   <Text type="secondary" style={{ fontSize: 12 }}>MANUAL</Text>
                 </Space>
               </Flex>
@@ -626,97 +603,45 @@ export const AgvControlPage: React.FC = () => {
                   children: (
                     <>
             <Paragraph type="secondary" style={{ marginBottom: 12, fontSize: 12 }}>
-              Raw order / instantActions payloads ACS publishes to this AGV. Polls every {INBOUND_POLL_MS / 1000}s.
+              Raw order / instantActions payloads ACS publishes to this AGV. Polls every {INBOUND_POLL_MS / 1000}s — click a message to view its JSON payload.
             </Paragraph>
             {inboundMessages.length === 0 ? (
               <Empty description="No order or instantActions received yet" image={Empty.PRESENTED_IMAGE_SIMPLE} />
             ) : (
-              <Flex vertical gap={12}>
-                <div style={{ maxHeight: 240, overflowY: 'auto' }}>
-                  {inboundMessages.map((msg, index) => (
-                    <div
-                      key={`${msg.timestamp}-${index}`}
-                      onClick={() => setSelectedMessageIndex(index)}
-                      style={{
-                        padding: '8px 10px',
-                        marginBottom: 6,
-                        borderRadius: 6,
-                        cursor: 'pointer',
-                        border: index === selectedMessageIndex
-                          ? '1px solid var(--primary-color)'
-                          : '1px solid var(--border-color)',
-                        background: index === selectedMessageIndex ? 'var(--primary-bg)' : 'transparent',
-                      }}
-                    >
-                      <Space wrap size={4}>
-                        <StatusBadge
-                          variant={msg.topicType === 'order' ? 'info' : msg.topicType === 'notifications' ? 'warning' : 'neutral'}
-                          text={msg.topicType}
-                          dot={false}
-                        />
-                        <StatusBadge
-                          variant={msg.accepted ? 'success' : 'error'}
-                          text={msg.accepted ? 'ACCEPTED' : 'IGNORED'}
-                          dot={false}
-                        />
-                        <Text type="secondary" style={{ fontSize: 11 }}>{formatTime(msg.timestamp)}</Text>
-                      </Space>
-                      {msg.note && (
-                        <div style={{ marginTop: 4 }}>
-                          <Text style={{ fontSize: 12 }}>{msg.note}</Text>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                {selectedMessage && (
-                  <div>
-                    <Descriptions size="small" column={1} style={{ marginBottom: 8 }}>
-                      <Descriptions.Item label="Topic">
-                        <Text code style={{ fontSize: 11 }}>{selectedMessage.topic}</Text>
-                      </Descriptions.Item>
-                      {selectedMessage.note && (
-                        <Descriptions.Item label="Note">{selectedMessage.note}</Descriptions.Item>
-                      )}
-                      {selectedSafetyActions.length > 0 && (
-                        <Descriptions.Item label="Safety actions">
-                          <Space wrap>
-                            {selectedSafetyActions.map((action, index) => (
-                              <Tag color="gold" key={`${action.nodeId}-${action.label}-${index}`}>
-                                {action.label} @ {action.nodeId}
-                              </Tag>
-                            ))}
-                          </Space>
-                        </Descriptions.Item>
-                      )}
-                      <Descriptions.Item label="Time">{selectedMessage.timestamp}</Descriptions.Item>
-                    </Descriptions>
-                    <Collapse
-                      size="small"
-                      defaultActiveKey={['payload']}
-                      items={[{
-                        key: 'payload',
-                        label: 'JSON Payload',
-                        children: (
-                          <pre style={{
-                            margin: 0,
-                            maxHeight: 250,
-                            overflow: 'auto',
-                            background: '#1e1e1e',
-                            color: '#d4d4d4',
-                            padding: 12,
-                            borderRadius: 6,
-                            fontSize: 12,
-                            lineHeight: 1.45,
-                          }}>
-                            {formatJsonPayload(selectedMessage.payload)}
-                          </pre>
-                        ),
-                      }]}
-                    />
+              <div style={{ maxHeight: 360, overflowY: 'auto' }}>
+                {inboundMessages.map((msg, index) => (
+                  <div
+                    key={`${msg.timestamp}-${index}`}
+                    onClick={() => setModalMessage(msg)}
+                    style={{
+                      padding: '8px 10px',
+                      marginBottom: 6,
+                      borderRadius: 6,
+                      cursor: 'pointer',
+                      border: '1px solid var(--border-color)',
+                    }}
+                  >
+                    <Space wrap size={4}>
+                      <StatusBadge
+                        variant={msg.topicType === 'order' ? 'info' : msg.topicType === 'notifications' ? 'warning' : 'neutral'}
+                        text={msg.topicType}
+                        dot={false}
+                      />
+                      <StatusBadge
+                        variant={msg.accepted ? 'success' : 'error'}
+                        text={msg.accepted ? 'ACCEPTED' : 'IGNORED'}
+                        dot={false}
+                      />
+                      <Text type="secondary" style={{ fontSize: 11 }}>{formatTime(msg.timestamp)}</Text>
+                    </Space>
+                    {msg.note && (
+                      <div style={{ marginTop: 4 }}>
+                        <Text style={{ fontSize: 12 }}>{msg.note}</Text>
+                      </div>
+                    )}
                   </div>
-                )}
-              </Flex>
+                ))}
+              </div>
             )}
                     </>
                   ),
@@ -755,6 +680,67 @@ export const AgvControlPage: React.FC = () => {
                 },
               ]}
             />
+            <Modal
+              open={modalMessage !== null}
+              onCancel={() => setModalMessage(null)}
+              footer={null}
+              width={720}
+              title={
+                modalMessage && (
+                  <Space size={6}>
+                    <StatusBadge
+                      variant={modalMessage.topicType === 'order' ? 'info' : modalMessage.topicType === 'notifications' ? 'warning' : 'neutral'}
+                      text={modalMessage.topicType}
+                      dot={false}
+                    />
+                    <StatusBadge
+                      variant={modalMessage.accepted ? 'success' : 'error'}
+                      text={modalMessage.accepted ? 'ACCEPTED' : 'IGNORED'}
+                      dot={false}
+                    />
+                    <Text type="secondary" style={{ fontSize: 12 }}>{formatTime(modalMessage.timestamp)}</Text>
+                  </Space>
+                )
+              }
+            >
+              {modalMessage && (
+                <>
+                  <Descriptions size="small" column={1} style={{ marginBottom: 10 }}>
+                    <Descriptions.Item label="Topic">
+                      <Text code style={{ fontSize: 11 }}>{modalMessage.topic}</Text>
+                    </Descriptions.Item>
+                    {modalMessage.note && (
+                      <Descriptions.Item label="Note">{modalMessage.note}</Descriptions.Item>
+                    )}
+                    {modalSafetyActions.length > 0 && (
+                      <Descriptions.Item label="Safety actions">
+                        <Space wrap>
+                          {modalSafetyActions.map((action, index) => (
+                            <Tag color="gold" key={`${action.nodeId}-${action.label}-${index}`}>
+                              {action.label} @ {action.nodeId}
+                            </Tag>
+                          ))}
+                        </Space>
+                      </Descriptions.Item>
+                    )}
+                    <Descriptions.Item label="Time">{modalMessage.timestamp}</Descriptions.Item>
+                  </Descriptions>
+                  <pre style={{
+                    margin: 0,
+                    maxHeight: '55vh',
+                    overflow: 'auto',
+                    background: '#1e1e1e',
+                    color: '#d4d4d4',
+                    padding: 12,
+                    borderRadius: 6,
+                    fontSize: 12,
+                    lineHeight: 1.45,
+                  }}>
+                    {formatJsonPayload(modalMessage.payload)}
+                  </pre>
+                </>
+              )}
+            </Modal>
           </SectionCard>
         </Col>
       </Row>

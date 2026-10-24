@@ -984,14 +984,6 @@ public partial class VirtualAgv
         if (string.Equals(_currentState.OperatingMode, normalized, StringComparison.OrdinalIgnoreCase))
             return true;
 
-        // Xe còn order/action chưa xong thì chặn đổi mode — MANUAL sẽ xoá mission giữa chừng.
-        if (!string.Equals(normalized, "AUTOMATIC", StringComparison.OrdinalIgnoreCase) && HasActiveMissionOrActions())
-        {
-            _logger.LogWarning("AGV {SerialNumber} rejected mode {Mode}: order/action still in progress",
-                _config.SerialNumber, normalized);
-            return false;
-        }
-
         _currentState.OperatingMode = normalized;
 
         if (string.Equals(normalized, "MANUAL", StringComparison.OrdinalIgnoreCase))
@@ -1012,15 +1004,6 @@ public partial class VirtualAgv
 
         await PublishStateAsync(true);
         return true;
-    }
-
-    // Xe "đang bận" = còn order hoặc action chưa kết thúc (WAITING/INITIALIZING/RUNNING/PAUSED).
-    private bool HasActiveMissionOrActions()
-    {
-        if (_currentOrder != null) return true;
-        // Đọc ngoài event loop chịu race khi list đang mutate — lỗi thì coi như bận cho an toàn.
-        try { return _currentState.ActionStates.Any(a => a.ActionStatus is "WAITING" or "INITIALIZING" or "RUNNING" or "PAUSED"); }
-        catch (InvalidOperationException) { return true; }
     }
 
     private async Task ClearOrderStateInternalAsync()
