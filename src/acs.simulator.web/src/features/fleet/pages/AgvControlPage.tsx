@@ -512,20 +512,22 @@ export const AgvControlPage: React.FC = () => {
         {/* Right: errors + MQTT debug */}
         <Col xs={24} lg={8}>
           <SectionCard title="Error Injection" style={{ marginBottom: 16 }}>
-            <Space wrap style={{ marginBottom: 12 }}>
-              {ERROR_TEMPLATES.map((t) => (
-                <Button
-                  key={t.name}
-                  size="small"
-                  icon={<WarningOutlined />}
-                  style={{ borderColor: t.color, color: t.color }}
-                  loading={loading === `tpl_${t.name}`}
-                  onClick={() => run(`tpl_${t.name}`, () => injectTemplate(id, t.name))}
-                >
-                  {t.label}
-                </Button>
-              ))}
-            </Space>
+            <Select
+              placeholder="Inject template error..."
+              style={{ width: '100%', marginBottom: 12 }}
+              loading={loading === 'tpl'}
+              value={null as unknown as string}
+              onChange={(v) => run('tpl', () => injectTemplate(id, v))}
+              options={ERROR_TEMPLATES.map((t) => ({
+                value: t.name,
+                label: (
+                  <Space size={6}>
+                    <WarningOutlined style={{ color: t.color }} />
+                    {t.label}
+                  </Space>
+                ),
+              }))}
+            />
             <Form form={errForm} layout="vertical" size="small"
               onFinish={(v) => run('err', () => addError(id, v.errorType, v.errorDescription, v.errorLevel))}>
               <Flex gap={8}>
