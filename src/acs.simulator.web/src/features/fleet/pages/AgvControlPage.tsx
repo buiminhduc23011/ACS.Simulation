@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Button, Space, Tag, Slider, InputNumber, Form, Input, Select,
-  Row, Col, Typography, Progress, Alert, Descriptions, Badge, Switch,
+  Row, Col, Typography, Alert, Descriptions, Badge, Switch,
   Collapse, Empty, Tooltip, Flex,
 } from 'antd';
 import {
@@ -220,7 +220,6 @@ export const AgvControlPage: React.FC = () => {
 
   const batteryColor = (agv.batteryLevel ?? 0) > 50 ? 'var(--success-color)' : (agv.batteryLevel ?? 0) > 20 ? 'var(--warning-color)' : 'var(--error-color)';
   const loadCount = agv.loadCount ?? 0;
-  const hasLoad = loadCount > 0;
   const planarSpeed = Math.hypot(agv.speedX ?? 0, agv.speedY ?? 0);
   const driveTagColor =
     driveDirection === 'FORWARD' ? 'green' :
@@ -238,15 +237,16 @@ export const AgvControlPage: React.FC = () => {
       <PageHeader
         backNode={<Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/fleet')} />}
         title={agv.serialNumber}
-        subtitle={`${agv.manufacturer || 'N/A'} · ${agv.mapId || 'no map'} · ${agv.ipAddress}`}
+        subtitle={`${agv.manufacturer || 'N/A'} · ${agv.ipAddress} · map ${agv.mapId || '—'} · pos ${agv.posX?.toFixed(1)}, ${agv.posY?.toFixed(1)}`}
         stats={[
-          { title: 'Battery', value: `${Math.round(agv.batteryLevel ?? 0)}%`, color: batteryColor },
+          { title: 'Battery', value: `${Math.round(agv.batteryLevel ?? 0)}%${agv.isCharging ? ' ⚡' : ''}`, color: batteryColor },
           { title: 'Speed', value: `${planarSpeed.toFixed(2)} m/s` },
           { title: 'Load', value: loadCount },
           { title: 'Errors', value: agv.errorCount, color: agv.errorCount > 0 ? 'var(--error-color)' : undefined },
         ]}
         actions={(
           <Space size={8}>
+            <StatusBadge variant={agv.isConnected ? 'success' : 'error'} text={agv.isConnected ? 'ONLINE' : 'OFFLINE'} />
             <StatusBadge status={agv.status} />
             <StatusBadge
               variant={isManual ? 'warning' : 'neutral'}
@@ -298,37 +298,6 @@ export const AgvControlPage: React.FC = () => {
       <Row gutter={[16, 16]}>
         {/* Left: status + lifecycle + operating mode */}
         <Col xs={24} lg={8}>
-          <SectionCard title="AGV Status" style={{ marginBottom: 16 }}>
-            <Descriptions column={1} size="small">
-              <Descriptions.Item label="Status"><StatusBadge status={agv.status} /></Descriptions.Item>
-              <Descriptions.Item label="Connected">
-                <StatusBadge variant={agv.isConnected ? 'success' : 'error'} text={agv.isConnected ? 'ONLINE' : 'OFFLINE'} />
-              </Descriptions.Item>
-              <Descriptions.Item label="Running">
-                <StatusBadge variant={agv.isRunning ? 'info' : 'neutral'} text={agv.isRunning ? 'RUNNING' : 'STOPPED'} />
-              </Descriptions.Item>
-              <Descriptions.Item label="Position">
-                <Text style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: 12 }}>
-                  {agv.posX?.toFixed(2)}, {agv.posY?.toFixed(2)} · θ {agv.posTheta?.toFixed(2)}
-                </Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Battery">
-                <Progress percent={Math.round(agv.batteryLevel)} size="small" strokeColor={batteryColor} style={{ width: 140, margin: 0 }} />
-              </Descriptions.Item>
-              <Descriptions.Item label="Charging">
-                <StatusBadge variant={agv.isCharging ? 'info' : 'neutral'} text={agv.isCharging ? 'CHARGING' : 'NO'} dot={false} />
-              </Descriptions.Item>
-              <Descriptions.Item label="Velocity">
-                <Text style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: 12 }}>
-                  {(agv.speedX ?? 0).toFixed(2)}, {(agv.speedY ?? 0).toFixed(2)} m/s
-                </Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Load">
-                <StatusBadge variant={hasLoad ? 'warning' : 'neutral'} text={hasLoad ? `LOADED (${loadCount})` : 'EMPTY'} dot={false} />
-              </Descriptions.Item>
-            </Descriptions>
-          </SectionCard>
-
           <SectionCard title="Operating Mode" style={{ marginBottom: 16 }}>
             <Space direction="vertical" style={{ width: '100%' }} size="middle">
               <Flex align="center" justify="space-between">

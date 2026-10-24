@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button, Space, Popconfirm, Typography, Tooltip, Table, Input, Select,
   Switch, Dropdown, Modal, Progress, Flex,
@@ -6,15 +6,15 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import {
   PlusOutlined, EditOutlined, ControlOutlined, PlayCircleOutlined, StopOutlined,
-  DeleteOutlined, RobotOutlined, SearchOutlined, FilterOutlined, MoreOutlined,
+  DeleteOutlined, RobotOutlined, SearchOutlined, MoreOutlined,
   ImportOutlined, ExportOutlined, AppstoreAddOutlined, ClearOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 import { useFleetStore } from '../../../store/fleetStore';
+import { useLayoutStore } from '../../../store/layoutStore';
 import { useFleetApi } from '../hooks/useFleetApi';
 import type { ISimAgv } from '../../../types/agv';
-import { PageHeader } from '../../../shared/ui/PageHeader';
 import { SectionCard } from '../../../shared/ui/SectionCard';
 import { StatusBadge } from '../../../shared/ui/StatusBadge';
 import { exportFleetCsv } from '../../../shared/utils/csv';
@@ -90,6 +90,83 @@ export const FleetPage: React.FC = () => {
     errors: agvs.filter((a) => a.status === 'ERROR').length,
   }), [agvs]);
 
+  // Stats + fleet actions đẩy lên global header, giải phóng chỗ cho table.
+  const setHeaderLeft = useLayoutStore((s) => s.setHeaderLeft);
+  const setHeaderRight = useLayoutStore((s) => s.setHeaderRight);
+  const filteredRef = useRef(filteredAgvs);
+  filteredRef.current = filteredAgvs;
+
+  useEffect(() => {
+    setHeaderLeft(
+      <Flex align="center" gap={10} style={{ minWidth: 0 }}>
+        <Text strong style={{ fontSize: 15, whiteSpace: 'nowrap' }}>Fleet Management</Text>
+        <StatusBadge variant="info" text={`${stats.online}/${stats.total} online`} />
+        <StatusBadge variant="neutral" text={`${stats.driving} driving`} dot={false} />
+        {stats.errors > 0 && <StatusBadge variant="error" text={`${stats.errors} errors`} />}
+      </Flex>,
+    );
+    return () => setHeaderLeft(null);
+  }, [setHeaderLeft, stats.online, stats.total, stats.driving, stats.errors]);
+
+  useEffect(() => {
+    setHeaderRight(
+      <Space size={8}>
+        <Button size="small" icon={<PlayCircleOutlined />} loading={busy === 'startAll'}
+          onClick={() => runBulk('startAll', () => startMany())}>
+          Start All
+        </Button>
+        <Popconfirm
+          title="Stop all AGVs?" description="All running AGVs go offline." okText="Stop All"
+          onConfirm={() => runBulk('stopAll', () => stopMany())}
+        >
+          <Button size="small" danger icon={<StopOutlined />} loading={busy === 'stopAll'}>Stop All</Button>
+        </Popconfirm>
+        <Dropdown
+          trigger={['click']}
+          menu={{
+            items: [
+              { key: 'bulk-create', label: 'Bulk Create…', icon: <AppstoreAddOutlined />, onClick: () => setBulkOpen(true) },
+              { key: 'import', label: 'Import CSV…', icon: <ImportOutlined />, onClick: () => setImportOpen(true) },
+              { key: 'export', label: 'Export CSV', icon: <ExportOutlined />, onClick: () => exportFleetCsv(filteredRef.current) },
+              { type: 'divider' },
+              {
+                key: 'delete-all', label: 'Delete All…', icon: <DeleteOutlined />, danger: true,
+                onClick: () => Modal.confirm({
+                  title: 'Delete the entire fleet?',
+                  content: `All ${agvs.length} simulated AGVs will be stopped and removed.`,
+                  okButtonProps: { danger: true },
+                  okText: 'Delete All',
+                  onOk: () => deleteMany(),
+                }),
+              },
+            ],
+          }}
+        >
+          <Tooltip title="Fleet actions"><Button size="small" icon={<MoreOutlined />} /></Tooltip>
+        </Dropdown>
+        <Button size="small" type="primary" icon={<PlusOutlined />}
+          onClick={() => { setEditingAgv(null); setModalOpen(true); }}>
+          Add AGV
+        </Button>
+      </Space>,
+    );
+    return () => setHeaderRight(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setHeaderRight, busy, agvs.length, startMany, stopMany, deleteMany]);
+
+  // Chỉ table body scroll: đo vùng còn lại trừ thead + pagination.
+  const tableAreaRef = useRef<HTMLDivElement>(null);
+  const [tableY, setTableY] = useState(400);
+  useEffect(() => {
+    const el = tableAreaRef.current;
+    if (!el) return;
+    const update = () => setTableY(Math.max(200, el.clientHeight - 104));
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const columns: ColumnsType<ISimAgv> = [
     {
       title: 'AGV', key: 'agv', width: 230,
@@ -143,10 +220,10 @@ export const FleetPage: React.FC = () => {
       ),
     },
     {
-      title: 'Position', key: 'position', width: 190,
+      title: 'Position', key: 'position', width: 170,
       render: (_, rec) => (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <Text style={{ fontSize: 12, fontFamily: 'var(--font-mono, monospace)' }}>
+          <Text style={{ fontSize: 12, fontFamily: 'var(--font-mono, monospace)', whiteSpace: 'nowrap' }}>
             {rec.posX?.toFixed(2)}, {rec.posY?.toFixed(2)} · θ {rec.posTheta?.toFixed(2)}
           </Text>
           <Text style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{rec.mapId || '—'}</Text>
@@ -169,9 +246,15 @@ export const FleetPage: React.FC = () => {
       ),
     },
     {
-      title: 'Order', dataIndex: 'orderId', key: 'order', width: 140,
+      title: 'Order', dataIndex: 'orderId', key: 'order', width: 170,
       render: (v: string, rec) => v
-        ? <Text code style={{ fontSize: 11 }}>{v}#{rec.orderUpdateId}</Text>
+        ? (
+          <Tooltip title={`${v} #${rec.orderUpdateId}`}>
+            <Text style={{ fontSize: 11, fontFamily: 'var(--font-mono, monospace)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {v} · u{rec.orderUpdateId}
+            </Text>
+          </Tooltip>
+        )
         : <Text type="secondary" style={{ fontSize: 12 }}>—</Text>,
     },
     {
@@ -224,33 +307,14 @@ export const FleetPage: React.FC = () => {
   ];
 
   return (
-    <div>
-      <PageHeader
-        icon={<RobotOutlined />}
-        title="Fleet Management"
-        subtitle="Simulated VDA5050 AGV fleet for ACS testing"
-        stats={[
-          { title: 'Total', value: stats.total },
-          { title: 'Online', value: stats.online, color: 'var(--success-color)' },
-          { title: 'Driving', value: stats.driving, color: 'var(--info-color)' },
-          { title: 'Errors', value: stats.errors, color: stats.errors > 0 ? 'var(--error-color)' : undefined },
-        ]}
-        actions={(
-          <Space>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditingAgv(null); setModalOpen(true); }}>
-              Add AGV
-            </Button>
-          </Space>
-        )}
-      />
-
-      <SectionCard noPadding>
-        {/* Filter + fleet actions bar */}
-        <Flex align="center" gap={12} wrap style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)' }}>
-          <Space size={4}>
-            <FilterOutlined style={{ color: 'var(--text-tertiary)' }} />
-            <Text style={{ fontWeight: 500, color: 'var(--text-secondary)', fontSize: 13 }}>Filters</Text>
-          </Space>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      <SectionCard
+        noPadding
+        style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
+        styles={{ body: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' } }}
+      >
+        {/* Filter bar */}
+        <Flex align="center" gap={10} wrap style={{ padding: '10px 16px', borderBottom: '1px solid var(--border-color)', flexShrink: 0 }}>
           <Input
             allowClear
             prefix={<SearchOutlined style={{ color: 'var(--text-quaternary)' }} />}
@@ -262,7 +326,7 @@ export const FleetPage: React.FC = () => {
           <Select<StatusFilter>
             value={statusFilter}
             onChange={setStatusFilter}
-            style={{ width: 130 }}
+            style={{ width: 120 }}
             options={[
               { value: 'all', label: 'All status' },
               { value: 'online', label: 'Online' },
@@ -277,60 +341,13 @@ export const FleetPage: React.FC = () => {
             value={mapFilter}
             onChange={setMapFilter}
             options={mapOptions}
-            style={{ width: 180 }}
+            style={{ width: 160 }}
           />
-          {selectedIds.length > 0 && (
-            <Tooltip title="Clear selection">
-              <Button size="small" type="text" icon={<ClearOutlined />} onClick={() => setSelectedKeys([])} />
-            </Tooltip>
-          )}
-          <div style={{ marginLeft: 'auto' }}>
-            <Space size={8} wrap>
-              <Button
-                icon={<PlayCircleOutlined />}
-                loading={busy === 'startAll'}
-                onClick={() => runBulk('startAll', () => startMany())}
-              >
-                Start All
-              </Button>
-              <Popconfirm
-                title="Stop all AGVs?"
-                description="All running AGVs go offline."
-                okText="Stop All"
-                onConfirm={() => runBulk('stopAll', () => stopMany())}
-              >
-                <Button danger icon={<StopOutlined />} loading={busy === 'stopAll'}>Stop All</Button>
-              </Popconfirm>
-              <Dropdown
-                trigger={['click']}
-                menu={{
-                  items: [
-                    { key: 'bulk-create', label: 'Bulk Create…', icon: <AppstoreAddOutlined />, onClick: () => setBulkOpen(true) },
-                    { key: 'import', label: 'Import CSV…', icon: <ImportOutlined />, onClick: () => setImportOpen(true) },
-                    { key: 'export', label: 'Export CSV', icon: <ExportOutlined />, onClick: () => exportFleetCsv(filteredAgvs) },
-                    { type: 'divider' },
-                    {
-                      key: 'delete-all', label: 'Delete All…', icon: <DeleteOutlined />, danger: true,
-                      onClick: () => Modal.confirm({
-                        title: 'Delete the entire fleet?',
-                        content: `All ${agvs.length} simulated AGVs will be stopped and removed.`,
-                        okButtonProps: { danger: true },
-                        okText: 'Delete All',
-                        onOk: () => deleteMany(),
-                      }),
-                    },
-                  ],
-                }}
-              >
-                <Button icon={<MoreOutlined />}>Fleet</Button>
-              </Dropdown>
-            </Space>
-          </div>
         </Flex>
 
         {/* Batch bar khi có selection */}
         {selectedIds.length > 0 && (
-          <Flex align="center" gap={10} style={{ padding: '8px 16px', background: 'var(--primary-bg)', borderBottom: '1px solid var(--primary-border)' }}>
+          <Flex align="center" gap={10} style={{ padding: '8px 16px', background: 'var(--primary-bg)', borderBottom: '1px solid var(--primary-border)', flexShrink: 0 }}>
             <Text strong style={{ fontSize: 13, color: 'var(--primary-color)' }}>{selectedIds.length} selected</Text>
             <Button
               size="small"
@@ -363,23 +380,26 @@ export const FleetPage: React.FC = () => {
           </Flex>
         )}
 
-        <Table
-          dataSource={filteredAgvs}
-          columns={columns}
-          rowKey="id"
-          size="middle"
-          rowSelection={{
-            selectedRowKeys: selectedKeys,
-            onChange: setSelectedKeys,
-          }}
-          rowClassName={(r) => r.status === 'ERROR' ? 'row-error' : !r.isRunning ? 'row-offline' : ''}
-          pagination={{
-            pageSize: 20,
-            showSizeChanger: true,
-            pageSizeOptions: ['10', '20', '50', '100'],
-            showTotal: (total) => `Total: ${total} AGVs`,
-          }}
-        />
+        <div ref={tableAreaRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+          <Table
+            dataSource={filteredAgvs}
+            columns={columns}
+            rowKey="id"
+            size="middle"
+            scroll={{ y: tableY }}
+            rowSelection={{
+              selectedRowKeys: selectedKeys,
+              onChange: setSelectedKeys,
+            }}
+            rowClassName={(r) => r.status === 'ERROR' ? 'row-error' : !r.isRunning ? 'row-offline' : ''}
+            pagination={{
+              pageSize: 20,
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '20', '50', '100'],
+              showTotal: (total) => `Total: ${total} AGVs`,
+            }}
+          />
+        </div>
       </SectionCard>
 
       <CreateAgvModal

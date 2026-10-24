@@ -36,6 +36,7 @@ export const AppLayout: React.FC<Props> = ({ children }) => {
   const errorCount = agvs.filter((a) => a.status === 'ERROR').length;
   const onlineCount = agvs.filter((a) => a.isConnected).length;
   const headerLeft = useLayoutStore((s) => s.headerLeft);
+  const headerRight = useLayoutStore((s) => s.headerRight);
   const { isDarkMode, toggleTheme } = useTheme();
 
   useSimulatorSignalR(['fleet'], {
@@ -138,6 +139,7 @@ export const AppLayout: React.FC<Props> = ({ children }) => {
             )}
           </Flex>
           <Flex align="center" gap={8}>
+            {headerRight}
             <Tooltip title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}>
               <Button
                 type="text"
@@ -149,7 +151,7 @@ export const AppLayout: React.FC<Props> = ({ children }) => {
           </Flex>
         </Header>
 
-        <Content style={{ padding: '16px 20px 24px', overflow: 'auto', height: 'calc(100vh - 56px)' }}>
+        <Content style={{ padding: '16px 20px 24px', overflow: 'auto', height: 'calc(100vh - 56px)', boxSizing: 'border-box' }}>
           {children}
         </Content>
       </Layout>
