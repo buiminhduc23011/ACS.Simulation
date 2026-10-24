@@ -113,7 +113,7 @@ export const DashboardPage: React.FC = () => {
       </Row>
 
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-        <Col xs={24} lg={9}>
+        <Col xs={24} lg={8}>
           <SectionCard title="Fleet Status" style={{ height: '100%' }}>
             {agvs.length === 0 ? <Empty description="No AGVs" image={Empty.PRESENTED_IMAGE_SIMPLE} /> : (
               <Flex vertical gap={14}>
@@ -142,7 +142,7 @@ export const DashboardPage: React.FC = () => {
           </SectionCard>
         </Col>
 
-        <Col xs={24} lg={6}>
+        <Col xs={24} lg={8}>
           <SectionCard title="Battery" style={{ height: '100%' }}>
             {agvs.length === 0 ? <Empty description="No AGVs" image={Empty.PRESENTED_IMAGE_SIMPLE} /> : (
               <Flex vertical gap={8}>
@@ -172,7 +172,7 @@ export const DashboardPage: React.FC = () => {
           </SectionCard>
         </Col>
 
-        <Col xs={24} lg={9}>
+        <Col xs={24} lg={8}>
           <SectionCard title="Recent Events" style={{ height: '100%' }}>
             {events.length === 0 ? <Empty description="No events" image={Empty.PRESENTED_IMAGE_SIMPLE} /> : (
               <div style={{ maxHeight: 220, overflowY: 'auto' }}>

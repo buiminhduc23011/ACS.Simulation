@@ -385,13 +385,11 @@ export const AgvControlPage: React.FC = () => {
                 <Form layout="inline" size="small" initialValues={{ batteryLevel: agv.batteryLevel, charging: agv.isCharging }}
                   onFinish={(v) => run('bat', () => setBattery(id, v.batteryLevel, v.charging))}>
                   <Form.Item name="batteryLevel" style={{ marginBottom: 0 }}>
-                    <InputNumber min={0} max={100} style={{ width: 110 }} addonAfter="%" />
+                    <InputNumber min={0} max={100} precision={1} style={{ width: 96 }} addonAfter="%" />
                   </Form.Item>
-                  <Form.Item name="charging" style={{ marginBottom: 0 }}>
-                    <Select size="small" style={{ width: 116 }} options={[
-                      { label: '⚡ Charging', value: true },
-                      { label: 'Not charging', value: false },
-                    ]} />
+                  <Text style={{ fontSize: 12, lineHeight: 1 }} title="Charging">⚡</Text>
+                  <Form.Item name="charging" valuePropName="checked" style={{ marginBottom: 0 }}>
+                    <Switch size="small" />
                   </Form.Item>
                   <Button htmlType="submit" size="small" type="primary" loading={loading === 'bat'}>Set</Button>
                 </Form>
