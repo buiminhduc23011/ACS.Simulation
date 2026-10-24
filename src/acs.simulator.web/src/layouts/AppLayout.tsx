@@ -68,7 +68,7 @@ export const AppLayout: React.FC<Props> = ({ children }) => {
           {!collapsed && (
             <div style={{ lineHeight: 1.15, overflow: 'hidden' }}>
               <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-main)', whiteSpace: 'nowrap' }}>ACS Simulator</div>
-              <div style={{ fontSize: 10, color: 'var(--text-quaternary)', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>AGV FLEET TESTBED</div>
+              <div style={{ fontSize: 10, color: 'var(--text-quaternary)', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>VDA5050 FLEET TEST</div>
             </div>
           )}
         </Flex>
