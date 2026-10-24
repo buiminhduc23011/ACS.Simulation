@@ -102,6 +102,10 @@ public partial class VirtualAgv : IVirtualAgv
     // Action state
     private bool _hasLoad = false;
     private CancellationTokenSource? _actionCts;
+    // Test hook: giữ action ở WAITING, không cho FINISHED cho tới khi tắt.
+    private volatile bool _holdActions;
+    // True khi event loop đang bị hold; timer không enqueue để tránh dồn channel.
+    private volatile bool _actionHoldBlocking;
     // Latched immediately on MQTT startPause so movement stops even while the event loop
     // is blocked inside a long-running pick/drop. stopPause clears it.
     private volatile bool _pauseLatched;
@@ -127,6 +131,7 @@ public partial class VirtualAgv : IVirtualAgv
     public string MacAddress   => _config.MacAddress;
     public bool IsConnected    => _mqttClient?.IsConnected ?? false;
     public bool IsRunning      => _isRunning;
+    public bool IsHoldingActions => _holdActions;
     public Vda5050State CurrentState => _currentState;
     public ScreenNotification? ActiveNotification =>
         _activeNotification is { } n && n.ExpiresAtUtc <= DateTime.UtcNow ? null : _activeNotification;

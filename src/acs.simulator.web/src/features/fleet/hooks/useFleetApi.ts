@@ -105,6 +105,12 @@ export function useFleetApi() {
     await fetchFleet();
   }, [fetchFleet]);
 
+  const setActionHold = useCallback(async (id: string, enabled: boolean) => {
+    await apiClient.post(ENDPOINTS.control.actionHold(id), { enabled });
+    message.success(`AGV ${id} action hold ${enabled ? 'ON' : 'OFF'}`);
+    await fetchFleet();
+  }, [fetchFleet]);
+
   const fetchInboundMessages = useCallback(async (id: string) => {
     const res = await apiClient.get<IInboundMqttMessage[]>(ENDPOINTS.control.inboundMessages(id));
     return res.data;
@@ -122,7 +128,7 @@ export function useFleetApi() {
 
   return {
     fetchFleet, createAgv, updateAgv, deleteAgv, startAgv, stopAgv,
-    setPosition, setBattery, setSpeed, setOperatingMode, clearOrderState, fetchInboundMessages, fetchMapNodes,
+    setPosition, setBattery, setSpeed, setOperatingMode, clearOrderState, setActionHold, fetchInboundMessages, fetchMapNodes,
     addError, clearErrors, injectTemplate, liftAgv, lowerAgv, clearLoads, disconnect,
   };
 

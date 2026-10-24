@@ -21,6 +21,7 @@ public partial class VirtualAgv
 
         try
         {
+            await WaitWhileActionsHeldAsync(actionState, ct);
             actionState.ActionStatus = "RUNNING";
             await PublishStateAsync(true);
             Func<Task>? applyLoadStateAfterFinished = null;
@@ -112,6 +113,7 @@ public partial class VirtualAgv
                     break;
             }
 
+            await WaitWhileActionsHeldAsync(actionState, ct);
             actionState.ActionStatus = "FINISHED";
             _logger.LogInformation("AGV {SerialNumber} finished action {ActionType}", _config.SerialNumber, action.ActionType);
             await PublishStateAsync(true);
@@ -137,6 +139,31 @@ public partial class VirtualAgv
         }
 
         await PublishStateAsync(true);
+    }
+
+    // Test hook: giữ action ở WAITING và tự publish state trong lúc event loop bị block.
+    private async Task WaitWhileActionsHeldAsync(ActionState actionState, CancellationToken ct)
+    {
+        if (!_holdActions) return;
+        var previousDescription = actionState.ResultDescription;
+        actionState.ActionStatus = "WAITING";
+        actionState.ResultDescription = "Held by simulator action hold";
+        await PublishStateAsync(true);
+        _actionHoldBlocking = true;
+        try
+        {
+            while (_holdActions && _isRunning && !_disposed)
+            {
+                await Task.Delay(1000, ct);
+                if (_holdActions && _isRunning && !_disposed)
+                    await PublishStateAsync(true);
+            }
+        }
+        finally
+        {
+            _actionHoldBlocking = false;
+        }
+        actionState.ResultDescription = previousDescription;
     }
 
     private static string? GetActionParameterString(VdaAction action, string key)

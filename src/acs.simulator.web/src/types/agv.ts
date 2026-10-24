@@ -17,6 +17,7 @@ export interface ISimAgv {
   status: AgvStatus;
   isConnected: boolean;
   isRunning: boolean;
+  holdActions?: boolean;
   posX: number;
   posY: number;
   posTheta: number;

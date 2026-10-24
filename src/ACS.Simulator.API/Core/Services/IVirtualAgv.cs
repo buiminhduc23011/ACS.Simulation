@@ -15,6 +15,7 @@ public interface IVirtualAgv : IDisposable
     // Status
     bool IsConnected { get; }
     bool IsRunning { get; }
+    bool IsHoldingActions { get; }
     Vda5050State CurrentState { get; }
 
     /// <summary>Notification currently shown on the AGV screen; null when none or expired.</summary>
@@ -33,6 +34,7 @@ public interface IVirtualAgv : IDisposable
     void SetSpeed(double speed);
     void SetBatteryLevel(double level);
     void SetOperatingMode(string mode);
+    void SetHoldActions(bool enabled);
     void ClearOrderState();
     Task LiftAsync();
     Task LowerAsync();

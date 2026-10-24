@@ -57,6 +57,16 @@ public class AgvControlController : ControllerBase
     }
 
     /// <summary>
+    /// Test hook: keep PICK/DROP/WAIT actions at WAITING instead of FINISHED.
+    /// </summary>
+    [HttpPost("action-hold")]
+    public IActionResult SetActionHold(string id, [FromBody] SetActionHoldRequest req)
+    {
+        if (_sim.SetActionHold(id, req.Enabled)) return Ok(new { enabled = req.Enabled });
+        return NotFound();
+    }
+
+    /// <summary>
     /// Recent ACS MQTT payloads (order + instantActions) for debug on the control page.
     /// </summary>
     [HttpGet("inbound-messages")]

@@ -148,6 +148,20 @@ public partial class VirtualAgv
     public async Task LiftAsync()              { _commandChannel.Writer.TryWrite(new LiftCmd()); await Task.CompletedTask; }
     public async Task LowerAsync()             { _commandChannel.Writer.TryWrite(new LowerCmd()); await Task.CompletedTask; }
 
+    /// <summary>
+    /// Test hook: giữ action ở WAITING cho tới khi tắt. Ghi trực tiếp volatile flag
+    /// để tắt được cả khi event loop đang bị hold.
+    /// </summary>
+    public void SetHoldActions(bool enabled)
+    {
+        if (_holdActions == enabled) return;
+        _holdActions = enabled;
+        _logger.LogInformation(
+            "AGV {SerialNumber} action hold {State}",
+            _config.SerialNumber,
+            enabled ? "ON" : "OFF");
+    }
+
     /// <inheritdoc/>
     public IReadOnlyList<InboundMqttMessage> GetRecentInboundMessages()
     {

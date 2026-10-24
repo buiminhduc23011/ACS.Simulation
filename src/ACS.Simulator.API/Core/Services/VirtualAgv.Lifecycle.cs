@@ -15,15 +15,17 @@ public partial class VirtualAgv
         _isRunning = true;
         _loopCts = new CancellationTokenSource();
 
-        // Timers only enqueue commands — no direct state mutation
+        // Timers only enqueue commands — no direct state mutation.
+        // While an action hold is blocking the event loop, the hold loop publishes state itself;
+        // skip enqueueing so a long hold does not flood the channel.
         _statePublishTimer = new Timer(
-            _ => _commandChannel.Writer.TryWrite(new StatePublishTickCmd(false)),
+            _ => { if (!_actionHoldBlocking) _commandChannel.Writer.TryWrite(new StatePublishTickCmd(false)); },
             null,
             TimeSpan.FromMilliseconds(_statePublishConfig.PeriodicInterval),
             TimeSpan.FromMilliseconds(_statePublishConfig.PeriodicInterval));
 
         _movementTimer = new Timer(
-            _ => _commandChannel.Writer.TryWrite(MovementTickCmd.Instance),
+            _ => { if (!_actionHoldBlocking) _commandChannel.Writer.TryWrite(MovementTickCmd.Instance); },
             null,
             TimeSpan.FromMilliseconds(_movementConfig.MovementUpdateInterval),
             TimeSpan.FromMilliseconds(_movementConfig.MovementUpdateInterval));
@@ -92,6 +94,7 @@ public partial class VirtualAgv
         StopVisualizationTimer();
         _loopCts?.Cancel();
         _loopCts?.Dispose();
+        _actionCts?.Cancel();
         _actionCts?.Dispose();
         _disconnectCts?.Cancel();
         _disconnectCts?.Dispose();

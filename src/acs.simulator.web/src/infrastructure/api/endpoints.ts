@@ -17,6 +17,7 @@ export const ENDPOINTS = {
     speed: (id: string) => `${BASE}/agvs/${id}/control/speed`,
     operatingMode: (id: string) => `${BASE}/agvs/${id}/control/operating-mode`,
     clearOrder: (id: string) => `${BASE}/agvs/${id}/control/clear-order`,
+    actionHold: (id: string) => `${BASE}/agvs/${id}/control/action-hold`,
     inboundMessages: (id: string) => `${BASE}/agvs/${id}/control/inbound-messages`,
     lift: (id: string) => `${BASE}/agvs/${id}/control/lift`,
     lower: (id: string) => `${BASE}/agvs/${id}/control/lower`,

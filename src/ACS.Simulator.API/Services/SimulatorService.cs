@@ -293,6 +293,15 @@ public class SimulatorService
         return true;
     }
 
+    public bool SetActionHold(string id, bool enabled)
+    {
+        if (!_fleet.TryGetValue(id, out var agv)) return false;
+        agv.SetHoldActions(enabled);
+        EmitEvent(id, enabled ? "ActionHoldOn" : "ActionHoldOff",
+            $"AGV {id} action hold {(enabled ? "enabled" : "disabled")}");
+        return true;
+    }
+
     public bool ClearOrderState(string id)
     {
         if (!_fleet.TryGetValue(id, out var agv)) return false;
@@ -466,7 +475,8 @@ public class SimulatorService
                 .ToList(),
             ActiveNotification: agv.ActiveNotification is { } notification
                 ? new ScreenNotificationDto(notification.Type, notification.Message, notification.ExpiresAtUtc)
-                : null
+                : null,
+            HoldActions: agv.IsHoldingActions
         );
     }
 

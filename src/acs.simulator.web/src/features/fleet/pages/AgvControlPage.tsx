@@ -87,7 +87,7 @@ export const AgvControlPage: React.FC = () => {
   const {
     fetchFleet, startAgv, stopAgv, setBattery, setSpeed, setOperatingMode,
     fetchInboundMessages, fetchMapNodes, addError, clearErrors, injectTemplate,
-    liftAgv, lowerAgv, clearLoads, disconnect, clearOrderState, setPosition,
+    liftAgv, lowerAgv, clearLoads, disconnect, clearOrderState, setPosition, setActionHold,
   } = useFleetApi();
 
   const [loading, setLoading] = useState<string | null>(null);
@@ -208,6 +208,7 @@ export const AgvControlPage: React.FC = () => {
           <Title level={4} style={{ margin: 0 }}>AGV Control: {agv.serialNumber}</Title>
           <Tag color={AGV_STATUS_COLORS[agv.status]} style={{ fontSize: 14, padding: '2px 12px' }}>{agv.status}</Tag>
           <Tag color={isManual ? 'orange' : 'blue'}>{agv.operatingMode ?? 'AUTOMATIC'}</Tag>
+          {agv.holdActions && <Tag color="gold">ACTION HOLD</Tag>}
           {agv.hasErrors && <Badge count={agv.errorCount} style={{ marginLeft: 4 }} />}
         </div>
       );
@@ -375,6 +376,25 @@ export const AgvControlPage: React.FC = () => {
                 Disconnect
               </Button>
             </Space>
+          </Card>
+
+          {/* Action Hold (test) */}
+          <Card title="Action Hold (Test)" size="small" style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <div>
+                <Text strong>Never finish actions</Text>
+                <div>
+                  <Text type="secondary">
+                    Keep PICK / DROP / WAIT at WAITING until turned off.
+                  </Text>
+                </div>
+              </div>
+              <Switch
+                checked={agv.holdActions === true}
+                loading={loading === 'action-hold'}
+                onChange={(checked) => run('action-hold', () => setActionHold(id, checked))}
+              />
+            </div>
           </Card>
 
           {/* Load Control */}
