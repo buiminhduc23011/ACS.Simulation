@@ -2,8 +2,8 @@ import React, { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Row, Col, Statistic, Timeline, Empty, Typography, Flex, Table, Progress, Button } from 'antd';
 import {
-  RobotOutlined, CheckCircleOutlined, ThunderboltOutlined,
-  WarningOutlined, DisconnectOutlined, DashboardOutlined,
+  RobotOutlined, CheckCircleOutlined, RocketOutlined, PercentageOutlined,
+  WarningOutlined, DisconnectOutlined,
 } from '@ant-design/icons';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useShallow } from 'zustand/react/shallow';
@@ -90,9 +90,9 @@ export const DashboardPage: React.FC = () => {
   const statCards = [
     { title: 'Total AGVs', value: stats.total, icon: <RobotOutlined />, color: 'var(--primary-color)' },
     { title: 'Online', value: stats.online, icon: <CheckCircleOutlined />, color: 'var(--success-color)' },
-    { title: 'Driving', value: stats.driving, icon: <ThunderboltOutlined />, color: 'var(--info-color)' },
+    { title: 'Driving', value: stats.driving, icon: <RocketOutlined />, color: 'var(--info-color)' },
     { title: 'Errors', value: stats.errors, icon: <WarningOutlined />, color: 'var(--error-color)' },
-    { title: 'Avg Battery', value: `${stats.avgBattery.toFixed(0)}%`, icon: <DashboardOutlined />, color: 'var(--warning-color)' },
+    { title: 'Avg Battery', value: `${stats.avgBattery.toFixed(0)}%`, icon: <PercentageOutlined />, color: 'var(--warning-color)' },
   ];
 
   return (

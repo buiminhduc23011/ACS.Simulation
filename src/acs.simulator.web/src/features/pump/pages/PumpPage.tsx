@@ -5,7 +5,7 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
-  ThunderboltOutlined, ApiOutlined, ReloadOutlined, SearchOutlined, StopOutlined,
+  SyncOutlined, ApiOutlined, CloudSyncOutlined, SearchOutlined, StopOutlined,
 } from '@ant-design/icons';
 import { SectionCard } from '../../../shared/ui/SectionCard';
 import { StatusBadge } from '../../../shared/ui/StatusBadge';
@@ -272,7 +272,7 @@ export const PumpPage: React.FC = () => {
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 12, paddingBottom: 12 }}>
               <SectionCard uiVariant="compact">
                 <Flex align="center" gap={12} wrap>
-                  <ThunderboltOutlined style={{ color: pumpEnabled ? 'var(--primary-color)' : 'var(--text-quaternary)' }} />
+                  <SyncOutlined spin={pumpEnabled} style={{ color: pumpEnabled ? 'var(--primary-color)' : 'var(--text-quaternary)' }} />
                   <Text style={{ fontSize: 12, color: 'var(--text-secondary)', flexShrink: 0 }}>
                     {pumpEnabled
                       ? nextTick
@@ -364,7 +364,7 @@ export const PumpPage: React.FC = () => {
                 </Form>
                 <Space>
                   <Button type="primary" onClick={doSaveConfig} loading={busy === 'cfg'}>Lưu cấu hình</Button>
-                  <Button icon={<ReloadOutlined />} onClick={doLoadWorkflows} loading={busy === 'loadWf'}>Tải workflow từ ACS</Button>
+                  <Button icon={<CloudSyncOutlined />} onClick={doLoadWorkflows} loading={busy === 'loadWf'}>Tải workflow từ ACS</Button>
                 </Space>
                 <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 10 }}>
                   Base URL để trống = dùng ACS API URL trong Settings chung của simulator.

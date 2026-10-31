@@ -8,7 +8,7 @@ import {
 import {
   ArrowLeftOutlined, PlayCircleOutlined, StopOutlined,
   VerticalAlignTopOutlined, VerticalAlignBottomOutlined,
-  ThunderboltOutlined, DeleteOutlined, WarningOutlined,
+  BugOutlined, DeleteOutlined, WarningOutlined,
   ReloadOutlined, ApiOutlined, EnvironmentOutlined,
 } from '@ant-design/icons';
 import { useShallow } from 'zustand/react/shallow';
@@ -551,7 +551,7 @@ export const AgvControlPage: React.FC = () => {
                 <Input placeholder="Description..." />
               </Form.Item>
               <Space>
-                <Button htmlType="submit" type="primary" icon={<ThunderboltOutlined />} loading={loading === 'err'}>
+                <Button htmlType="submit" type="primary" icon={<BugOutlined />} loading={loading === 'err'}>
                   Inject Error
                 </Button>
                 <Button danger icon={<DeleteOutlined />} loading={loading === 'clr'}

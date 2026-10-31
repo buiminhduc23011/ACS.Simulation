@@ -8,7 +8,7 @@ import {
   PlusOutlined, EditOutlined, ControlOutlined, PlayCircleOutlined, StopOutlined,
   DeleteOutlined, RobotOutlined, SearchOutlined, MoreOutlined,
   ImportOutlined, ExportOutlined, AppstoreAddOutlined, ClearOutlined,
-  VerticalAlignTopOutlined, VerticalAlignBottomOutlined, ThunderboltOutlined,
+  VerticalAlignTopOutlined, VerticalAlignBottomOutlined, PercentageOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
@@ -123,7 +123,7 @@ export const FleetPage: React.FC = () => {
           <Button size="small" danger icon={<StopOutlined />} loading={busy === 'stopAll'}>Stop All</Button>
         </Popconfirm>
         <Tooltip title="Bơm đầy pin toàn bộ AGV (100%)">
-          <Button size="small" icon={<ThunderboltOutlined />} loading={busy === 'batteryAll'}
+          <Button size="small" icon={<PercentageOutlined />} loading={busy === 'batteryAll'}
             onClick={() => runBulk('batteryAll', () => refillBatteryMany())}>
             Refill Battery
           </Button>
