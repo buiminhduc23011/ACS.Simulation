@@ -169,3 +169,18 @@ body,
 .ant-table-thead > tr > th {
   font-weight: 600;
 }
+
+/* Tabs full-height — nội dung tab chiếm hết vùng còn lại, pagination neo đáy. */
+.full-tabs {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.full-tabs > .ant-tabs-content-holder {
+  flex: 1;
+  min-height: 0;
+}
+.full-tabs .ant-tabs-content,
+.full-tabs .ant-tabs-tabpane {
+  height: 100%;
+}

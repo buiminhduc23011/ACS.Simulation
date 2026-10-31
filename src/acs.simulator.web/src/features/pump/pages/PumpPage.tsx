@@ -16,6 +16,22 @@ import type { IPumpSnapshot, IWorkflowRuntime, IWorkflowSummary } from '../../..
 const { Text } = Typography;
 const POLL_MS = 3000;
 
+// Chỉ table body scroll — pagination neo đáy, đo vùng trống trừ thead + pager.
+function useTableAreaY(active: boolean) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [y, setY] = useState(400);
+  useEffect(() => {
+    const el = ref.current;
+    if (!active || !el) return;
+    const update = () => setY(Math.max(200, el.clientHeight - 104));
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [active]);
+  return { ref, y };
+}
+
 export const PumpPage: React.FC = () => {
   const { fetchState, saveConfig, setEnabled, loadWorkflows, cancelTransaction } = usePumpApi();
   const [state, setState] = useState<IPumpSnapshot | null>(null);
@@ -23,9 +39,13 @@ export const PumpPage: React.FC = () => {
   const [wfSearch, setWfSearch] = useState('');
   const [selectedWfIds, setSelectedWfIds] = useState<number[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('monitor');
   const [cfgForm] = Form.useForm();
   const serverOffsetRef = useRef(0);
   const [, forceTick] = useState(0);
+
+  const rtArea = useTableAreaY(activeTab === 'monitor');
+  const wfArea = useTableAreaY(activeTab === 'settings');
 
   const refresh = useCallback(async () => {
     const snap = await fetchState();
@@ -43,6 +63,12 @@ export const PumpPage: React.FC = () => {
     const clock = setInterval(() => forceTick((t) => t + 1), 500);
     return () => { clearInterval(poll); clearInterval(clock); };
   }, [refresh]);
+
+  // Mở tab Settings lần đầu thì tự tải danh sách workflow từ ACS.
+  useEffect(() => {
+    if (activeTab !== 'settings' || workflows.length > 0) return;
+    loadWorkflows().then(setWorkflows).catch(() => {});
+  }, [activeTab, workflows.length, loadWorkflows]);
 
   const wfName = useMemo(() => {
     const map = new Map(workflows.map((w) => [w.id, w.name]));
@@ -125,9 +151,8 @@ export const PumpPage: React.FC = () => {
         <StatusBadge variant="info" text={`${runningCount}/${targetRunning} running`} />
         <StatusBadge variant="neutral" text={`${wfCount} workflows`} dot={false} />
         <StatusBadge variant="neutral" text={`${totalStarts} starts`} dot={false} />
-        {acsReachable
-          ? <StatusBadge variant="success" text={`ACS online${acsVersion ? ` · v${acsVersion}` : ''}`} />
-          : <StatusBadge variant="error" text="ACS offline" />}
+        {acsReachable &&
+          <StatusBadge variant="success" text={`ACS online${acsVersion ? ` · v${acsVersion}` : ''}`} />}
       </Flex>,
     );
     return () => setHeaderLeft(null);
@@ -135,14 +160,12 @@ export const PumpPage: React.FC = () => {
 
   useEffect(() => {
     setHeaderRight(
-      <Space size={8}>
-        <Switch
-          checked={pumpEnabled}
-          loading={busy === 'toggle'}
-          onChange={doToggle}
-          checkedChildren="ON" unCheckedChildren="OFF"
-        />
-      </Space>,
+      <Switch
+        checked={pumpEnabled}
+        loading={busy === 'toggle'}
+        onChange={doToggle}
+        checkedChildren="ON" unCheckedChildren="OFF"
+      />,
     );
     return () => setHeaderRight(null);
   }, [setHeaderRight, pumpEnabled, busy, doToggle]);
@@ -223,147 +246,167 @@ export const PumpPage: React.FC = () => {
     return q ? workflows.filter((w) => String(w.id).includes(q) || w.name.toLowerCase().includes(q)) : workflows;
   }, [workflows, wfSearch]);
 
-  return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      <Tabs
-        style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
-        items={[
-          {
-            key: 'monitor',
-            label: 'Monitor',
-            children: (
-              <Flex vertical gap={12} style={{ paddingBottom: 16 }}>
-                <SectionCard uiVariant="compact">
-                  <Flex align="center" gap={12} wrap>
-                    <ThunderboltOutlined style={{ color: pumpEnabled ? 'var(--primary-color)' : 'var(--text-quaternary)' }} />
-                    <Text style={{ fontSize: 12, color: 'var(--text-secondary)', flexShrink: 0 }}>
-                      {pumpEnabled
-                        ? nextTick
-                          ? `Tick tiếp theo sau ${nextTick.remainSec}s — mỗi tick check toàn bộ workflow, start bù đúng 1 workflow (xoay vòng)`
-                          : 'Đang lên lịch…'
-                        : `Pump tắt — khi bật sẽ giữ ${targetRunning} transaction running, mỗi ${state?.intervalSeconds ?? 0}s một tick`}
-                    </Text>
-                    <Progress
-                      percent={pumpEnabled ? nextTick?.pct ?? 0 : 0}
-                      showInfo={false}
-                      size="small"
-                      strokeColor={{ from: '#2563EB', to: '#22D3EE' }}
-                      style={{ margin: 0, flex: 1, minWidth: 160 }}
-                    />
-                  </Flex>
-                </SectionCard>
+  const tablePager = {
+    pageSize: 15,
+    showSizeChanger: true,
+    pageSizeOptions: ['10', '15', '20', '50'],
+    showTotal: (total: number) => `Total: ${total} workflows`,
+  };
 
-                <SectionCard
-                  title={`Pumped workflows${state?.workflowIds.length ? ` (${state.workflowIds.length})` : ''}`}
-                  noPadding
-                >
+  const fillCardProps = {
+    noPadding: true,
+    style: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' } as React.CSSProperties,
+    styles: { body: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' } as React.CSSProperties },
+  };
+
+  return (
+    <Tabs
+      className="full-tabs"
+      activeKey={activeTab}
+      onChange={setActiveTab}
+      items={[
+        {
+          key: 'monitor',
+          label: 'Monitor',
+          children: (
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 12, paddingBottom: 12 }}>
+              <SectionCard uiVariant="compact">
+                <Flex align="center" gap={12} wrap>
+                  <ThunderboltOutlined style={{ color: pumpEnabled ? 'var(--primary-color)' : 'var(--text-quaternary)' }} />
+                  <Text style={{ fontSize: 12, color: 'var(--text-secondary)', flexShrink: 0 }}>
+                    {pumpEnabled
+                      ? nextTick
+                        ? `Tick tiếp theo sau ${nextTick.remainSec}s — mỗi tick check toàn bộ workflow, start bù đúng 1 workflow (xoay vòng)`
+                        : 'Đang lên lịch…'
+                      : `Pump tắt — khi bật sẽ giữ ${targetRunning} transaction running, mỗi ${state?.intervalSeconds ?? 0}s một tick`}
+                  </Text>
+                  <Progress
+                    percent={pumpEnabled ? nextTick?.pct ?? 0 : 0}
+                    showInfo={false}
+                    size="small"
+                    strokeColor={{ from: '#2563EB', to: '#22D3EE' }}
+                    style={{ margin: 0, flex: 1, minWidth: 160 }}
+                  />
+                </Flex>
+              </SectionCard>
+
+              <SectionCard
+                title={`Pumped workflows${wfCount ? ` (${wfCount})` : ''}`}
+                {...fillCardProps}
+              >
+                <div ref={rtArea.ref} style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
                   <Table<IWorkflowRuntime>
                     dataSource={state?.runtimes ?? []}
                     columns={rtColumns}
                     rowKey="workflowId"
                     size="small"
-                    pagination={{
-                      pageSize: 15,
-                      showSizeChanger: true,
-                      pageSizeOptions: ['10', '15', '20', '50'],
-                      showTotal: (total) => `Total: ${total} workflows`,
-                    }}
+                    scroll={{ y: rtArea.y }}
+                    pagination={tablePager}
                     locale={{ emptyText: 'Chưa chọn workflow — sang tab Settings để chọn' }}
                   />
-                </SectionCard>
-
-                <SectionCard title="Event log" uiVariant="compact">
-                  <Flex vertical gap={4} style={{ maxHeight: 220, overflowY: 'auto', fontFamily: 'var(--font-mono, monospace)', fontSize: 12 }}>
-                    {(state?.events.length ?? 0) === 0 && <Text type="secondary">—</Text>}
-                    {state?.events.map((e, i) => (
-                      <div key={i} style={{
-                        padding: '4px 10px',
-                        borderLeft: '2px solid var(--border-color)',
-                        background: 'var(--neutral-bg, rgba(0,0,0,0.02))',
-                        borderRadius: '0 6px 6px 0',
-                      }}>{e}</div>
-                    ))}
-                  </Flex>
-                </SectionCard>
-              </Flex>
-            ),
-          },
-          {
-            key: 'settings',
-            label: 'Settings',
-            children: (
-              <Flex vertical gap={12} style={{ paddingBottom: 16, maxWidth: 1100 }}>
-                <SectionCard title={<><ApiOutlined /> ACS connection</>} uiVariant="compact">
-                  <Form form={cfgForm} layout="vertical" key={state?.baseUrl ?? 'x'}
-                    initialValues={{
-                      baseUrl: state?.baseUrl ?? '',
-                      intervalSeconds: state?.intervalSeconds ?? 10,
-                      targetRunning: state?.targetRunning ?? 5,
-                    }}
-                  >
-                    <Flex gap={12} wrap>
-                      <Form.Item name="baseUrl" label="ACS Base URL" style={{ flex: 2, minWidth: 260, marginBottom: 12 }}>
-                        <Input placeholder={state?.baseUrl ?? 'http://127.0.0.1:9051'} />
-                      </Form.Item>
-                      <Form.Item name="apiKey" label="API Key (X-ACS-API-Key)" style={{ flex: 2, minWidth: 260, marginBottom: 12 }}>
-                        <Input.Password placeholder={state?.hasApiKey ? '(key đã lưu — nhập để thay)' : 'nhập key'} autoComplete="off" />
-                      </Form.Item>
-                      <Form.Item name="intervalSeconds" label="Interval (giây, ≥3)" style={{ width: 140, marginBottom: 12 }}>
-                        <InputNumber min={3} max={3600} style={{ width: '100%' }} />
-                      </Form.Item>
-                      <Form.Item name="targetRunning" label="Số running mục tiêu" style={{ width: 160, marginBottom: 12 }}>
-                        <InputNumber min={0} max={1000} style={{ width: '100%' }} />
-                      </Form.Item>
-                    </Flex>
-                  </Form>
-                  <Space>
-                    <Button type="primary" onClick={doSaveConfig} loading={busy === 'cfg'}>Lưu cấu hình</Button>
-                    <Button icon={<ReloadOutlined />} onClick={doLoadWorkflows} loading={busy === 'loadWf'}>Tải workflow từ ACS</Button>
-                  </Space>
-                  <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 10 }}>
-                    Base URL để trống = dùng ACS API URL trong Settings chung của simulator.
-                  </Text>
-                </SectionCard>
-
-                <SectionCard
-                  title="Workflow cần pump"
-                  noPadding
-                  extra={
-                    <Space size={8}>
-                      <Input
-                        allowClear size="small" prefix={<SearchOutlined />}
-                        placeholder="Lọc id / tên…" value={wfSearch}
-                        onChange={(e) => setWfSearch(e.target.value)} style={{ width: 200 }}
-                      />
-                      <Button size="small" onClick={() => doSaveWfIds(workflows.map((w) => w.id))}>Chọn hết</Button>
-                      <Button size="small" onClick={() => doSaveWfIds([])}>Bỏ hết</Button>
-                    </Space>
-                  }
+                </div>
+              </SectionCard>
+            </div>
+          ),
+        },
+        {
+          key: 'events',
+          label: `Event log${state?.events.length ? ` (${state.events.length})` : ''}`,
+          children: (
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', paddingBottom: 12 }}>
+              <SectionCard
+                title="Event log"
+                {...fillCardProps}
+                styles={{ body: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: '8px 16px' } }}
+              >
+                <Flex vertical gap={4} style={{ flex: 1, overflowY: 'auto', fontFamily: 'var(--font-mono, monospace)', fontSize: 12 }}>
+                  {(state?.events.length ?? 0) === 0 && <Text type="secondary">—</Text>}
+                  {state?.events.map((e, i) => (
+                    <div key={i} style={{
+                      padding: '4px 10px',
+                      borderLeft: '2px solid var(--border-color)',
+                      background: 'var(--neutral-bg, rgba(0,0,0,0.02))',
+                      borderRadius: '0 6px 6px 0',
+                    }}>{e}</div>
+                  ))}
+                </Flex>
+              </SectionCard>
+            </div>
+          ),
+        },
+        {
+          key: 'settings',
+          label: 'Settings',
+          children: (
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 12, paddingBottom: 12 }}>
+              <SectionCard title={<><ApiOutlined /> ACS connection</>} uiVariant="compact">
+                <Form form={cfgForm} layout="vertical" key={state?.baseUrl ?? 'x'}
+                  initialValues={{
+                    baseUrl: state?.baseUrl ?? '',
+                    intervalSeconds: state?.intervalSeconds ?? 10,
+                    targetRunning: state?.targetRunning ?? 5,
+                  }}
                 >
+                  <Flex gap={12} wrap>
+                    <Form.Item name="baseUrl" label="ACS Base URL" style={{ flex: 2, minWidth: 260, marginBottom: 12 }}>
+                      <Input placeholder={state?.baseUrl ?? 'http://127.0.0.1:9051'} />
+                    </Form.Item>
+                    <Form.Item name="apiKey" label="API Key (X-ACS-API-Key)" style={{ flex: 2, minWidth: 260, marginBottom: 12 }}>
+                      <Input.Password placeholder={state?.hasApiKey ? '(key đã lưu — nhập để thay)' : 'nhập key'} autoComplete="off" />
+                    </Form.Item>
+                    <Form.Item name="intervalSeconds" label="Interval (giây, ≥3)" style={{ width: 140, marginBottom: 12 }}>
+                      <InputNumber min={3} max={3600} style={{ width: '100%' }} />
+                    </Form.Item>
+                    <Form.Item name="targetRunning" label="Số running mục tiêu" style={{ width: 160, marginBottom: 12 }}>
+                      <InputNumber min={0} max={1000} style={{ width: '100%' }} />
+                    </Form.Item>
+                  </Flex>
+                </Form>
+                <Space>
+                  <Button type="primary" onClick={doSaveConfig} loading={busy === 'cfg'}>Lưu cấu hình</Button>
+                  <Button icon={<ReloadOutlined />} onClick={doLoadWorkflows} loading={busy === 'loadWf'}>Tải workflow từ ACS</Button>
+                </Space>
+                <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 10 }}>
+                  Base URL để trống = dùng ACS API URL trong Settings chung của simulator.
+                </Text>
+              </SectionCard>
+
+              <SectionCard
+                title="Workflow cần pump"
+                {...fillCardProps}
+                extra={
+                  <Space size={8}>
+                    <Input
+                      allowClear size="small" prefix={<SearchOutlined />}
+                      placeholder="Lọc id / tên…" value={wfSearch}
+                      onChange={(e) => setWfSearch(e.target.value)} style={{ width: 200 }}
+                    />
+                    <Button size="small" onClick={() => doSaveWfIds(workflows.map((w) => w.id))}>Chọn hết</Button>
+                    <Button size="small" onClick={() => doSaveWfIds([])}>Bỏ hết</Button>
+                  </Space>
+                }
+              >
+                <div ref={wfArea.ref} style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
                   <Table<IWorkflowSummary>
                     dataSource={filteredWfs}
                     columns={wfColumns}
                     rowKey="id"
                     size="small"
+                    scroll={{ y: wfArea.y }}
                     rowSelection={{
                       selectedRowKeys: selectedWfIds,
                       onChange: (keys) => doSaveWfIds(keys.map(Number)),
                       preserveSelectedRowKeys: true,
                     }}
-                    pagination={{
-                      pageSize: 15,
-                      showSizeChanger: true,
-                      pageSizeOptions: ['10', '15', '20', '50'],
-                      showTotal: (total) => `Total: ${total} workflows`,
-                    }}
-                    locale={{ emptyText: workflows.length === 0 ? 'Bấm "Tải workflow từ ACS" để lấy danh sách' : 'Không khớp bộ lọc' }}
+                    pagination={tablePager}
+                    locale={{ emptyText: workflows.length === 0 ? 'Đang tải workflow từ ACS…' : 'Không khớp bộ lọc' }}
                   />
-                </SectionCard>
-              </Flex>
-            ),
-          },
-        ]}
-      />
-    </div>
+                </div>
+              </SectionCard>
+            </div>
+          ),
+        },
+      ]}
+    />
   );
 };
