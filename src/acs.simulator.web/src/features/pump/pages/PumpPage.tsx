@@ -134,12 +134,12 @@ export const PumpPage: React.FC = () => {
     },
     { title: 'State', key: 'state', width: 110, render: (_, r) => statePill(r) },
     {
-      title: 'AGV', key: 'agv', width: 120,
+      title: 'AGV', key: 'agv', width: 110,
       render: (_, r) => r.agvName
         ? <Text style={{ fontSize: 12 }}>{r.agvName}{r.commandAccepted ? ' ✓' : ''}</Text>
         : <Text type="secondary">—</Text>,
     },
-    { title: 'Starts', dataIndex: 'startedCount', key: 'starts', width: 70, align: 'center',
+    { title: 'Starts', dataIndex: 'startedCount', key: 'starts', width: 85, align: 'center',
       render: (v: number) => <Text strong>{v}</Text>, sorter: (a, b) => a.startedCount - b.startedCount },
     {
       title: 'Note / Pending', key: 'note', ellipsis: true,
@@ -150,13 +150,13 @@ export const PumpPage: React.FC = () => {
       ),
     },
     {
-      title: 'Checked', dataIndex: 'lastCheckedAt', key: 'checked', width: 90,
+      title: 'Checked', dataIndex: 'lastCheckedAt', key: 'checked', width: 100,
       render: (v?: string | null) => v
         ? <Text type="secondary" style={{ fontSize: 11 }}>{new Date(v).toLocaleTimeString()}</Text>
         : <Text type="secondary">—</Text>,
     },
     {
-      title: '', key: 'actions', width: 90, align: 'right',
+      title: '', key: 'actions', width: 56, align: 'right',
       render: (_, r) => {
         const busyTx = r.lastState === 'Pending' || r.lastState === 'Running' || r.lastState === 'Created';
         if (!busyTx || !r.lastTransactionId) return null;
@@ -219,7 +219,7 @@ export const PumpPage: React.FC = () => {
             label: 'Monitor',
             children: (
               <Flex vertical gap={12} style={{ paddingBottom: 16 }}>
-                <SectionCard title="Pump control">
+                <SectionCard title="Pump control" uiVariant="compact">
                   <Flex align="center" gap={16} wrap>
                     <Button
                       type={state?.enabled ? 'default' : 'primary'}
@@ -259,12 +259,17 @@ export const PumpPage: React.FC = () => {
                     columns={rtColumns}
                     rowKey="workflowId"
                     size="small"
-                    pagination={false}
+                    pagination={{
+                      pageSize: 15,
+                      showSizeChanger: true,
+                      pageSizeOptions: ['10', '15', '20', '50'],
+                      showTotal: (total) => `Total: ${total} workflows`,
+                    }}
                     locale={{ emptyText: 'Chưa chọn workflow — sang tab Settings để chọn' }}
                   />
                 </SectionCard>
 
-                <SectionCard title="Event log">
+                <SectionCard title="Event log" uiVariant="compact">
                   <Flex vertical gap={4} style={{ maxHeight: 220, overflowY: 'auto', fontFamily: 'var(--font-mono, monospace)', fontSize: 12 }}>
                     {(state?.events.length ?? 0) === 0 && <Text type="secondary">—</Text>}
                     {state?.events.map((e, i) => (
@@ -285,7 +290,7 @@ export const PumpPage: React.FC = () => {
             label: 'Settings',
             children: (
               <Flex vertical gap={12} style={{ paddingBottom: 16, maxWidth: 1100 }}>
-                <SectionCard title={<><ApiOutlined /> ACS connection</>}>
+                <SectionCard title={<><ApiOutlined /> ACS connection</>} uiVariant="compact">
                   <Form form={cfgForm} layout="vertical" key={state?.baseUrl ?? 'x'}
                     initialValues={{
                       baseUrl: state?.baseUrl ?? '',
@@ -342,8 +347,12 @@ export const PumpPage: React.FC = () => {
                       onChange: (keys) => doSaveWfIds(keys.map(Number)),
                       preserveSelectedRowKeys: true,
                     }}
-                    pagination={false}
-                    scroll={{ y: 340 }}
+                    pagination={{
+                      pageSize: 15,
+                      showSizeChanger: true,
+                      pageSizeOptions: ['10', '15', '20', '50'],
+                      showTotal: (total) => `Total: ${total} workflows`,
+                    }}
                     locale={{ emptyText: workflows.length === 0 ? 'Bấm "Tải workflow từ ACS" để lấy danh sách' : 'Không khớp bộ lọc' }}
                   />
                 </SectionCard>
