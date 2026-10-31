@@ -5,12 +5,11 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
-  ThunderboltOutlined, ApiOutlined, ReloadOutlined, SearchOutlined,
-  StopOutlined, CheckCircleFilled, CloseCircleFilled,
+  ThunderboltOutlined, ApiOutlined, ReloadOutlined, SearchOutlined, StopOutlined,
 } from '@ant-design/icons';
-import { PageHeader } from '../../../shared/ui/PageHeader';
 import { SectionCard } from '../../../shared/ui/SectionCard';
 import { StatusBadge } from '../../../shared/ui/StatusBadge';
+import { useLayoutStore } from '../../../store/layoutStore';
 import { usePumpApi } from '../hooks/usePumpApi';
 import type { IPumpSnapshot, IWorkflowRuntime, IWorkflowSummary } from '../../../types/pump';
 
@@ -50,12 +49,12 @@ export const PumpPage: React.FC = () => {
     return (id: number) => map.get(id) ?? '';
   }, [workflows]);
 
-  const doToggle = async (enabled: boolean) => {
+  const doToggle = useCallback(async (enabled: boolean) => {
     setBusy('toggle');
     try { setState(await setEnabled(enabled)); }
     catch { message.error('Pump toggle failed'); }
     finally { setBusy(null); }
-  };
+  }, [setEnabled]);
 
   const doSaveConfig = async () => {
     const values = await cfgForm.validateFields();
@@ -108,6 +107,45 @@ export const PumpPage: React.FC = () => {
   })();
 
   const totalStarts = state?.runtimes.reduce((s, r) => s + r.startedCount, 0) ?? 0;
+
+  // Title + badges + switch đưa lên global header như các trang khác.
+  const setHeaderLeft = useLayoutStore((s) => s.setHeaderLeft);
+  const setHeaderRight = useLayoutStore((s) => s.setHeaderRight);
+  const runningCount = state?.runningCount ?? 0;
+  const targetRunning = state?.targetRunning ?? 0;
+  const wfCount = state?.workflowIds.length ?? 0;
+  const pumpEnabled = state?.enabled ?? false;
+  const acsReachable = state?.acsReachable ?? false;
+  const acsVersion = state?.acsVersion;
+
+  useEffect(() => {
+    setHeaderLeft(
+      <Flex align="center" gap={10} style={{ minWidth: 0 }}>
+        <Text strong style={{ fontSize: 15, whiteSpace: 'nowrap' }}>Workflow Pump</Text>
+        <StatusBadge variant="info" text={`${runningCount}/${targetRunning} running`} />
+        <StatusBadge variant="neutral" text={`${wfCount} workflows`} dot={false} />
+        <StatusBadge variant="neutral" text={`${totalStarts} starts`} dot={false} />
+        {acsReachable
+          ? <StatusBadge variant="success" text={`ACS online${acsVersion ? ` · v${acsVersion}` : ''}`} />
+          : <StatusBadge variant="error" text="ACS offline" />}
+      </Flex>,
+    );
+    return () => setHeaderLeft(null);
+  }, [setHeaderLeft, runningCount, targetRunning, wfCount, totalStarts, acsReachable, acsVersion]);
+
+  useEffect(() => {
+    setHeaderRight(
+      <Space size={8}>
+        <Switch
+          checked={pumpEnabled}
+          loading={busy === 'toggle'}
+          onChange={doToggle}
+          checkedChildren="ON" unCheckedChildren="OFF"
+        />
+      </Space>,
+    );
+    return () => setHeaderRight(null);
+  }, [setHeaderRight, pumpEnabled, busy, doToggle]);
 
   const statePill = (r: IWorkflowRuntime) => {
     if (r.lastState === 'Running') return <StatusBadge variant="info" text="Running" />;
@@ -187,30 +225,6 @@ export const PumpPage: React.FC = () => {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      <PageHeader
-        icon={<ThunderboltOutlined />}
-        title="Workflow Pump"
-        subtitle="Giữ đúng số transaction running mục tiêu trên ACS"
-        stats={[
-          { title: 'Running', value: `${state?.runningCount ?? 0}/${state?.targetRunning ?? 0}` },
-          { title: 'Workflows', value: state?.workflowIds.length ?? 0 },
-          { title: 'Total starts', value: totalStarts },
-        ]}
-        actions={
-          <Flex align="center" gap={10}>
-            {state?.acsReachable
-              ? <StatusBadge variant="success" text={`ACS online${state.acsVersion ? ` · v${state.acsVersion}` : ''}`} />
-              : <StatusBadge variant="error" text="ACS offline" />}
-            <Switch
-              checked={state?.enabled ?? false}
-              loading={busy === 'toggle'}
-              onChange={doToggle}
-              checkedChildren="ON" unCheckedChildren="OFF"
-            />
-          </Flex>
-        }
-      />
-
       <Tabs
         style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
         items={[
@@ -219,34 +233,23 @@ export const PumpPage: React.FC = () => {
             label: 'Monitor',
             children: (
               <Flex vertical gap={12} style={{ paddingBottom: 16 }}>
-                <SectionCard title="Pump control" uiVariant="compact">
-                  <Flex align="center" gap={16} wrap>
-                    <Button
-                      type={state?.enabled ? 'default' : 'primary'}
-                      danger={state?.enabled}
-                      icon={<ThunderboltOutlined />}
-                      loading={busy === 'toggle'}
-                      onClick={() => doToggle(!(state?.enabled ?? false))}
-                      style={{ minWidth: 140 }}
-                    >
-                      {state?.enabled ? 'TẮT PUMP' : 'BẬT PUMP'}
-                    </Button>
-                    <Flex vertical flex={1} style={{ minWidth: 240 }}>
-                      <Text style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                        {state?.enabled
-                          ? nextTick
-                            ? `Tick tiếp theo sau ${nextTick.remainSec}s — mỗi tick check toàn bộ workflow, start bù đúng 1 workflow (xoay vòng)`
-                            : 'Đang lên lịch…'
-                          : `Pump tắt — khi bật sẽ giữ ${state?.targetRunning ?? 0} transaction running, mỗi ${state?.intervalSeconds ?? 0}s một tick`}
-                      </Text>
-                      <Progress
-                        percent={state?.enabled ? nextTick?.pct ?? 0 : 0}
-                        showInfo={false}
-                        size="small"
-                        strokeColor={{ from: '#2563EB', to: '#22D3EE' }}
-                        style={{ margin: '6px 0 0' }}
-                      />
-                    </Flex>
+                <SectionCard uiVariant="compact">
+                  <Flex align="center" gap={12} wrap>
+                    <ThunderboltOutlined style={{ color: pumpEnabled ? 'var(--primary-color)' : 'var(--text-quaternary)' }} />
+                    <Text style={{ fontSize: 12, color: 'var(--text-secondary)', flexShrink: 0 }}>
+                      {pumpEnabled
+                        ? nextTick
+                          ? `Tick tiếp theo sau ${nextTick.remainSec}s — mỗi tick check toàn bộ workflow, start bù đúng 1 workflow (xoay vòng)`
+                          : 'Đang lên lịch…'
+                        : `Pump tắt — khi bật sẽ giữ ${targetRunning} transaction running, mỗi ${state?.intervalSeconds ?? 0}s một tick`}
+                    </Text>
+                    <Progress
+                      percent={pumpEnabled ? nextTick?.pct ?? 0 : 0}
+                      showInfo={false}
+                      size="small"
+                      strokeColor={{ from: '#2563EB', to: '#22D3EE' }}
+                      style={{ margin: 0, flex: 1, minWidth: 160 }}
+                    />
                   </Flex>
                 </SectionCard>
 
