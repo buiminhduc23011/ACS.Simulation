@@ -8,6 +8,7 @@ import { DARK_COLORS, LIGHT_COLORS, UI_TOKENS } from './shared/ui/tokens';
 const DashboardPage = lazy(() => import('./features/dashboard/pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
 const FleetPage = lazy(() => import('./features/fleet/pages/FleetPage').then((m) => ({ default: m.FleetPage })));
 const AgvControlPage = lazy(() => import('./features/fleet/pages/AgvControlPage').then((m) => ({ default: m.AgvControlPage })));
+const PumpPage = lazy(() => import('./features/pump/pages/PumpPage').then((m) => ({ default: m.PumpPage })));
 const SettingsPage = lazy(() => import('./features/settings/pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 
 const loader = (
@@ -84,6 +85,7 @@ export const App: React.FC = () => {
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/fleet" element={<FleetPage />} />
                 <Route path="/fleet/:id/control" element={<AgvControlPage />} />
+                <Route path="/pump" element={<PumpPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>

@@ -8,7 +8,7 @@ import {
   PlusOutlined, EditOutlined, ControlOutlined, PlayCircleOutlined, StopOutlined,
   DeleteOutlined, RobotOutlined, SearchOutlined, MoreOutlined,
   ImportOutlined, ExportOutlined, AppstoreAddOutlined, ClearOutlined,
-  VerticalAlignTopOutlined, VerticalAlignBottomOutlined,
+  VerticalAlignTopOutlined, VerticalAlignBottomOutlined, ThunderboltOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
@@ -31,7 +31,7 @@ export const FleetPage: React.FC = () => {
   const agvs = useFleetStore(useShallow((s) => Object.values(s.agvs).sort((a, b) => a.id.localeCompare(b.id))));
   const {
     fetchFleet, createAgv, updateAgv, deleteAgv, startAgv, stopAgv, liftAgv, lowerAgv,
-    bulkCreate, startMany, stopMany, deleteMany, importAgvs,
+    bulkCreate, startMany, stopMany, deleteMany, importAgvs, refillBatteryMany,
   } = useFleetApi();
   const navigate = useNavigate();
 
@@ -122,6 +122,12 @@ export const FleetPage: React.FC = () => {
         >
           <Button size="small" danger icon={<StopOutlined />} loading={busy === 'stopAll'}>Stop All</Button>
         </Popconfirm>
+        <Tooltip title="Bơm đầy pin toàn bộ AGV (100%)">
+          <Button size="small" icon={<ThunderboltOutlined />} loading={busy === 'batteryAll'}
+            onClick={() => runBulk('batteryAll', () => refillBatteryMany())}>
+            Refill Battery
+          </Button>
+        </Tooltip>
         <Dropdown
           trigger={['click']}
           menu={{
@@ -153,7 +159,7 @@ export const FleetPage: React.FC = () => {
     );
     return () => setHeaderRight(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setHeaderRight, busy, agvs.length, startMany, stopMany, deleteMany]);
+  }, [setHeaderRight, busy, agvs.length, startMany, stopMany, deleteMany, refillBatteryMany]);
 
   // Chỉ table body scroll: đo vùng còn lại trừ thead + pagination.
   const tableAreaRef = useRef<HTMLDivElement>(null);

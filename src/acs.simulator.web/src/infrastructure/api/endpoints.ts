@@ -16,6 +16,15 @@ export const ENDPOINTS = {
     bulkStart: '/api/fleet/bulk/start',
     bulkStop: '/api/fleet/bulk/stop',
     bulkDelete: '/api/fleet/bulk/delete',
+    bulkBattery: '/api/fleet/bulk/battery',
+  },
+  // Workflow pump — giữ số transaction running trên ACS
+  pump: {
+    state: '/api/pump/state',
+    config: '/api/pump/config',
+    enabled: '/api/pump/enabled',
+    workflows: '/api/pump/workflows',
+    cancelTx: (txId: number) => `/api/pump/transactions/${txId}/cancel`,
   },
   // AGV Control
   control: {

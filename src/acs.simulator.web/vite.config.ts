@@ -20,6 +20,14 @@ export default defineConfig({
         target: 'http://localhost:9060',
         changeOrigin: true,
       },
+      '/api/fleet': {
+        target: 'http://localhost:9060',
+        changeOrigin: true,
+      },
+      '/api/pump': {
+        target: 'http://localhost:9060',
+        changeOrigin: true,
+      },
       '/hubs/simulator': {
         target: 'http://localhost:9060',
         changeOrigin: true,

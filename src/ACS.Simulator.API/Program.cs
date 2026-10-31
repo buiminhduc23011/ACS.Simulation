@@ -36,8 +36,13 @@ try
     builder.Services.AddHostedService<SimulatorBroadcastService>();
     builder.Services.AddHostedService<SimulatorMapGraphLoaderService>();
 
+    // Workflow pump — giữ số transaction running mục tiêu trên ACS.
+    builder.Services.AddSingleton<ACS.Simulator.API.Services.Pump.PumpService>();
+    builder.Services.AddHostedService<ACS.Simulator.API.Services.Pump.PumpWorker>();
+
     // HTTP client for ACS API proxy
     builder.Services.AddHttpClient("AcsApi");
+    builder.Services.AddHttpClient("PumpAcs").ConfigureHttpClient(client => client.Timeout = TimeSpan.FromSeconds(15));
 
     // Controllers
     builder.Services.AddControllers();

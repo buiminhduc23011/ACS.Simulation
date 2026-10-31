@@ -171,6 +171,15 @@ export function useFleetApi() {
     await fetchFleet();
   }, [fetchFleet]);
 
+  /** Bơm pin fleet — ids rỗng = toàn bộ, level mặc định 100%. */
+  const refillBatteryMany = useCallback(async (ids?: string[], level?: number) => {
+    const res = await apiClient.post<{ updated: number; level: number }>(
+      ENDPOINTS.fleet.bulkBattery,
+      { ids: ids?.length ? ids : undefined, level: level ?? 100 });
+    message.success(`Battery set to ${res.data.level}% on ${res.data.updated} AGVs`);
+    await fetchFleet();
+  }, [fetchFleet]);
+
   /** Import tạo lần lượt từng AGV — trả về số thành công + lỗi theo serial. */
   const importAgvs = useCallback(async (reqs: ICreateAgvRequest[]) => {
     const created: string[] = [];
@@ -192,7 +201,7 @@ export function useFleetApi() {
     fetchFleet, createAgv, updateAgv, deleteAgv, startAgv, stopAgv,
     setPosition, setBattery, setSpeed, setOperatingMode, clearOrderState, setActionHold, fetchInboundMessages, fetchOutboundState, fetchMapNodes,
     addError, clearErrors, injectTemplate, liftAgv, lowerAgv, clearLoads, disconnect,
-    bulkCreate, startMany, stopMany, deleteMany, importAgvs,
+    bulkCreate, startMany, stopMany, deleteMany, importAgvs, refillBatteryMany,
   };
 
 }

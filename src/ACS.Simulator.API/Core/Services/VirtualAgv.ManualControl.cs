@@ -142,7 +142,20 @@ public partial class VirtualAgv
     // ── Public Command APIs ──────────────────────────────────────────────
 
     public void SetSpeed(double speed)         => _commandChannel.Writer.TryWrite(new SetSpeedCmd(speed));
-    public void SetBatteryLevel(double level)  => _commandChannel.Writer.TryWrite(new SetBatteryCmd(level));
+
+    /// <summary>AGV stop thì event loop không chạy — ghi pin trực tiếp để cập nhật ngay.</summary>
+    public void SetBatteryLevel(double level)
+    {
+        if (!_isRunning) { ApplyBatteryLevel(level); return; }
+        _commandChannel.Writer.TryWrite(new SetBatteryCmd(level));
+    }
+
+    private void ApplyBatteryLevel(double level)
+    {
+        _batteryLevel = Math.Clamp(level, 0, 100);
+        _currentState.BatteryState.BatteryCharge = _batteryLevel;
+        _currentState.BatteryState.Reach = CalculateReach(_batteryLevel);
+    }
     /// <summary>Đổi operatingMode qua event loop; false = loop không xử lý kịp (timeout/channel đóng).</summary>
     public async Task<bool> SetOperatingModeAsync(string mode)
     {

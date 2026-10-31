@@ -243,9 +243,7 @@ public partial class VirtualAgv
                 break;
 
             case SetBatteryCmd b:
-                _batteryLevel = Math.Clamp(b.Level, 0, 100);
-                _currentState.BatteryState.BatteryCharge = _batteryLevel;
-                _currentState.BatteryState.Reach = CalculateReach(_batteryLevel);
+                ApplyBatteryLevel(b.Level);
                 break;
 
             case SetSpeedCmd s:

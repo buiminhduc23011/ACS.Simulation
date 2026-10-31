@@ -9,6 +9,7 @@ import {
   MenuUnfoldOutlined,
   BulbOutlined,
   BulbFilled,
+  ThunderboltOutlined,
 } from '@ant-design/icons';
 import { useShallow } from 'zustand/react/shallow';
 import { useFleetStore } from '../store/fleetStore';
@@ -22,6 +23,7 @@ const { Text } = Typography;
 const MENU_ITEMS = [
   { key: '/', icon: <DashboardOutlined />, label: 'Dashboard' },
   { key: '/fleet', icon: <RobotOutlined />, label: 'Fleet' },
+  { key: '/pump', icon: <ThunderboltOutlined />, label: 'Pump' },
   { key: '/settings', icon: <SettingOutlined />, label: 'Settings' },
 ];
 

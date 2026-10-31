@@ -121,10 +121,27 @@ public class FleetBulkController : ControllerBase
         return Ok(new { Deleted = ids.Count });
     }
 
-    /// <summary>Ids trong body; null/rỗng = toàn bộ fleet hiện có.</summary>
-    private List<string> ResolveIds(BulkOperationRequest? req)
+    /// <summary>
+    /// Bơm pin cho AGVs. Body { ids, level } — ids rỗng = toàn bộ fleet, level mặc định 100.
+    /// POST /api/fleet/bulk/battery
+    /// </summary>
+    [HttpPost("battery")]
+    public IActionResult BulkBattery([FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] BulkBatteryRequest? req)
     {
-        if (req?.Ids is { Count: > 0 } ids)
+        var ids = ResolveIds(req?.Ids);
+        var level = Math.Clamp(req?.Level ?? 100.0, 0, 100);
+        _logger.LogInformation("BulkBattery: setting {Count} AGVs to {Level}%", ids.Count, level);
+
+        var updated = ids.Count(id => _simulator.SetBattery(id, level));
+        return Ok(new { Updated = updated, Level = level });
+    }
+
+    /// <summary>Ids trong body; null/rỗng = toàn bộ fleet hiện có.</summary>
+    private List<string> ResolveIds(BulkOperationRequest? req) => ResolveIds(req?.Ids);
+
+    private List<string> ResolveIds(List<string>? ids)
+    {
+        if (ids is { Count: > 0 })
             return ids;
 
         return _simulator.GetAll().Select(a => a.SerialNumber).ToList();
@@ -149,3 +166,6 @@ public record BulkCreateRequest(
 
 /// <summary>Danh sách AGV ids cho bulk op; null/rỗng = toàn bộ fleet.</summary>
 public record BulkOperationRequest(List<string>? Ids);
+
+/// <summary>Bulk set pin; ids null/rỗng = toàn bộ fleet, level null = 100%.</summary>
+public record BulkBatteryRequest(List<string>? Ids, double? Level);
