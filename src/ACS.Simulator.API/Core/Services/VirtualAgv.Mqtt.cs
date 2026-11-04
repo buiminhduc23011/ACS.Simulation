@@ -128,6 +128,22 @@ public partial class VirtualAgv
                         return;
                     }
 
+                    // Giả lập nghẽn mạng: inbound đã log ở trên, nhưng echo trong state
+                    // (OrderId/NodeStates) chỉ xảy ra sau khi order vào actor. Delay ở đây
+                    // giữ actor rảnh để xe vẫn chạy order cũ / publish state cũ.
+                    var echoDelaySec = _orderEchoDelaySeconds;
+                    if (echoDelaySec > 0)
+                    {
+                        _logger.LogInformation(
+                            "AGV {SerialNumber} delaying order {OrderId} echo by {Delay:F1}s (network stall simulation)",
+                            _config.SerialNumber, order.OrderId, echoDelaySec);
+                        try
+                        {
+                            await Task.Delay(TimeSpan.FromSeconds(echoDelaySec));
+                        }
+                        catch (OperationCanceledException) { return; }
+                    }
+
                     // A base order replacement must interrupt a running action before the actor
                     // reaches the queued command. Same-order updates are extensions; leave their
                     // token live so the actor can merge the update and execute later actions.

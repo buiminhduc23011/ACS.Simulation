@@ -36,6 +36,8 @@ public interface IVirtualAgv : IDisposable
     Task<bool> SetOperatingModeAsync(string mode);
     void SetHoldActions(bool enabled);
     void ClearOrderState();
+    /// <summary>Giả lập nghẽn mạng: delay giây trước khi enqueue order MQTT vào actor (inbound đã log, state echo sau).</summary>
+    void SetOrderEchoDelay(double delaySeconds);
     Task LiftAsync();
     Task LowerAsync();
     Task<int> ClearLoadsAsync();

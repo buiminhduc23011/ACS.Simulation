@@ -314,6 +314,14 @@ public class SimulatorService
         return true;
     }
 
+    public bool SetOrderEchoDelay(string id, double delaySeconds)
+    {
+        if (!_fleet.TryGetValue(id, out var agv)) return false;
+        agv.SetOrderEchoDelay(delaySeconds);
+        EmitEvent(id, "OrderEchoDelayChanged", $"AGV {id} order echo delay → {delaySeconds:F1}s");
+        return true;
+    }
+
     public List<InboundMqttMessageDto>? GetInboundMessages(string id)
     {
         if (!_fleet.TryGetValue(id, out var agv)) return null;
@@ -484,7 +492,8 @@ public class SimulatorService
             ActiveNotification: agv.ActiveNotification is { } notification
                 ? new ScreenNotificationDto(notification.Type, notification.Message, notification.ExpiresAtUtc)
                 : null,
-            HoldActions: agv.IsHoldingActions
+            HoldActions: agv.IsHoldingActions,
+            OrderEchoDelaySeconds: agv is VirtualAgv concrete ? concrete.OrderEchoDelaySeconds : 0
         );
     }
 

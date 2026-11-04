@@ -96,7 +96,7 @@ export const AgvControlPage: React.FC = () => {
   const {
     fetchFleet, startAgv, stopAgv, setBattery, setSpeed, setOperatingMode,
     fetchInboundMessages, fetchOutboundState, fetchMapNodes, addError, clearErrors, injectTemplate,
-    liftAgv, lowerAgv, clearLoads, disconnect, clearOrderState, setPosition, setActionHold,
+    liftAgv, lowerAgv, clearLoads, disconnect, clearOrderState, setPosition, setActionHold, setOrderEchoDelay,
   } = useFleetApi();
 
   const [loading, setLoading] = useState<string | null>(null);
@@ -108,6 +108,7 @@ export const AgvControlPage: React.FC = () => {
   const [modalMessage, setModalMessage] = useState<IInboundMqttMessage | null>(null);
   const [mapNodes, setMapNodes] = useState<{ mapId: string; mapName: string; nodes: ISimMapNode[] }[]>([]);
   const [mapNodesFailed, setMapNodesFailed] = useState(false);
+  const [echoDelaySec, setEchoDelaySec] = useState<number>(5);
   const [teleportMapId, setTeleportMapId] = useState<string | undefined>(undefined);
   const [teleportNodeId, setTeleportNodeId] = useState<string | undefined>(undefined);
 
@@ -336,6 +337,43 @@ export const AgvControlPage: React.FC = () => {
                   loading={loading === 'action-hold'}
                   onChange={(checked) => run('action-hold', () => setActionHold(id, checked))}
                 />
+              </Flex>
+              <Flex align="center" gap={8} wrap>
+                <Text className="stat-title" style={{ width: 52 }}>Nghẽn</Text>
+                <InputNumber
+                  size="small"
+                  min={0}
+                  max={300}
+                  step={1}
+                  precision={0}
+                  style={{ width: 90 }}
+                  addonAfter="s"
+                  value={echoDelaySec}
+                  onChange={(v) => setEchoDelaySec(v ?? 0)}
+                />
+                <Button
+                  size="small"
+                  loading={loading === 'echo-delay'}
+                  onClick={() => run('echo-delay', () => setOrderEchoDelay(id, echoDelaySec))}
+                >
+                  Giả lập nghẽn
+                </Button>
+                {(agv.orderEchoDelaySeconds ?? 0) > 0 ? (
+                  <>
+                    <Tag color="orange">delay {(agv.orderEchoDelaySeconds ?? 0).toFixed(0)}s</Tag>
+                    <Button
+                      size="small"
+                      type="text"
+                      danger
+                      loading={loading === 'echo-delay-off'}
+                      onClick={() => run('echo-delay-off', () => setOrderEchoDelay(id, 0))}
+                    >
+                      Tắt
+                    </Button>
+                  </>
+                ) : (
+                  <Text type="secondary" style={{ fontSize: 11 }}>Nhận order nhưng echo state sau N giây</Text>
+                )}
               </Flex>
 
               <Divider style={{ margin: '4px 0' }} />

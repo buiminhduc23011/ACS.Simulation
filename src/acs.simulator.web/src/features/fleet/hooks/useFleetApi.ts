@@ -119,6 +119,12 @@ export function useFleetApi() {
     await fetchFleet();
   }, [fetchFleet]);
 
+  const setOrderEchoDelay = useCallback(async (id: string, delaySeconds: number) => {
+    await apiClient.post(ENDPOINTS.control.orderEchoDelay(id), { delaySeconds });
+    message.success(delaySeconds > 0 ? `AGV ${id} nghẽn mạng ${delaySeconds}s` : `AGV ${id} tắt giả lập nghẽn`);
+    await fetchFleet();
+  }, [fetchFleet]);
+
   const fetchInboundMessages = useCallback(async (id: string) => {
     const res = await apiClient.get<IInboundMqttMessage[]>(ENDPOINTS.control.inboundMessages(id));
     return res.data;
@@ -199,7 +205,7 @@ export function useFleetApi() {
 
   return {
     fetchFleet, createAgv, updateAgv, deleteAgv, startAgv, stopAgv,
-    setPosition, setBattery, setSpeed, setOperatingMode, clearOrderState, setActionHold, fetchInboundMessages, fetchOutboundState, fetchMapNodes,
+    setPosition, setBattery, setSpeed, setOperatingMode, clearOrderState, setActionHold, setOrderEchoDelay, fetchInboundMessages, fetchOutboundState, fetchMapNodes,
     addError, clearErrors, injectTemplate, liftAgv, lowerAgv, clearLoads, disconnect,
     bulkCreate, startMany, stopMany, deleteMany, importAgvs, refillBatteryMany,
   };

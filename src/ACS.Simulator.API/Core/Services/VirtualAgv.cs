@@ -112,6 +112,9 @@ public partial class VirtualAgv : IVirtualAgv
     private volatile bool _pauseLatched;
 
     // ACS inbound MQTT debug ring buffer (order + instantActions)
+    private const double MaxOrderEchoDelaySeconds = 300.0;
+    private double _orderEchoDelaySeconds;
+    public double OrderEchoDelaySeconds => _orderEchoDelaySeconds;
     private const int MaxInboundMqttMessages = 50;
     private readonly object _inboundMessagesLock = new();
     private readonly LinkedList<InboundMqttMessage> _inboundMessages = new();

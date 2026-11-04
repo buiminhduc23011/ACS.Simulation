@@ -40,6 +40,7 @@ public record SetBatteryRequest(double Level);
 public record SetSpeedRequest(double Speed);
 public record SetOperatingModeRequest(string Mode);
 public record SetActionHoldRequest(bool Enabled);
+public record SetOrderEchoDelayRequest(double DelaySeconds);
 
 public record AddErrorRequest(
     string ErrorType,
@@ -88,7 +89,8 @@ public record AgvSummaryDto(
     int NavigationTechnologyId = 1,
     List<AgvMapMappingDto>? MapMappings = null,
     ScreenNotificationDto? ActiveNotification = null,
-    bool HoldActions = false
+    bool HoldActions = false,
+    double OrderEchoDelaySeconds = 0
 );
 
 /// <summary>Notification currently shown on the AGV screen (ACS → notifications topic).</summary>

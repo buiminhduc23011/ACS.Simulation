@@ -322,6 +322,11 @@ public partial class VirtualAgv
     /// <summary>Test seam: mirror MQTT order ingress, including replacement cancellation.</summary>
     internal async Task EnqueueMqttOrderForTestsAsync(Vda5050Order order)
     {
+        var echoDelaySec = _orderEchoDelaySeconds;
+        if (echoDelaySec > 0)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(echoDelaySec));
+        }
         CancelActionForIncomingOrderIfReplacing(order);
         await _commandChannel.Writer.WriteAsync(new ProcessOrderCmd(order));
     }

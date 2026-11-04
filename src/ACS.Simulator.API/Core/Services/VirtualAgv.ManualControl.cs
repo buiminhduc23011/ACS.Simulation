@@ -204,6 +204,16 @@ public partial class VirtualAgv
     }
 
     /// <inheritdoc/>
+    public void SetOrderEchoDelay(double delaySeconds)
+    {
+        var clamped = double.IsFinite(delaySeconds) ? Math.Clamp(delaySeconds, 0, MaxOrderEchoDelaySeconds) : 0;
+        _orderEchoDelaySeconds = clamped;
+        _logger.LogInformation(
+            "AGV {SerialNumber} order echo delay set to {Delay:F1}s",
+            _config.SerialNumber, clamped);
+    }
+
+    /// <inheritdoc/>
     public IReadOnlyList<InboundMqttMessage> GetRecentInboundMessages()
     {
         lock (_inboundMessagesLock)

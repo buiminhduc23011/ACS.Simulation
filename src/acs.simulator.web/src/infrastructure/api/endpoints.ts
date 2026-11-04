@@ -43,6 +43,7 @@ export const ENDPOINTS = {
     clearErrors: (id: string) => `${BASE}/agvs/${id}/control/errors`,
     injectTemplate: (id: string) => `${BASE}/agvs/${id}/control/errors/inject`,
     disconnect: (id: string) => `${BASE}/agvs/${id}/control/disconnect`,
+    orderEchoDelay: (id: string) => `${BASE}/agvs/${id}/control/order-echo-delay`,
   },
   // Map data (loaded graphs)
   maps: {

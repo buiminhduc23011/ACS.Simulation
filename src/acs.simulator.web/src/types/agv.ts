@@ -18,6 +18,7 @@ export interface ISimAgv {
   isConnected: boolean;
   isRunning: boolean;
   holdActions?: boolean;
+  orderEchoDelaySeconds?: number;
   posX: number;
   posY: number;
   posTheta: number;

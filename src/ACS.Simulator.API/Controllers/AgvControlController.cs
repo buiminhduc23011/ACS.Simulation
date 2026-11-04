@@ -70,6 +70,17 @@ public class AgvControlController : ControllerBase
     }
 
     /// <summary>
+    /// Giả lập nghẽn mạng: delay giây trước khi order MQTT được echo trong state.
+    /// 0 = tắt. Tối đa 300s.
+    /// </summary>
+    [HttpPost("order-echo-delay")]
+    public IActionResult SetOrderEchoDelay(string id, [FromBody] SetOrderEchoDelayRequest req)
+    {
+        if (_sim.SetOrderEchoDelay(id, req.DelaySeconds)) return Ok(new { delaySeconds = req.DelaySeconds });
+        return NotFound();
+    }
+
+    /// <summary>
     /// Recent ACS MQTT payloads (order + instantActions) for debug on the control page.
     /// </summary>
     [HttpGet("inbound-messages")]
