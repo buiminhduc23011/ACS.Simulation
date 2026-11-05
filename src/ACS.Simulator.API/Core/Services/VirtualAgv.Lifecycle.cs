@@ -97,6 +97,8 @@ public partial class VirtualAgv
         _isMoving = false;
         _isRotating = false;
         _isReversing = false;
+        _currentSpeed = 0.0;
+        _currentEdgeMaxSpeed = 0.0;
         _arrivalTheta = null;
         _activeTrajectoryPoints = null;
         _currentTrajectorySegmentIndex = 0;
@@ -247,8 +249,29 @@ public partial class VirtualAgv
                 break;
 
             case SetSpeedCmd s:
-                _movementConfig.Speed = s.Speed;
+                _movementConfig.MaxSpeed = s.Speed;
                 _logger.LogInformation("AGV {SerialNumber} speed updated to {Speed} m/s", _config.SerialNumber, s.Speed);
+                break;
+
+            case SetMotionConfigCmd m:
+                _movementConfig.MaxSpeed = m.MaxSpeed;
+                _movementConfig.Acceleration = m.Acceleration;
+                _movementConfig.Deceleration = m.Deceleration;
+                // Kẹp tốc hiện tại nếu đang chạy nhanh hơn trần mới.
+                if (_currentSpeed > m.MaxSpeed) _currentSpeed = m.MaxSpeed;
+                _logger.LogInformation(
+                    "AGV {SerialNumber} motion config updated: maxSpeed={MaxSpeed} m/s, accel={Accel} m/s², decel={Decel} m/s²",
+                    _config.SerialNumber, m.MaxSpeed, m.Acceleration, m.Deceleration);
+                break;
+
+            case SetActionsConfigCmd ac:
+                _actionsConfig.LiftDurationMs = ac.LiftDurationMs;
+                _actionsConfig.LowerDurationMs = ac.LowerDurationMs;
+                _actionsConfig.GenericActionDurationMs = ac.GenericActionDurationMs;
+                _actionsConfig.LoadStateDelayMs = ac.LoadStateDelayMs;
+                _logger.LogInformation(
+                    "AGV {SerialNumber} actions config updated: lift={Lift}ms, lower={Lower}ms, generic={Generic}ms, loadDelay={Delay}ms",
+                    _config.SerialNumber, ac.LiftDurationMs, ac.LowerDurationMs, ac.GenericActionDurationMs, ac.LoadStateDelayMs);
                 break;
 
             case AddErrorCmd a:
@@ -260,6 +283,7 @@ public partial class VirtualAgv
                 });
                 _isMoving = false;
                 _isRotating = false;
+                _currentSpeed = 0.0;
                 _currentState.Driving = false;
                 ZeroStoppedVelocities();
                 StopVisualizationTimer();

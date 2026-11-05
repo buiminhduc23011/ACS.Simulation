@@ -90,6 +90,7 @@ public partial class VirtualAgv
         _isMoving = false;
         _isRotating = false;
         _isReversing = false;
+        _currentSpeed = 0.0;
         _arrivalTheta = null;
         _targetTheta = _currentTheta;
         _currentMovementBlocker = null;
@@ -412,6 +413,7 @@ public partial class VirtualAgv
         _isMoving = false;
         _isRotating = false;
         _isReversing = false;
+        _currentSpeed = 0.0;
         _arrivalTheta = null;
         _targetTheta = _currentTheta;
         _currentMovementBlocker = null;
@@ -501,6 +503,8 @@ public partial class VirtualAgv
             _isMoving = false;
             _isRotating = false;
             _isReversing = false;
+            _currentSpeed = 0.0;
+            _currentEdgeMaxSpeed = 0.0;
             _arrivalTheta = null;
             _targetTheta = _currentTheta;
 
@@ -522,7 +526,9 @@ public partial class VirtualAgv
             // the AGV simply stops and waits for the fleet manager to extend the order.
             // newBaseRequest must stay false here so ACS keeps dispatching EXTENSIONs.
             _isMoving = false;
+            _currentSpeed = 0.0;
             _currentState.Driving = false;
+            ZeroStoppedVelocities();
             StopVisualizationTimer();
             await PublishStateAsync(true);
 
@@ -560,7 +566,9 @@ public partial class VirtualAgv
                 _currentNodeIndex--;
                 _currentState.NewBaseRequest = true;
                 _isMoving = false;
+                _currentSpeed = 0.0;
                 _currentState.Driving = false;
+                ZeroStoppedVelocities();
                 StopVisualizationTimer();
                 await PublishStateAsync(true);
                 return;
@@ -624,6 +632,7 @@ public partial class VirtualAgv
                     _currentState.Paused = true;
                 }
                 _isMoving = false;
+                _currentSpeed = 0.0;
                 _currentState.Driving = false;
                 ZeroStoppedVelocities();
                 StopVisualizationTimer();
@@ -639,8 +648,9 @@ public partial class VirtualAgv
             _isMoving = true;
             _currentState.Driving = true;
 
-            // Cache the current edge maxSpeed
-            _currentEdgeMaxSpeed = orderEdge?.MaxSpeed ?? _movementConfig.Speed;
+            // Cache the current edge maxSpeed (0 = không giới hạn từ order, dùng MaxSpeed cấu hình)
+            _currentEdgeMaxSpeed = orderEdge?.MaxSpeed ?? 0.0;
+            _currentSpeed = 0.0;
 
             StartVisualizationTimer();
 
@@ -716,6 +726,7 @@ public partial class VirtualAgv
                         _pauseLatched = true;
                         _currentState.Paused = true;
                         _isMoving = false;
+                        _currentSpeed = 0.0;
                         _currentState.Driving = false;
                         ZeroStoppedVelocities();
                         StopVisualizationTimer();
@@ -947,6 +958,7 @@ public partial class VirtualAgv
         _isMoving = false;
         _isRotating = false;
         _isReversing = false;
+        _currentSpeed = 0.0;
         _arrivalTheta = null;
         _targetTheta = _currentTheta;
         _currentMovementBlocker = null;

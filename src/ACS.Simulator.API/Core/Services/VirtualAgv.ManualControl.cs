@@ -143,6 +143,22 @@ public partial class VirtualAgv
 
     public void SetSpeed(double speed)         => _commandChannel.Writer.TryWrite(new SetSpeedCmd(speed));
 
+    /// <inheritdoc/>
+    public void SetMotionConfig(double maxSpeed, double acceleration, double deceleration)
+        => _commandChannel.Writer.TryWrite(new SetMotionConfigCmd(maxSpeed, acceleration, deceleration));
+
+    /// <inheritdoc/>
+    public (double MaxSpeed, double Acceleration, double Deceleration) GetMotionConfig()
+        => (_movementConfig.MaxSpeed, _movementConfig.Acceleration, _movementConfig.Deceleration);
+
+    /// <inheritdoc/>
+    public void SetActionsConfig(int liftDurationMs, int lowerDurationMs, int genericActionDurationMs, int loadStateDelayMs)
+        => _commandChannel.Writer.TryWrite(new SetActionsConfigCmd(liftDurationMs, lowerDurationMs, genericActionDurationMs, loadStateDelayMs));
+
+    /// <inheritdoc/>
+    public (int LiftDurationMs, int LowerDurationMs, int GenericActionDurationMs, int LoadStateDelayMs) GetActionsConfig()
+        => (_actionsConfig.LiftDurationMs, _actionsConfig.LowerDurationMs, _actionsConfig.GenericActionDurationMs, _actionsConfig.LoadStateDelayMs);
+
     /// <summary>AGV stop thì event loop không chạy — ghi pin trực tiếp để cập nhật ngay.</summary>
     public void SetBatteryLevel(double level)
     {
@@ -281,6 +297,7 @@ public partial class VirtualAgv
         var previousY = _currentY;
         var previousTheta = _currentTheta;
         var now = DateTime.UtcNow;
+        _currentSpeed = 0.0;
 
         ApplyPositionInternal(x, y, theta, mapId);
         _currentState.LastNodeId = ResolveNearestNodeIdOnCurrentMap() ?? string.Empty;

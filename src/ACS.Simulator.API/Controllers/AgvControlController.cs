@@ -29,7 +29,45 @@ public class AgvControlController : ControllerBase
     [HttpPost("speed")]
     public IActionResult SetSpeed(string id, [FromBody] SetSpeedRequest req)
     {
+        if (req.Speed <= 0 || req.Speed > 10)
+            return BadRequest(new { message = "Speed must be within (0, 10] m/s." });
         if (_sim.SetSpeed(id, req.Speed)) return Ok();
+        return NotFound();
+    }
+
+    /// <summary>
+    /// Cài trần tốc độ + gia tốc tăng/giảm tốc. Edge cho cao hơn vẫn bị kẹp bởi MaxSpeed.
+    /// </summary>
+    [HttpPost("motion-config")]
+    public IActionResult SetMotionConfig(string id, [FromBody] SetMotionConfigRequest req)
+    {
+        if (req.MaxSpeed <= 0 || req.MaxSpeed > 10)
+            return BadRequest(new { message = "MaxSpeed must be within (0, 10] m/s." });
+        if (req.Acceleration <= 0 || req.Acceleration > 10)
+            return BadRequest(new { message = "Acceleration must be within (0, 10] m/s²." });
+        if (req.Deceleration <= 0 || req.Deceleration > 10)
+            return BadRequest(new { message = "Deceleration must be within (0, 10] m/s²." });
+        if (_sim.SetMotionConfig(id, req.MaxSpeed, req.Acceleration, req.Deceleration))
+            return Ok(new { req.MaxSpeed, req.Acceleration, req.Deceleration });
+        return NotFound();
+    }
+
+    /// <summary>
+    /// Cài thời gian thực hiện action PICK/LIFT, DROP/LOWER, generic và delay cập nhật load.
+    /// </summary>
+    [HttpPost("actions-config")]
+    public IActionResult SetActionsConfig(string id, [FromBody] SetActionsConfigRequest req)
+    {
+        if (req.LiftDurationMs < 0 || req.LiftDurationMs > 600000)
+            return BadRequest(new { message = "LiftDurationMs must be within [0, 600000] ms." });
+        if (req.LowerDurationMs < 0 || req.LowerDurationMs > 600000)
+            return BadRequest(new { message = "LowerDurationMs must be within [0, 600000] ms." });
+        if (req.GenericActionDurationMs < 0 || req.GenericActionDurationMs > 600000)
+            return BadRequest(new { message = "GenericActionDurationMs must be within [0, 600000] ms." });
+        if (req.LoadStateDelayMs < 0 || req.LoadStateDelayMs > 60000)
+            return BadRequest(new { message = "LoadStateDelayMs must be within [0, 60000] ms." });
+        if (_sim.SetActionsConfig(id, req.LiftDurationMs, req.LowerDurationMs, req.GenericActionDurationMs, req.LoadStateDelayMs))
+            return Ok(new { req.LiftDurationMs, req.LowerDurationMs, req.GenericActionDurationMs, req.LoadStateDelayMs });
         return NotFound();
     }
 

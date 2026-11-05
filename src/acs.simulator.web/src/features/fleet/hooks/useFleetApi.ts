@@ -58,6 +58,18 @@ export function useFleetApi() {
     await apiClient.post(ENDPOINTS.control.speed(id), { speed });
   }, []);
 
+  const setMotionConfig = useCallback(async (id: string, maxSpeed: number, acceleration: number, deceleration: number) => {
+    await apiClient.post(ENDPOINTS.control.motionConfig(id), { maxSpeed, acceleration, deceleration });
+    message.success(`AGV ${id} motion: max ${maxSpeed} m/s, accel ${acceleration}, decel ${deceleration}`);
+    await fetchFleet();
+  }, [fetchFleet]);
+
+  const setActionsConfig = useCallback(async (id: string, liftDurationMs: number, lowerDurationMs: number, genericActionDurationMs: number, loadStateDelayMs: number) => {
+    await apiClient.post(ENDPOINTS.control.actionsConfig(id), { liftDurationMs, lowerDurationMs, genericActionDurationMs, loadStateDelayMs });
+    message.success(`AGV ${id} action durations updated`);
+    await fetchFleet();
+  }, [fetchFleet]);
+
   const addError = useCallback(async (id: string, errorType: string, errorDescription: string, errorLevel: string) => {
     await apiClient.post(ENDPOINTS.control.addError(id), { errorType, description: errorDescription, errorLevel });
     message.warning(`Error added to ${id}`);
@@ -205,7 +217,7 @@ export function useFleetApi() {
 
   return {
     fetchFleet, createAgv, updateAgv, deleteAgv, startAgv, stopAgv,
-    setPosition, setBattery, setSpeed, setOperatingMode, clearOrderState, setActionHold, setOrderEchoDelay, fetchInboundMessages, fetchOutboundState, fetchMapNodes,
+    setPosition, setBattery, setSpeed, setMotionConfig, setActionsConfig, setOperatingMode, clearOrderState, setActionHold, setOrderEchoDelay, fetchInboundMessages, fetchOutboundState, fetchMapNodes,
     addError, clearErrors, injectTemplate, liftAgv, lowerAgv, clearLoads, disconnect,
     bulkCreate, startMany, stopMany, deleteMany, importAgvs, refillBatteryMany,
   };

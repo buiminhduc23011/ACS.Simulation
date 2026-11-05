@@ -90,6 +90,8 @@ public partial class VirtualAgv : IVirtualAgv
     private bool _isMoving = false;
     private bool _isRotating = false;
     private int _currentNodeIndex = -1;
+    // Tốc độ thẳng tức thời (m/s) — tăng theo Acceleration, giảm theo Deceleration, kẹp bởi MaxSpeed.
+    private double _currentSpeed = 0.0;
 
     // Curved trajectory state
     private List<(double X, double Y)>? _activeTrajectoryPoints;

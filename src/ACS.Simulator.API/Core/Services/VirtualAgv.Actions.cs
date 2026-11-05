@@ -339,6 +339,7 @@ public partial class VirtualAgv
         // Any error injection immediately stops movement
         _isMoving = false;
         _isRotating = false;
+        _currentSpeed = 0.0;
         _currentState.Driving = false;
         ZeroStoppedVelocities();
         StopVisualizationTimer();
@@ -346,8 +347,8 @@ public partial class VirtualAgv
         switch (template.SideEffect)
         {
             case ErrorSideEffect.ReduceSpeed50Percent:
-                _movementConfig.Speed *= 0.5;
-                _logger.LogWarning("AGV {SerialNumber} speed reduced to {Speed} m/s and stopped due to error", _config.SerialNumber, _movementConfig.Speed);
+                _movementConfig.MaxSpeed *= 0.5;
+                _logger.LogWarning("AGV {SerialNumber} speed reduced to {Speed} m/s and stopped due to error", _config.SerialNumber, _movementConfig.MaxSpeed);
                 break;
             case ErrorSideEffect.StopMovement:
                 _logger.LogWarning("AGV {SerialNumber} movement stopped due to error", _config.SerialNumber);

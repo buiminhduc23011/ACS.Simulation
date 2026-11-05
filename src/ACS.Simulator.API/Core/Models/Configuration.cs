@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace ACS.Simulator.API.Core.Models;
 
 public class AgvConfiguration
@@ -39,10 +41,18 @@ public class MqttBrokerConfig
 
 public class MovementConfig
 {
-    public double Speed { get; set; } = 1.5; // m/s
+    /// <summary>Trần tốc độ xe (m/s). Edge cho phép cao hơn vẫn bị kẹp ở mức này.</summary>
+    public double MaxSpeed { get; set; } = 1.5; // m/s
+    /// <summary>Gia tốc tăng tốc (m/s^2).</summary>
+    public double Acceleration { get; set; } = 0.8;
+    /// <summary>Gia tốc giảm tốc / phanh (m/s^2).</summary>
+    public double Deceleration { get; set; } = 0.8;
     public int MovementUpdateInterval { get; set; } = 100; // ms - cập nhật vị trí
     public int VisualizationPublishInterval { get; set; } = 200; // ms - publish visualization khi di chuyển
     public double Tolerance { get; set; } = 0.1; // meters
+    /// <summary>Alias cũ của MaxSpeed — giữ để code hiện tại (SetSpeed) không vỡ.</summary>
+    [JsonIgnore]
+    public double Speed { get => MaxSpeed; set => MaxSpeed = value; }
 }
 
 public class StatePublishConfig

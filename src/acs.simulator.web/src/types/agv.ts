@@ -38,6 +38,21 @@ export interface ISimAgv {
   errors?: IAgvError[];
   mapMappings?: IAgvMapMapping[];
   activeNotification?: IScreenNotification | null;
+  motion?: IMotionConfig;
+  actions?: IActionsConfig;
+}
+
+export interface IMotionConfig {
+  maxSpeed: number;
+  acceleration: number;
+  deceleration: number;
+}
+
+export interface IActionsConfig {
+  liftDurationMs: number;
+  lowerDurationMs: number;
+  genericActionDurationMs: number;
+  loadStateDelayMs: number;
 }
 
 /** Notification currently shown on the AGV screen (ACS → notifications topic). */

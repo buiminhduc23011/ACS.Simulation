@@ -32,6 +32,12 @@ public interface IVirtualAgv : IDisposable
     // Control
     void SetPosition(double x, double y, double theta, string mapId);
     void SetSpeed(double speed);
+    /// <summary>Cài trần tốc độ + gia tốc (m/s, m/s^2). Edge cho cao hơn vẫn bị kẹp bởi MaxSpeed.</summary>
+    void SetMotionConfig(double maxSpeed, double acceleration, double deceleration);
+    (double MaxSpeed, double Acceleration, double Deceleration) GetMotionConfig();
+    /// <summary>Cài thời gian thực hiện action (ms).</summary>
+    void SetActionsConfig(int liftDurationMs, int lowerDurationMs, int genericActionDurationMs, int loadStateDelayMs);
+    (int LiftDurationMs, int LowerDurationMs, int GenericActionDurationMs, int LoadStateDelayMs) GetActionsConfig();
     void SetBatteryLevel(double level);
     Task<bool> SetOperatingModeAsync(string mode);
     void SetHoldActions(bool enabled);

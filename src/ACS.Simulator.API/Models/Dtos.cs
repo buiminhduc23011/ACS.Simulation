@@ -38,6 +38,8 @@ public record UpdateAgvRequest(
 public record SetPositionRequest(double X, double Y, double Theta, string MapId);
 public record SetBatteryRequest(double Level);
 public record SetSpeedRequest(double Speed);
+public record SetMotionConfigRequest(double MaxSpeed, double Acceleration, double Deceleration);
+public record SetActionsConfigRequest(int LiftDurationMs, int LowerDurationMs, int GenericActionDurationMs, int LoadStateDelayMs);
 public record SetOperatingModeRequest(string Mode);
 public record SetActionHoldRequest(bool Enabled);
 public record SetOrderEchoDelayRequest(double DelaySeconds);
@@ -61,6 +63,19 @@ public record AcsApiConfigDto(string BaseUrl);
 public record SimMapInfoDto(string MapId, string MapName, int NodeCount, int EdgeCount);
 
 // Response DTOs
+
+public record MotionConfigDto(
+    double MaxSpeed,
+    double Acceleration,
+    double Deceleration
+);
+
+public record ActionsConfigDto(
+    int LiftDurationMs,
+    int LowerDurationMs,
+    int GenericActionDurationMs,
+    int LoadStateDelayMs
+);
 
 public record AgvSummaryDto(
     string Id,
@@ -90,7 +105,9 @@ public record AgvSummaryDto(
     List<AgvMapMappingDto>? MapMappings = null,
     ScreenNotificationDto? ActiveNotification = null,
     bool HoldActions = false,
-    double OrderEchoDelaySeconds = 0
+    double OrderEchoDelaySeconds = 0,
+    MotionConfigDto? Motion = null,
+    ActionsConfigDto? Actions = null
 );
 
 /// <summary>Notification currently shown on the AGV screen (ACS → notifications topic).</summary>

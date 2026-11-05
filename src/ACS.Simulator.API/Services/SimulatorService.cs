@@ -114,11 +114,20 @@ public class SimulatorService
             ApplyKnownMapGraphs(agv);
 
             _fleet[id] = agv;
+            var motion = agv.GetMotionConfig();
+            var actions = agv.GetActionsConfig();
             _meta[id] = new AgvMeta
             {
                 Id = id,
                 Manufacturer = req.Manufacturer,
-                Speed = 1.0,
+                Speed = motion.MaxSpeed,
+                MaxSpeed = motion.MaxSpeed,
+                Acceleration = motion.Acceleration,
+                Deceleration = motion.Deceleration,
+                LiftDurationMs = actions.LiftDurationMs,
+                LowerDurationMs = actions.LowerDurationMs,
+                GenericActionDurationMs = actions.GenericActionDurationMs,
+                LoadStateDelayMs = actions.LoadStateDelayMs,
                 VehicleShapeId = req.VehicleShapeId,
                 NavigationTechnologyId = req.NavigationTechnologyId,
                 MapMappings = agvConfig.MapMappings
@@ -146,6 +155,7 @@ public class SimulatorService
         try
         {
             if (!_fleet.TryGetValue(id, out var oldAgv)) return null;
+            _meta.TryGetValue(id, out var oldMeta);
 
             // Stop and dispose the old AGV
             await oldAgv.StopAsync();
@@ -181,12 +191,25 @@ public class SimulatorService
 
             using var logFactory = LoggerFactory.Create(b => b.AddConsole());
             var agvLogger = logFactory.CreateLogger<VirtualAgv>();
+            var movementConfig = new MovementConfig
+            {
+                MaxSpeed = oldMeta?.MaxSpeed ?? 1.5,
+                Acceleration = oldMeta?.Acceleration ?? 0.8,
+                Deceleration = oldMeta?.Deceleration ?? 0.8,
+            };
+            var actionsConfig = new ActionsConfig
+            {
+                LiftDurationMs = oldMeta?.LiftDurationMs ?? 2000,
+                LowerDurationMs = oldMeta?.LowerDurationMs ?? 2000,
+                GenericActionDurationMs = oldMeta?.GenericActionDurationMs ?? 3500,
+                LoadStateDelayMs = oldMeta?.LoadStateDelayMs ?? 250,
+            };
             var newAgv = new VirtualAgv(
                 agvConfig,
                 mqttConfig,
-                new MovementConfig(),
+                movementConfig,
                 new StatePublishConfig(),
-                new ActionsConfig(),
+                actionsConfig,
                 agvLogger);
             newAgv.SetMovementBlockResolver(FindBlockingAgv);
             ApplyKnownMapGraphs(newAgv);
@@ -196,7 +219,14 @@ public class SimulatorService
             {
                 Id = newId,
                 Manufacturer = req.Manufacturer,
-                Speed = 1.0,
+                Speed = movementConfig.MaxSpeed,
+                MaxSpeed = movementConfig.MaxSpeed,
+                Acceleration = movementConfig.Acceleration,
+                Deceleration = movementConfig.Deceleration,
+                LiftDurationMs = actionsConfig.LiftDurationMs,
+                LowerDurationMs = actionsConfig.LowerDurationMs,
+                GenericActionDurationMs = actionsConfig.GenericActionDurationMs,
+                LoadStateDelayMs = actionsConfig.LoadStateDelayMs,
                 VehicleShapeId = req.VehicleShapeId,
                 NavigationTechnologyId = req.NavigationTechnologyId,
                 MapMappings = agvConfig.MapMappings
@@ -284,7 +314,46 @@ public class SimulatorService
     {
         if (!_fleet.TryGetValue(id, out var agv)) return false;
         agv.SetSpeed(speed);
-        if (_meta.TryGetValue(id, out var m)) m.Speed = speed;
+        if (_meta.TryGetValue(id, out var m))
+        {
+            m.Speed = speed;
+            m.MaxSpeed = speed;
+        }
+        _ = SaveFleetAsync();
+        return true;
+    }
+
+    public bool SetMotionConfig(string id, double maxSpeed, double acceleration, double deceleration)
+    {
+        if (!_fleet.TryGetValue(id, out var agv)) return false;
+        agv.SetMotionConfig(maxSpeed, acceleration, deceleration);
+        if (_meta.TryGetValue(id, out var m))
+        {
+            m.MaxSpeed = maxSpeed;
+            m.Acceleration = acceleration;
+            m.Deceleration = deceleration;
+            m.Speed = maxSpeed;
+        }
+        EmitEvent(id, "MotionConfigChanged",
+            $"AGV {id} motion → max {maxSpeed:F2} m/s, accel {acceleration:F2}, decel {deceleration:F2}");
+        _ = SaveFleetAsync();
+        return true;
+    }
+
+    public bool SetActionsConfig(string id, int liftMs, int lowerMs, int genericMs, int loadDelayMs)
+    {
+        if (!_fleet.TryGetValue(id, out var agv)) return false;
+        agv.SetActionsConfig(liftMs, lowerMs, genericMs, loadDelayMs);
+        if (_meta.TryGetValue(id, out var m))
+        {
+            m.LiftDurationMs = liftMs;
+            m.LowerDurationMs = lowerMs;
+            m.GenericActionDurationMs = genericMs;
+            m.LoadStateDelayMs = loadDelayMs;
+        }
+        EmitEvent(id, "ActionsConfigChanged",
+            $"AGV {id} actions → lift {liftMs}ms, lower {lowerMs}ms, generic {genericMs}ms");
+        _ = SaveFleetAsync();
         return true;
     }
 
@@ -460,6 +529,8 @@ public class SimulatorService
             : agv.HasFatalErrors ? "ERROR"
             : state.Driving ? "DRIVING"
             : "IDLE";
+        var motion = agv.GetMotionConfig();
+        var actions = agv.GetActionsConfig();
 
         return new AgvSummaryDto(
             Id: id,
@@ -493,7 +564,9 @@ public class SimulatorService
                 ? new ScreenNotificationDto(notification.Type, notification.Message, notification.ExpiresAtUtc)
                 : null,
             HoldActions: agv.IsHoldingActions,
-            OrderEchoDelaySeconds: agv is VirtualAgv concrete ? concrete.OrderEchoDelaySeconds : 0
+            OrderEchoDelaySeconds: agv is VirtualAgv concrete ? concrete.OrderEchoDelaySeconds : 0,
+            Motion: new MotionConfigDto(motion.MaxSpeed, motion.Acceleration, motion.Deceleration),
+            Actions: new ActionsConfigDto(actions.LiftDurationMs, actions.LowerDurationMs, actions.GenericActionDurationMs, actions.LoadStateDelayMs)
         );
     }
 
@@ -601,7 +674,14 @@ public class SimulatorService
                     PosY = pos.Y,
                     PosTheta = pos.Theta,
                     MapId = !string.IsNullOrEmpty(pos.MapId) ? pos.MapId : "",
-                    Speed = meta?.Speed ?? 1.0,
+                    Speed = meta?.MaxSpeed ?? 1.5,
+                    MaxSpeed = meta?.MaxSpeed ?? 1.5,
+                    Acceleration = meta?.Acceleration ?? 0.8,
+                    Deceleration = meta?.Deceleration ?? 0.8,
+                    LiftDurationMs = meta?.LiftDurationMs ?? 2000,
+                    LowerDurationMs = meta?.LowerDurationMs ?? 2000,
+                    GenericActionDurationMs = meta?.GenericActionDurationMs ?? 3500,
+                    LoadStateDelayMs = meta?.LoadStateDelayMs ?? 250,
                     VehicleShapeId = meta?.VehicleShapeId ?? 1,
                     NavigationTechnologyId = meta?.NavigationTechnologyId ?? 1,
                     AutoStart = agv.IsRunning,
@@ -661,9 +741,16 @@ public class SimulatorService
                     continue;
                 }
 
-                // Restore speed
-                if (saved.Speed != 1.0)
-                    SetSpeed(saved.SerialNumber, saved.Speed);
+                // Restore motion + actions (Speed cũ map sang MaxSpeed để tương thích fleet.json cũ)
+                var restoreMax = saved.MaxSpeed > 0 ? saved.MaxSpeed : saved.Speed > 0 ? saved.Speed : 1.5;
+                var restoreAccel = saved.Acceleration > 0 ? saved.Acceleration : 0.8;
+                var restoreDecel = saved.Deceleration > 0 ? saved.Deceleration : 0.8;
+                SetMotionConfig(saved.SerialNumber, restoreMax, restoreAccel, restoreDecel);
+                SetActionsConfig(saved.SerialNumber,
+                    saved.LiftDurationMs > 0 ? saved.LiftDurationMs : 2000,
+                    saved.LowerDurationMs > 0 ? saved.LowerDurationMs : 2000,
+                    saved.GenericActionDurationMs > 0 ? saved.GenericActionDurationMs : 3500,
+                    saved.LoadStateDelayMs >= 0 ? saved.LoadStateDelayMs : 250);
 
                 // Auto-start only AGVs that were running before shutdown.
                 if (saved.AutoStart)
@@ -711,7 +798,14 @@ public class AgvMeta
 {
     public string Id { get; set; } = "";
     public string Manufacturer { get; set; } = "";
-    public double Speed { get; set; } = 1.0;
+    public double Speed { get; set; } = 1.5;
+    public double MaxSpeed { get; set; } = 1.5;
+    public double Acceleration { get; set; } = 0.8;
+    public double Deceleration { get; set; } = 0.8;
+    public int LiftDurationMs { get; set; } = 2000;
+    public int LowerDurationMs { get; set; } = 2000;
+    public int GenericActionDurationMs { get; set; } = 3500;
+    public int LoadStateDelayMs { get; set; } = 250;
     public int VehicleShapeId { get; set; } = 1;
     public int NavigationTechnologyId { get; set; } = 1;
     public List<AgvMapMapping> MapMappings { get; set; } = new();

@@ -94,7 +94,7 @@ export const AgvControlPage: React.FC = () => {
   const navigate = useNavigate();
   const agv = useFleetStore(useShallow((s) => (id ? s.agvs[id] : undefined)));
   const {
-    fetchFleet, startAgv, stopAgv, setBattery, setSpeed, setOperatingMode,
+    fetchFleet, startAgv, stopAgv, setBattery, setMotionConfig, setActionsConfig, setOperatingMode,
     fetchInboundMessages, fetchOutboundState, fetchMapNodes, addError, clearErrors, injectTemplate,
     liftAgv, lowerAgv, clearLoads, disconnect, clearOrderState, setPosition, setActionHold, setOrderEchoDelay,
   } = useFleetApi();
@@ -103,6 +103,8 @@ export const AgvControlPage: React.FC = () => {
   const [moveSpeed, setMoveSpeed] = useState(1.0);
   const [driveDirection, setDriveDirection] = useState<'IDLE' | 'FORWARD' | 'REVERSE' | 'TURNING'>('IDLE');
   const [errForm] = Form.useForm();
+  const [motionForm] = Form.useForm();
+  const [actionsForm] = Form.useForm();
   const [inboundMessages, setInboundMessages] = useState<IInboundMqttMessage[]>([]);
   const [outboundState, setOutboundState] = useState<Record<string, unknown> | null>(null);
   const [modalMessage, setModalMessage] = useState<IInboundMqttMessage | null>(null);
@@ -119,6 +121,28 @@ export const AgvControlPage: React.FC = () => {
       posRef.current = { x: agv.posX, y: agv.posY, theta: agv.posTheta, mapId: agv.mapId ?? '' };
     }
   }, [agv]);
+
+  // Đồng bộ form motion/actions khi fleet poll về giá trị mới từ backend
+  useEffect(() => {
+    if (agv?.motion) {
+      motionForm.setFieldsValue({
+        maxSpeed: agv.motion.maxSpeed,
+        acceleration: agv.motion.acceleration,
+        deceleration: agv.motion.deceleration,
+      });
+    }
+  }, [agv?.motion?.maxSpeed, agv?.motion?.acceleration, agv?.motion?.deceleration, motionForm, agv?.motion]);
+
+  useEffect(() => {
+    if (agv?.actions) {
+      actionsForm.setFieldsValue({
+        liftDurationMs: agv.actions.liftDurationMs,
+        lowerDurationMs: agv.actions.lowerDurationMs,
+        genericActionDurationMs: agv.actions.genericActionDurationMs,
+        loadStateDelayMs: agv.actions.loadStateDelayMs,
+      });
+    }
+  }, [agv?.actions?.liftDurationMs, agv?.actions?.lowerDurationMs, agv?.actions?.genericActionDurationMs, agv?.actions?.loadStateDelayMs, actionsForm, agv?.actions]);
 
   useEffect(() => { fetchFleet(); }, [fetchFleet]);
 
@@ -417,7 +441,7 @@ export const AgvControlPage: React.FC = () => {
 
               <Divider style={{ margin: '4px 0' }} />
 
-              {/* Battery + speed */}
+              {/* Battery + motion limits + action durations */}
               <Flex align="center" gap={8} wrap>
                 <Text className="stat-title" style={{ width: 52 }}>Battery</Text>
                 <Form layout="inline" size="small" initialValues={{ batteryLevel: agv.batteryLevel, charging: agv.isCharging }}
@@ -432,14 +456,90 @@ export const AgvControlPage: React.FC = () => {
                   <Button htmlType="submit" size="small" type="primary" loading={loading === 'bat'}>Set</Button>
                 </Form>
               </Flex>
-              <Flex align="center" gap={8} wrap>
-                <Text className="stat-title" style={{ width: 52 }}>Speed</Text>
-                <Form layout="inline" size="small" initialValues={{ speed: planarSpeed }}
-                  onFinish={(v) => run('spd', () => setSpeed(id, v.speed))}>
-                  <Form.Item name="speed" style={{ marginBottom: 0 }}>
-                    <InputNumber min={0} max={10} step={0.1} style={{ width: 110 }} addonAfter="m/s" />
-                  </Form.Item>
-                  <Button htmlType="submit" size="small" type="primary" loading={loading === 'spd'}>Set</Button>
+              <Flex vertical gap={8} style={{ marginTop: 8 }}>
+                <Flex align="center" gap={8}>
+                  <Text className="stat-title" style={{ width: 52 }}>Tốc độ</Text>
+                  <Text type="secondary" style={{ fontSize: 11 }}>
+                    Trần tốc độ — đường cho cao hơn vẫn bị kẹp. Hiện tại: {planarSpeed.toFixed(2)} m/s
+                  </Text>
+                </Flex>
+                <Form
+                  form={motionForm}
+                  layout="vertical"
+                  size="small"
+                  initialValues={{
+                    maxSpeed: agv.motion?.maxSpeed ?? 1.5,
+                    acceleration: agv.motion?.acceleration ?? 0.8,
+                    deceleration: agv.motion?.deceleration ?? 0.8,
+                  }}
+                  onFinish={(v) => run('motion', () => setMotionConfig(id, v.maxSpeed, v.acceleration, v.deceleration))}
+                >
+                  <Row gutter={8}>
+                    <Col span={8}>
+                      <Form.Item name="maxSpeed" label="Tốc max (m/s)" rules={[{ required: true }]} style={{ marginBottom: 8 }}>
+                        <InputNumber min={0.05} max={10} step={0.1} precision={2} style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item name="acceleration" label="Gia tốc tăng (m/s²)" rules={[{ required: true }]} style={{ marginBottom: 8 }}>
+                        <InputNumber min={0.05} max={10} step={0.1} precision={2} style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item name="deceleration" label="Gia tốc giảm (m/s²)" rules={[{ required: true }]} style={{ marginBottom: 8 }}>
+                        <InputNumber min={0.05} max={10} step={0.1} precision={2} style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                  <Button htmlType="submit" size="small" type="primary" loading={loading === 'motion'} block>
+                    Lưu giới hạn tốc độ
+                  </Button>
+                </Form>
+              </Flex>
+              <Flex vertical gap={8} style={{ marginTop: 8 }}>
+                <Flex align="center" gap={8}>
+                  <Text className="stat-title" style={{ width: 52 }}>Action</Text>
+                  <Text type="secondary" style={{ fontSize: 11 }}>Thời gian thực hiện PICK / DROP / action khác</Text>
+                </Flex>
+                <Form
+                  form={actionsForm}
+                  layout="vertical"
+                  size="small"
+                  initialValues={{
+                    liftDurationMs: agv.actions?.liftDurationMs ?? 2000,
+                    lowerDurationMs: agv.actions?.lowerDurationMs ?? 2000,
+                    genericActionDurationMs: agv.actions?.genericActionDurationMs ?? 3500,
+                    loadStateDelayMs: agv.actions?.loadStateDelayMs ?? 250,
+                  }}
+                  onFinish={(v) => run('actions', () => setActionsConfig(id, v.liftDurationMs, v.lowerDurationMs, v.genericActionDurationMs, v.loadStateDelayMs))}
+                >
+                  <Row gutter={8}>
+                    <Col span={12}>
+                      <Form.Item name="liftDurationMs" label="PICK / LIFT (ms)" rules={[{ required: true }]} style={{ marginBottom: 8 }}>
+                        <InputNumber min={0} max={600000} step={100} precision={0} style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item name="lowerDurationMs" label="DROP / LOWER (ms)" rules={[{ required: true }]} style={{ marginBottom: 8 }}>
+                        <InputNumber min={0} max={600000} step={100} precision={0} style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                  <Row gutter={8}>
+                    <Col span={12}>
+                      <Form.Item name="genericActionDurationMs" label="Action khác (ms)" rules={[{ required: true }]} style={{ marginBottom: 8 }}>
+                        <InputNumber min={0} max={600000} step={100} precision={0} style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item name="loadStateDelayMs" label="Delay cập nhật load (ms)" rules={[{ required: true }]} style={{ marginBottom: 8 }}>
+                        <InputNumber min={0} max={60000} step={50} precision={0} style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                  <Button htmlType="submit" size="small" type="primary" loading={loading === 'actions'} block>
+                    Lưu thời gian action
+                  </Button>
                 </Form>
               </Flex>
             </Flex>

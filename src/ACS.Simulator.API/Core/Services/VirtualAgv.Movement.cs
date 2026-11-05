@@ -23,6 +23,7 @@ public partial class VirtualAgv
             {
                 _isMoving = false;
                 _isRotating = false;
+                _currentSpeed = 0.0;
                 _currentState.Driving = false;
                 if (_pauseLatched)
                 {
@@ -31,12 +32,19 @@ public partial class VirtualAgv
                 ZeroStoppedVelocities();
                 StopVisualizationTimer();
             }
+            else
+            {
+                _currentSpeed = 0.0;
+            }
 
             return;
         }
 
         if (!_isMoving)
+        {
+            _currentSpeed = 0.0;
             return;
+        }
 
         // Safety check: validate _currentOrder and _currentNodeIndex before accessing
         if (_currentOrder == null || _currentOrder.Nodes == null ||
@@ -44,6 +52,7 @@ public partial class VirtualAgv
         {
             _isMoving = false;
             _isRotating = false;
+            _currentSpeed = 0.0;
             _currentState.Driving = false;
             return;
         }
@@ -107,6 +116,7 @@ public partial class VirtualAgv
             _isMoving = false;
             _isRotating = false;
             _isReversing = false;
+            _currentSpeed = 0.0;
             _arrivalTheta = null;
             _targetTheta = _currentTheta;
 
@@ -139,6 +149,7 @@ public partial class VirtualAgv
         if (!isFollowingCurve && Math.Abs(angleDiff) > rotationTolerance)
         {
             _isRotating = true;
+            _currentSpeed = 0.0;
 
             // Ensure linear velocity is zero during rotation to prevent sliding
             _currentState.Velocity!.Vx = 0;
@@ -174,13 +185,33 @@ public partial class VirtualAgv
         }
 
         // Phase 2: translate toward the target while keeping the chosen heading.
+        // Tốc độ tuân theo hình thang: tăng theo Acceleration, kẹp trần MaxSpeed
+        // (edge cho cao hơn vẫn bị kẹp), phanh theo Deceleration để dừng đúng node.
         _isRotating = false;
         _currentState.Velocity!.Omega = 0;
         _currentVisualization.Velocity!.Omega = 0;
 
-        double edgeMaxSpeed = _currentEdgeMaxSpeed > 0 ? _currentEdgeMaxSpeed : _movementConfig.Speed;
-        double fastSpeed = edgeMaxSpeed;
-        double stepDistance = fastSpeed * _movementConfig.MovementUpdateInterval / 1000.0; // metres per tick
+        double dt = _movementConfig.MovementUpdateInterval / 1000.0;
+        double edgeLimit = _currentEdgeMaxSpeed > 0 ? _currentEdgeMaxSpeed : _movementConfig.MaxSpeed;
+        double cruiseSpeed = Math.Min(edgeLimit, _movementConfig.MaxSpeed);
+        cruiseSpeed = Math.Max(0.0, cruiseSpeed);
+        // Phanh để kịp dừng tại node: v = sqrt(2*a*d)
+        double brakeSpeed = _movementConfig.Deceleration > 0 && distance > 0
+            ? Math.Sqrt(2.0 * _movementConfig.Deceleration * distance)
+            : cruiseSpeed;
+        double targetSpeed = Math.Min(cruiseSpeed, brakeSpeed);
+        if (_currentSpeed < targetSpeed)
+        {
+            double accel = _movementConfig.Acceleration > 0 ? _movementConfig.Acceleration : double.MaxValue;
+            _currentSpeed = Math.Min(targetSpeed, _currentSpeed + accel * dt);
+        }
+        else if (_currentSpeed > targetSpeed)
+        {
+            double decel = _movementConfig.Deceleration > 0 ? _movementConfig.Deceleration : double.MaxValue;
+            _currentSpeed = Math.Max(targetSpeed, _currentSpeed - decel * dt);
+        }
+        double fastSpeed = _currentSpeed;
+        double stepDistance = fastSpeed * dt; // metres per tick
 
         double nextX, nextY;
 
@@ -240,6 +271,7 @@ public partial class VirtualAgv
         if (_pauseLatched || _currentState.Paused)
         {
             _isMoving = false;
+            _currentSpeed = 0.0;
             _currentState.Driving = false;
             _currentState.Paused = true;
             ZeroStoppedVelocities();
@@ -306,6 +338,7 @@ public partial class VirtualAgv
         _currentState.LastNodeId = ToReportedNodeId(currentNode.NodeId) ?? string.Empty;
         _currentState.LastNodeSequenceId = currentNode.SequenceId;
         _currentState.DistanceSinceLastNode = 0;
+        _currentSpeed = 0.0;
 
         _currentState.Velocity!.Vx = 0;
         _currentState.Velocity.Vy = 0;
@@ -442,6 +475,7 @@ public partial class VirtualAgv
         }
 
         _currentState.Driving = false;
+        _currentSpeed = 0.0;
         _currentState.Velocity!.Vx = 0;
         _currentState.Velocity.Vy = 0;
         _currentState.Velocity.Omega = 0;

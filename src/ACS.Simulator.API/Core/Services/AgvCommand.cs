@@ -38,6 +38,12 @@ public sealed record SetBatteryCmd(double Level) : AgvCommand;
 /// <summary>Enqueued by SetSpeed() HTTP call.</summary>
 public sealed record SetSpeedCmd(double Speed) : AgvCommand;
 
+/// <summary>Enqueued by SetMotionConfig() — trần tốc độ + gia tốc tăng/giảm tốc.</summary>
+public sealed record SetMotionConfigCmd(double MaxSpeed, double Acceleration, double Deceleration) : AgvCommand;
+
+/// <summary>Enqueued by SetActionsConfig() — thời gian thực hiện PICK/DROP/generic.</summary>
+public sealed record SetActionsConfigCmd(int LiftDurationMs, int LowerDurationMs, int GenericActionDurationMs, int LoadStateDelayMs) : AgvCommand;
+
 /// <summary>Enqueued by AddErrorAsync().</summary>
 public sealed record AddErrorCmd(string ErrorType, string ErrorLevel, string? Description) : AgvCommand;
 

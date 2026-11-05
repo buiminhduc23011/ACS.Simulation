@@ -116,6 +116,13 @@ public class SavedAgvConfig
     public double PosTheta { get; set; }
     public string MapId { get; set; } = "";
     public double Speed { get; set; } = 1.0;
+    public double MaxSpeed { get; set; } = 1.5;
+    public double Acceleration { get; set; } = 0.8;
+    public double Deceleration { get; set; } = 0.8;
+    public int LiftDurationMs { get; set; } = 2000;
+    public int LowerDurationMs { get; set; } = 2000;
+    public int GenericActionDurationMs { get; set; } = 3500;
+    public int LoadStateDelayMs { get; set; } = 250;
     public int VehicleShapeId { get; set; } = 1;
     public int NavigationTechnologyId { get; set; } = 1;
     public bool AutoStart { get; set; } = true;
