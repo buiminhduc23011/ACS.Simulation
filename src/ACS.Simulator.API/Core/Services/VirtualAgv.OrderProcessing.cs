@@ -650,7 +650,16 @@ public partial class VirtualAgv
 
             // Cache the current edge maxSpeed (0 = không giới hạn từ order, dùng MaxSpeed cấu hình)
             _currentEdgeMaxSpeed = orderEdge?.MaxSpeed ?? 0.0;
-            _currentSpeed = 0.0;
+            // Giữ tốc độ hiện tại khi qua node trung gian để không giật cục:
+            // chỉ kẹp xuống nếu trần edge mới / MaxSpeed thấp hơn tốc độ đang chạy.
+            {
+                double newCruise = _currentEdgeMaxSpeed > 0
+                    ? Math.Min(_currentEdgeMaxSpeed, _movementConfig.MaxSpeed)
+                    : _movementConfig.MaxSpeed;
+                newCruise = Math.Max(0.0, newCruise);
+                if (_currentSpeed > newCruise)
+                    _currentSpeed = newCruise;
+            }
 
             StartVisualizationTimer();
 

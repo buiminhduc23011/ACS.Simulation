@@ -39,6 +39,9 @@ public interface IVirtualAgv : IDisposable
     void SetActionsConfig(int liftDurationMs, int lowerDurationMs, int genericActionDurationMs, int loadStateDelayMs);
     (int LiftDurationMs, int LowerDurationMs, int GenericActionDurationMs, int LoadStateDelayMs) GetActionsConfig();
     void SetBatteryLevel(double level);
+    /// <summary>Đặt thời gian sạc đầy 0-100% (giờ, float). AGV nạp tuyến tính 100/(giờ*60) %/phút.</summary>
+    void SetBatteryChargeConfig(double fullChargeHours);
+    double GetFullChargeHours();
     Task<bool> SetOperatingModeAsync(string mode);
     void SetHoldActions(bool enabled);
     void ClearOrderState();

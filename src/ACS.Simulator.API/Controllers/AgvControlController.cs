@@ -22,7 +22,22 @@ public class AgvControlController : ControllerBase
     [HttpPost("battery")]
     public IActionResult SetBattery(string id, [FromBody] SetBatteryRequest req)
     {
+        if (req.Level < 0 || req.Level > 100)
+            return BadRequest(new { message = "Level must be within [0, 100]." });
         if (_sim.SetBattery(id, req.Level)) return Ok();
+        return NotFound();
+    }
+
+    /// <summary>
+    /// Đặt thời gian sạc đầy 0-100% (giờ, float ví dụ 5.6). AGV nạp tuyến tính 100/(giờ*60) %/phút.
+    /// </summary>
+    [HttpPost("battery-config")]
+    public IActionResult SetBatteryConfig(string id, [FromBody] SetBatteryChargeRequest req)
+    {
+        if (!double.IsFinite(req.FullChargeHours) || req.FullChargeHours <= 0 || req.FullChargeHours > 1000)
+            return BadRequest(new { message = "FullChargeHours must be within (0, 1000] hours." });
+        if (_sim.SetBatteryChargeConfig(id, req.FullChargeHours))
+            return Ok(new { req.FullChargeHours });
         return NotFound();
     }
 

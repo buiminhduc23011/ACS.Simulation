@@ -248,6 +248,13 @@ public partial class VirtualAgv
                 ApplyBatteryLevel(b.Level);
                 break;
 
+            case SetBatteryChargeCmd bc:
+                ApplyBatteryChargeHours(bc.FullChargeHours);
+                _logger.LogInformation(
+                    "AGV {SerialNumber} battery charge time updated: {Hours:F3}h (rate {Rate:F4}%/min)",
+                    _config.SerialNumber, _batteryConfig.FullChargeHours, _batteryConfig.ChargeRatePerMinute);
+                break;
+
             case SetSpeedCmd s:
                 _movementConfig.MaxSpeed = s.Speed;
                 _logger.LogInformation("AGV {SerialNumber} speed updated to {Speed} m/s", _config.SerialNumber, s.Speed);

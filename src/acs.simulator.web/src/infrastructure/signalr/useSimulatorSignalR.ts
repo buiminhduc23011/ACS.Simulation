@@ -31,9 +31,19 @@ export function useSimulatorSignalR(
       .configureLogging(signalR.LogLevel.Warning)
       .build();
     let disposed = false;
+    // Gộp nhiều push trong cùng 1 frame thành 1 lần setFleet — tránh render dồn khi fleet đông.
+    let pendingFleet: ISimAgv[] | null = null;
+    let rafId = 0;
 
     connection.on('AgvFleetUpdated', (data: { agvs: ISimAgv[] }) => {
-      callbacksRef.current.onFleetUpdated?.(data.agvs ?? data as unknown as ISimAgv[]);
+      pendingFleet = data.agvs ?? (data as unknown as ISimAgv[]);
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        const fleet = pendingFleet;
+        pendingFleet = null;
+        if (fleet) callbacksRef.current.onFleetUpdated?.(fleet);
+      });
     });
 
     connection.on('FleetEvent', (event: IFleetEvent) => {
@@ -63,6 +73,7 @@ export function useSimulatorSignalR(
 
     return () => {
       disposed = true;
+      if (rafId) cancelAnimationFrame(rafId);
       if (connectionRef.current === connection) {
         connectionRef.current = null;
       }

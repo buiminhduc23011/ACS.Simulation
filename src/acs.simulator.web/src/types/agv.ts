@@ -40,12 +40,18 @@ export interface ISimAgv {
   activeNotification?: IScreenNotification | null;
   motion?: IMotionConfig;
   actions?: IActionsConfig;
+  battery?: IBatteryConfig;
 }
 
 export interface IMotionConfig {
   maxSpeed: number;
   acceleration: number;
   deceleration: number;
+}
+
+export interface IBatteryConfig {
+  fullChargeHours: number;
+  chargeRatePerMinute: number;
 }
 
 export interface IActionsConfig {

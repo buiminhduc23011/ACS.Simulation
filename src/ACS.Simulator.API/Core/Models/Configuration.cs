@@ -85,8 +85,27 @@ public class BatteryConfig
     /// </summary>
     public double AutoDrainFloor { get; set; } = 18.0;
 
-    /// <summary>Phần trăm pin nạp mỗi phút khi charging (default: 2.0%/min)</summary>
+    /// <summary>Phần trăm pin nạp mỗi phút khi charging (default: 2.0%/min).</summary>
+    /// <remarks>
+    /// Giá trị này được suy ra tuyến tính từ <see cref="FullChargeHours"/>:
+    /// ChargeRatePerMinute = 100 / (FullChargeHours * 60).
+    /// Giữ setter để tương thích fleet.json / API cũ.
+    /// </remarks>
     public double ChargeRatePerMinute { get; set; } = 2.0;
+
+    /// <summary>
+    /// Thời gian sạc đầy từ 0 lên 100% (giờ, cho phép float ví dụ 5.6).
+    /// AGV tính tuyến tính: mỗi phút nạp 100 / (giờ * 60) %.
+    /// </summary>
+    public double FullChargeHours
+    {
+        get => ChargeRatePerMinute <= 0 ? 0 : 100.0 / (ChargeRatePerMinute * 60.0);
+        set
+        {
+            if (double.IsFinite(value) && value > 0)
+                ChargeRatePerMinute = 100.0 / (value * 60.0);
+        }
+    }
 
     /// <summary>Mức pin ban đầu (default: 100%)</summary>
     public double InitialLevel { get; set; } = 100.0;

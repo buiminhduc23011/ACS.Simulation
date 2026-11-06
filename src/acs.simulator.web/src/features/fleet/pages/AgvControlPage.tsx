@@ -94,7 +94,7 @@ export const AgvControlPage: React.FC = () => {
   const navigate = useNavigate();
   const agv = useFleetStore(useShallow((s) => (id ? s.agvs[id] : undefined)));
   const {
-    fetchFleet, startAgv, stopAgv, setBattery, setMotionConfig, setActionsConfig, setOperatingMode,
+    fetchFleet, startAgv, stopAgv, setBattery, setBatteryConfig, setMotionConfig, setActionsConfig, setOperatingMode,
     fetchInboundMessages, fetchOutboundState, fetchMapNodes, addError, clearErrors, injectTemplate,
     liftAgv, lowerAgv, clearLoads, disconnect, clearOrderState, setPosition, setActionHold, setOrderEchoDelay,
   } = useFleetApi();
@@ -105,6 +105,7 @@ export const AgvControlPage: React.FC = () => {
   const [errForm] = Form.useForm();
   const [motionForm] = Form.useForm();
   const [actionsForm] = Form.useForm();
+  const [batteryConfigForm] = Form.useForm();
   const [inboundMessages, setInboundMessages] = useState<IInboundMqttMessage[]>([]);
   const [outboundState, setOutboundState] = useState<Record<string, unknown> | null>(null);
   const [modalMessage, setModalMessage] = useState<IInboundMqttMessage | null>(null);
@@ -122,19 +123,31 @@ export const AgvControlPage: React.FC = () => {
     }
   }, [agv]);
 
-  // Đồng bộ form motion/actions khi fleet poll về giá trị mới từ backend
+  // Đồng bộ form motion/actions/battery khi backend đổi thật.
+  // Fleet poll 2s tạo object mới mỗi lần nên phải so key primitive, tránh setFieldsValue
+  // ghi đè lúc user đang gõ dở (vd gõ 5.6 bị dí về số cũ).
+  const motionSyncRef = useRef<string>('');
+  const actionsSyncRef = useRef<string>('');
+  const batterySyncRef = useRef<string>('');
+
   useEffect(() => {
-    if (agv?.motion) {
+    if (!agv?.motion || !id) return;
+    const key = `${id}|${agv.motion.maxSpeed}|${agv.motion.acceleration}|${agv.motion.deceleration}`;
+    if (motionSyncRef.current !== key) {
+      motionSyncRef.current = key;
       motionForm.setFieldsValue({
         maxSpeed: agv.motion.maxSpeed,
         acceleration: agv.motion.acceleration,
         deceleration: agv.motion.deceleration,
       });
     }
-  }, [agv?.motion?.maxSpeed, agv?.motion?.acceleration, agv?.motion?.deceleration, motionForm, agv?.motion]);
+  }, [id, agv?.motion?.maxSpeed, agv?.motion?.acceleration, agv?.motion?.deceleration, motionForm]);
 
   useEffect(() => {
-    if (agv?.actions) {
+    if (!agv?.actions || !id) return;
+    const key = `${id}|${agv.actions.liftDurationMs}|${agv.actions.lowerDurationMs}|${agv.actions.genericActionDurationMs}|${agv.actions.loadStateDelayMs}`;
+    if (actionsSyncRef.current !== key) {
+      actionsSyncRef.current = key;
       actionsForm.setFieldsValue({
         liftDurationMs: agv.actions.liftDurationMs,
         lowerDurationMs: agv.actions.lowerDurationMs,
@@ -142,15 +155,23 @@ export const AgvControlPage: React.FC = () => {
         loadStateDelayMs: agv.actions.loadStateDelayMs,
       });
     }
-  }, [agv?.actions?.liftDurationMs, agv?.actions?.lowerDurationMs, agv?.actions?.genericActionDurationMs, agv?.actions?.loadStateDelayMs, actionsForm, agv?.actions]);
+  }, [id, agv?.actions?.liftDurationMs, agv?.actions?.lowerDurationMs, agv?.actions?.genericActionDurationMs, agv?.actions?.loadStateDelayMs, actionsForm]);
+
+  useEffect(() => {
+    if (!agv?.battery || !id) return;
+    const key = `${id}|${agv.battery.fullChargeHours}`;
+    if (batterySyncRef.current !== key) {
+      batterySyncRef.current = key;
+      batteryConfigForm.setFieldsValue({
+        fullChargeHours: agv.battery.fullChargeHours,
+      });
+    }
+  }, [id, agv?.battery?.fullChargeHours, batteryConfigForm]);
 
   useEffect(() => { fetchFleet(); }, [fetchFleet]);
 
-  // Poll for state updates
-  useEffect(() => {
-    const interval = setInterval(fetchFleet, 2000);
-    return () => clearInterval(interval);
-  }, [fetchFleet]);
+  // Fleet cập nhật qua SignalR (AppLayout) — không poll 2s ở đây nữa để đỡ lag
+  // khi fleet đông. Inbound/state payload vẫn poll riêng bên dưới.
 
   // Poll MQTT monitor: inbound payloads ACS gửi + outbound state AGV publish
   useEffect(() => {
@@ -454,6 +475,41 @@ export const AgvControlPage: React.FC = () => {
                     <Switch size="small" />
                   </Form.Item>
                   <Button htmlType="submit" size="small" type="primary" loading={loading === 'bat'}>Set</Button>
+                </Form>
+              </Flex>
+              <Flex vertical gap={8} style={{ marginTop: 8 }}>
+                <Flex align="center" gap={8}>
+                  <Text className="stat-title" style={{ width: 52 }}>Sạc</Text>
+                  <Text type="secondary" style={{ fontSize: 11 }}>
+                    Thời gian sạc đầy 0→100% (giờ, tuyến tính)
+                    {agv.battery ? ` · hiện tại ≈ ${(agv.battery.chargeRatePerMinute ?? 0).toFixed(3)}%/phút` : ''}
+                  </Text>
+                </Flex>
+                <Form
+                  form={batteryConfigForm}
+                  layout="inline"
+                  size="small"
+                  initialValues={{ fullChargeHours: agv.battery?.fullChargeHours ?? 0.8333 }}
+                  onFinish={(v) => run('battCfg', () => setBatteryConfig(id, v.fullChargeHours))}
+                >
+                  <Form.Item
+                    name="fullChargeHours"
+                    rules={[{ required: true, message: 'Nhập giờ sạc, vd 5.6' }]}
+                    style={{ marginBottom: 8, flex: 1 }}
+                  >
+                    <InputNumber
+                      min={0.01}
+                      max={1000}
+                      step={0.1}
+                      precision={2}
+                      style={{ width: '100%' }}
+                      addonAfter="giờ"
+                      placeholder="vd 5.6"
+                    />
+                  </Form.Item>
+                  <Button htmlType="submit" size="small" type="primary" loading={loading === 'battCfg'}>
+                    Lưu sạc
+                  </Button>
                 </Form>
               </Flex>
               <Flex vertical gap={8} style={{ marginTop: 8 }}>

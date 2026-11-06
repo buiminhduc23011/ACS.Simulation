@@ -37,6 +37,7 @@ public record UpdateAgvRequest(
 
 public record SetPositionRequest(double X, double Y, double Theta, string MapId);
 public record SetBatteryRequest(double Level);
+public record SetBatteryChargeRequest(double FullChargeHours);
 public record SetSpeedRequest(double Speed);
 public record SetMotionConfigRequest(double MaxSpeed, double Acceleration, double Deceleration);
 public record SetActionsConfigRequest(int LiftDurationMs, int LowerDurationMs, int GenericActionDurationMs, int LoadStateDelayMs);
@@ -68,6 +69,11 @@ public record MotionConfigDto(
     double MaxSpeed,
     double Acceleration,
     double Deceleration
+);
+
+public record BatteryConfigDto(
+    double FullChargeHours,
+    double ChargeRatePerMinute
 );
 
 public record ActionsConfigDto(
@@ -107,7 +113,8 @@ public record AgvSummaryDto(
     bool HoldActions = false,
     double OrderEchoDelaySeconds = 0,
     MotionConfigDto? Motion = null,
-    ActionsConfigDto? Actions = null
+    ActionsConfigDto? Actions = null,
+    BatteryConfigDto? Battery = null
 );
 
 /// <summary>Notification currently shown on the AGV screen (ACS → notifications topic).</summary>

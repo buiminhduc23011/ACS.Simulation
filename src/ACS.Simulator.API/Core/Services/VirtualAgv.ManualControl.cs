@@ -166,6 +166,22 @@ public partial class VirtualAgv
         _commandChannel.Writer.TryWrite(new SetBatteryCmd(level));
     }
 
+    /// <inheritdoc/>
+    public void SetBatteryChargeConfig(double fullChargeHours)
+    {
+        if (!double.IsFinite(fullChargeHours) || fullChargeHours <= 0) return;
+        if (!_isRunning) { ApplyBatteryChargeHours(fullChargeHours); return; }
+        _commandChannel.Writer.TryWrite(new SetBatteryChargeCmd(fullChargeHours));
+    }
+
+    /// <inheritdoc/>
+    public double GetFullChargeHours() => _batteryConfig.FullChargeHours;
+
+    private void ApplyBatteryChargeHours(double fullChargeHours)
+    {
+        _batteryConfig.FullChargeHours = fullChargeHours;
+    }
+
     private void ApplyBatteryLevel(double level)
     {
         _batteryLevel = Math.Clamp(level, 0, 100);

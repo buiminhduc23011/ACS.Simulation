@@ -54,6 +54,12 @@ export function useFleetApi() {
     await apiClient.post(ENDPOINTS.control.battery(id), { level: batteryLevel });
   }, []);
 
+  const setBatteryConfig = useCallback(async (id: string, fullChargeHours: number) => {
+    await apiClient.post(ENDPOINTS.control.batteryConfig(id), { fullChargeHours });
+    message.success(`AGV ${id} sạc đầy sau ${fullChargeHours}h`);
+    await fetchFleet();
+  }, [fetchFleet]);
+
   const setSpeed = useCallback(async (id: string, speed: number) => {
     await apiClient.post(ENDPOINTS.control.speed(id), { speed });
   }, []);
@@ -198,6 +204,30 @@ export function useFleetApi() {
     await fetchFleet();
   }, [fetchFleet]);
 
+  const applyMotionToMany = useCallback(async (ids: string[] | undefined, maxSpeed: number, acceleration: number, deceleration: number) => {
+    const res = await apiClient.post<{ updated: number; total: number }>(
+      ENDPOINTS.fleet.bulkMotionConfig,
+      { ids: ids?.length ? ids : undefined, maxSpeed, acceleration, deceleration });
+    message.success(`Motion áp cho ${res.data.updated}/${res.data.total} AGV`);
+    await fetchFleet();
+  }, [fetchFleet]);
+
+  const applyActionsToMany = useCallback(async (ids: string[] | undefined, liftDurationMs: number, lowerDurationMs: number, genericActionDurationMs: number, loadStateDelayMs: number) => {
+    const res = await apiClient.post<{ updated: number; total: number }>(
+      ENDPOINTS.fleet.bulkActionsConfig,
+      { ids: ids?.length ? ids : undefined, liftDurationMs, lowerDurationMs, genericActionDurationMs, loadStateDelayMs });
+    message.success(`Actions áp cho ${res.data.updated}/${res.data.total} AGV`);
+    await fetchFleet();
+  }, [fetchFleet]);
+
+  const applyBatteryConfigToMany = useCallback(async (ids: string[] | undefined, fullChargeHours: number) => {
+    const res = await apiClient.post<{ updated: number; total: number }>(
+      ENDPOINTS.fleet.bulkBatteryConfig,
+      { ids: ids?.length ? ids : undefined, fullChargeHours });
+    message.success(`Sạc đầy ${fullChargeHours}h áp cho ${res.data.updated}/${res.data.total} AGV`);
+    await fetchFleet();
+  }, [fetchFleet]);
+
   /** Import tạo lần lượt từng AGV — trả về số thành công + lỗi theo serial. */
   const importAgvs = useCallback(async (reqs: ICreateAgvRequest[]) => {
     const created: string[] = [];
@@ -217,9 +247,10 @@ export function useFleetApi() {
 
   return {
     fetchFleet, createAgv, updateAgv, deleteAgv, startAgv, stopAgv,
-    setPosition, setBattery, setSpeed, setMotionConfig, setActionsConfig, setOperatingMode, clearOrderState, setActionHold, setOrderEchoDelay, fetchInboundMessages, fetchOutboundState, fetchMapNodes,
+    setPosition, setBattery, setBatteryConfig, setSpeed, setMotionConfig, setActionsConfig, setOperatingMode, clearOrderState, setActionHold, setOrderEchoDelay, fetchInboundMessages, fetchOutboundState, fetchMapNodes,
     addError, clearErrors, injectTemplate, liftAgv, lowerAgv, clearLoads, disconnect,
     bulkCreate, startMany, stopMany, deleteMany, importAgvs, refillBatteryMany,
+    applyMotionToMany, applyActionsToMany, applyBatteryConfigToMany,
   };
 
 }

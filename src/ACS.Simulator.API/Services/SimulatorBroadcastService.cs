@@ -7,7 +7,8 @@ namespace ACS.Simulator.API.Services;
 
 /// <summary>
 /// Broadcasts fleet state updates to SignalR clients with adaptive interval.
-/// Fast (150ms) when AGVs are moving, slow (3s) when idle.
+/// Fast (500ms) when AGVs are moving, slow (3s) when idle.
+/// 150ms cũ khiến React re-render full table 6.7Hz khi fleet đông → lag thao tác.
 /// </summary>
 public class SimulatorBroadcastService : BackgroundService
 {
@@ -17,8 +18,9 @@ public class SimulatorBroadcastService : BackgroundService
     // ConcurrentQueue — lock-free, safe to enqueue from any thread
     private readonly ConcurrentQueue<FleetEventDto> _pendingEvents = new();
 
-    // Adaptive interval: fast when AGVs are moving, slow when idle
-    private static readonly TimeSpan FastInterval = TimeSpan.FromMilliseconds(150);
+    // Adaptive interval: fast when AGVs are moving, slow when idle.
+    // 500ms đủ mượt mắt (2fps) mà không ép React render 6.7 lần/giây.
+    private static readonly TimeSpan FastInterval = TimeSpan.FromMilliseconds(500);
     private static readonly TimeSpan SlowInterval = TimeSpan.FromMilliseconds(3000);
     private const double PositionChangeTolerance = 0.001; // meters
 

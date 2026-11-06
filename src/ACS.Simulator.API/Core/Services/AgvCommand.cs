@@ -35,6 +35,9 @@ public sealed record SetPositionCmd(double X, double Y, double Theta, string Map
 /// <summary>Enqueued by SetBatteryLevel() HTTP call.</summary>
 public sealed record SetBatteryCmd(double Level) : AgvCommand;
 
+/// <summary>Enqueued by SetBatteryChargeConfig() — thời gian sạc đầy 0-100% (giờ, tuyến tính).</summary>
+public sealed record SetBatteryChargeCmd(double FullChargeHours) : AgvCommand;
+
 /// <summary>Enqueued by SetSpeed() HTTP call.</summary>
 public sealed record SetSpeedCmd(double Speed) : AgvCommand;
 

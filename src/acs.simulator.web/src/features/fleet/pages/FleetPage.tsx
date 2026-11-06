@@ -8,7 +8,7 @@ import {
   PlusOutlined, EditOutlined, ControlOutlined, PlayCircleOutlined, StopOutlined,
   DeleteOutlined, RobotOutlined, SearchOutlined, MoreOutlined,
   ImportOutlined, ExportOutlined, AppstoreAddOutlined, ClearOutlined,
-  VerticalAlignTopOutlined, VerticalAlignBottomOutlined, PercentageOutlined,
+  VerticalAlignTopOutlined, VerticalAlignBottomOutlined, PercentageOutlined, SettingOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
@@ -22,6 +22,7 @@ import { exportFleetCsv } from '../../../shared/utils/csv';
 import { CreateAgvModal } from '../components/CreateAgvModal';
 import { BulkCreateModal } from '../components/BulkCreateModal';
 import { ImportAgvModal } from '../components/ImportAgvModal';
+import { ApplyAllConfigModal, type ApplyAllValues } from '../components/ApplyAllConfigModal';
 
 const { Text } = Typography;
 
@@ -32,12 +33,14 @@ export const FleetPage: React.FC = () => {
   const {
     fetchFleet, createAgv, updateAgv, deleteAgv, startAgv, stopAgv, liftAgv, lowerAgv,
     bulkCreate, startMany, stopMany, deleteMany, importAgvs, refillBatteryMany,
+    applyMotionToMany, applyActionsToMany, applyBatteryConfigToMany,
   } = useFleetApi();
   const navigate = useNavigate();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [applyAllOpen, setApplyAllOpen] = useState(false);
   const [editingAgv, setEditingAgv] = useState<ISimAgv | null>(null);
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
   const [searchText, setSearchText] = useState('');
@@ -47,10 +50,10 @@ export const FleetPage: React.FC = () => {
 
   useEffect(() => { fetchFleet(); }, [fetchFleet]);
 
-  const runBulk = async (key: string, fn: () => Promise<void>) => {
+  const runBulk = React.useCallback(async (key: string, fn: () => Promise<void>) => {
     setBusy(key);
-    try { await fn(); } finally { setBusy(null); setSelectedKeys([]); }
-  };
+    try { await fn(); } finally { setBusy(null); }
+  }, []);
 
   const mapOptions = useMemo(
     () => [...new Set(agvs.map((a) => a.mapId).filter(Boolean))].sort().map((m) => ({ value: m, label: m })),
@@ -128,6 +131,11 @@ export const FleetPage: React.FC = () => {
             Refill Battery
           </Button>
         </Tooltip>
+        <Tooltip title="Áp tốc độ / thời gian PICK-DROP / thời gian sạc cho nhiều AGV">
+          <Button size="small" icon={<SettingOutlined />} onClick={() => setApplyAllOpen(true)}>
+            Apply All
+          </Button>
+        </Tooltip>
         <Dropdown
           trigger={['click']}
           menu={{
@@ -174,7 +182,7 @@ export const FleetPage: React.FC = () => {
     return () => ro.disconnect();
   }, []);
 
-  const columns: ColumnsType<ISimAgv> = [
+  const columns: ColumnsType<ISimAgv> = useMemo(() => [
     {
       title: 'AGV', key: 'agv', width: 140,
       sorter: (a, b) => a.id.localeCompare(b.id),
@@ -321,7 +329,27 @@ export const FleetPage: React.FC = () => {
         </Space>
       ),
     },
-  ];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [navigate, busy, startAgv, stopAgv, liftAgv, lowerAgv, deleteAgv]);
+
+  const handleApplyAll = async (values: ApplyAllValues, scope: 'selected' | 'all') => {
+    const ids = scope === 'selected' ? selectedIds : undefined;
+    setBusy('applyAll');
+    try {
+      if (values.applyMotion) {
+        await applyMotionToMany(ids, values.maxSpeed, values.acceleration, values.deceleration);
+      }
+      if (values.applyActions) {
+        await applyActionsToMany(ids, values.liftDurationMs, values.lowerDurationMs, values.genericActionDurationMs, values.loadStateDelayMs);
+      }
+      if (values.applyBattery) {
+        await applyBatteryConfigToMany(ids, values.fullChargeHours);
+      }
+      setSelectedKeys([]);
+    } finally {
+      setBusy(null);
+    }
+  };
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
@@ -428,6 +456,13 @@ export const FleetPage: React.FC = () => {
       />
       <BulkCreateModal open={bulkOpen} onClose={() => setBulkOpen(false)} onSubmit={bulkCreate} />
       <ImportAgvModal open={importOpen} onClose={() => setImportOpen(false)} onImport={importAgvs} />
+      <ApplyAllConfigModal
+        open={applyAllOpen}
+        targetCount={selectedIds.length}
+        hasSelection={selectedIds.length > 0}
+        onClose={() => setApplyAllOpen(false)}
+        onSubmit={handleApplyAll}
+      />
     </div>
   );
 };

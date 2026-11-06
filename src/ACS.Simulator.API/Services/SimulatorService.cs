@@ -128,6 +128,7 @@ public class SimulatorService
                 LowerDurationMs = actions.LowerDurationMs,
                 GenericActionDurationMs = actions.GenericActionDurationMs,
                 LoadStateDelayMs = actions.LoadStateDelayMs,
+                FullChargeHours = agv.GetFullChargeHours(),
                 VehicleShapeId = req.VehicleShapeId,
                 NavigationTechnologyId = req.NavigationTechnologyId,
                 MapMappings = agvConfig.MapMappings
@@ -204,13 +205,17 @@ public class SimulatorService
                 GenericActionDurationMs = oldMeta?.GenericActionDurationMs ?? 3500,
                 LoadStateDelayMs = oldMeta?.LoadStateDelayMs ?? 250,
             };
+            var batteryConfig = new BatteryConfig();
+            if (oldMeta?.FullChargeHours > 0)
+                batteryConfig.FullChargeHours = oldMeta.FullChargeHours;
             var newAgv = new VirtualAgv(
                 agvConfig,
                 mqttConfig,
                 movementConfig,
                 new StatePublishConfig(),
                 actionsConfig,
-                agvLogger);
+                agvLogger,
+                batteryConfig);
             newAgv.SetMovementBlockResolver(FindBlockingAgv);
             ApplyKnownMapGraphs(newAgv);
 
@@ -227,6 +232,7 @@ public class SimulatorService
                 LowerDurationMs = actionsConfig.LowerDurationMs,
                 GenericActionDurationMs = actionsConfig.GenericActionDurationMs,
                 LoadStateDelayMs = actionsConfig.LoadStateDelayMs,
+                FullChargeHours = batteryConfig.FullChargeHours,
                 VehicleShapeId = req.VehicleShapeId,
                 NavigationTechnologyId = req.NavigationTechnologyId,
                 MapMappings = agvConfig.MapMappings
@@ -355,6 +361,44 @@ public class SimulatorService
             $"AGV {id} actions → lift {liftMs}ms, lower {lowerMs}ms, generic {genericMs}ms");
         _ = SaveFleetAsync();
         return true;
+    }
+
+    public bool SetBatteryChargeConfig(string id, double fullChargeHours)
+    {
+        if (!_fleet.TryGetValue(id, out var agv)) return false;
+        agv.SetBatteryChargeConfig(fullChargeHours);
+        if (_meta.TryGetValue(id, out var m))
+        {
+            m.FullChargeHours = fullChargeHours;
+        }
+        EmitEvent(id, "BatteryConfigChanged",
+            $"AGV {id} full charge time → {fullChargeHours:F2}h");
+        _ = SaveFleetAsync();
+        return true;
+    }
+
+    public int ApplyMotionConfig(IEnumerable<string> ids, double maxSpeed, double acceleration, double deceleration)
+    {
+        var count = 0;
+        foreach (var id in ids)
+            if (SetMotionConfig(id, maxSpeed, acceleration, deceleration)) count++;
+        return count;
+    }
+
+    public int ApplyActionsConfig(IEnumerable<string> ids, int liftMs, int lowerMs, int genericMs, int loadDelayMs)
+    {
+        var count = 0;
+        foreach (var id in ids)
+            if (SetActionsConfig(id, liftMs, lowerMs, genericMs, loadDelayMs)) count++;
+        return count;
+    }
+
+    public int ApplyBatteryChargeConfig(IEnumerable<string> ids, double fullChargeHours)
+    {
+        var count = 0;
+        foreach (var id in ids)
+            if (SetBatteryChargeConfig(id, fullChargeHours)) count++;
+        return count;
     }
 
     /// <summary>null = không tìm thấy AGV; false = bị từ chối (đang có order/action); true = đã đổi.</summary>
@@ -531,6 +575,7 @@ public class SimulatorService
             : "IDLE";
         var motion = agv.GetMotionConfig();
         var actions = agv.GetActionsConfig();
+        var fullChargeHours = agv.GetFullChargeHours();
 
         return new AgvSummaryDto(
             Id: id,
@@ -566,7 +611,8 @@ public class SimulatorService
             HoldActions: agv.IsHoldingActions,
             OrderEchoDelaySeconds: agv is VirtualAgv concrete ? concrete.OrderEchoDelaySeconds : 0,
             Motion: new MotionConfigDto(motion.MaxSpeed, motion.Acceleration, motion.Deceleration),
-            Actions: new ActionsConfigDto(actions.LiftDurationMs, actions.LowerDurationMs, actions.GenericActionDurationMs, actions.LoadStateDelayMs)
+            Actions: new ActionsConfigDto(actions.LiftDurationMs, actions.LowerDurationMs, actions.GenericActionDurationMs, actions.LoadStateDelayMs),
+            Battery: new BatteryConfigDto(fullChargeHours, fullChargeHours > 0 ? 100.0 / (fullChargeHours * 60.0) : 0)
         );
     }
 
@@ -682,6 +728,7 @@ public class SimulatorService
                     LowerDurationMs = meta?.LowerDurationMs ?? 2000,
                     GenericActionDurationMs = meta?.GenericActionDurationMs ?? 3500,
                     LoadStateDelayMs = meta?.LoadStateDelayMs ?? 250,
+                    FullChargeHours = meta?.FullChargeHours > 0 ? meta.FullChargeHours : agv.GetFullChargeHours(),
                     VehicleShapeId = meta?.VehicleShapeId ?? 1,
                     NavigationTechnologyId = meta?.NavigationTechnologyId ?? 1,
                     AutoStart = agv.IsRunning,
@@ -751,6 +798,8 @@ public class SimulatorService
                     saved.LowerDurationMs > 0 ? saved.LowerDurationMs : 2000,
                     saved.GenericActionDurationMs > 0 ? saved.GenericActionDurationMs : 3500,
                     saved.LoadStateDelayMs >= 0 ? saved.LoadStateDelayMs : 250);
+                if (saved.FullChargeHours > 0)
+                    SetBatteryChargeConfig(saved.SerialNumber, saved.FullChargeHours);
 
                 // Auto-start only AGVs that were running before shutdown.
                 if (saved.AutoStart)
@@ -806,6 +855,7 @@ public class AgvMeta
     public int LowerDurationMs { get; set; } = 2000;
     public int GenericActionDurationMs { get; set; } = 3500;
     public int LoadStateDelayMs { get; set; } = 250;
+    public double FullChargeHours { get; set; } = 100.0 / (2.0 * 60.0);
     public int VehicleShapeId { get; set; } = 1;
     public int NavigationTechnologyId { get; set; } = 1;
     public List<AgvMapMapping> MapMappings { get; set; } = new();

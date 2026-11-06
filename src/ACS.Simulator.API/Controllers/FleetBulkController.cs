@@ -136,6 +136,55 @@ public class FleetBulkController : ControllerBase
         return Ok(new { Updated = updated, Level = level });
     }
 
+    /// <summary>
+    /// Apply motion config cho nhiều AGV. Body { ids?, maxSpeed, acceleration, deceleration } — ids rỗng = toàn bộ fleet.
+    /// POST /api/fleet/bulk/motion-config
+    /// </summary>
+    [HttpPost("motion-config")]
+    public IActionResult BulkMotionConfig([FromBody] BulkMotionConfigRequest req)
+    {
+        if (req.MaxSpeed <= 0 || req.MaxSpeed > 10)
+            return BadRequest("MaxSpeed must be within (0, 10] m/s.");
+        if (req.Acceleration <= 0 || req.Acceleration > 10)
+            return BadRequest("Acceleration must be within (0, 10] m/s².");
+        if (req.Deceleration <= 0 || req.Deceleration > 10)
+            return BadRequest("Deceleration must be within (0, 10] m/s².");
+        var ids = ResolveIds(req.Ids);
+        var updated = _simulator.ApplyMotionConfig(ids, req.MaxSpeed, req.Acceleration, req.Deceleration);
+        return Ok(new { Updated = updated, Total = ids.Count });
+    }
+
+    /// <summary>
+    /// Apply actions config cho nhiều AGV. Body { ids?, liftDurationMs, ... } — ids rỗng = toàn bộ fleet.
+    /// POST /api/fleet/bulk/actions-config
+    /// </summary>
+    [HttpPost("actions-config")]
+    public IActionResult BulkActionsConfig([FromBody] BulkActionsConfigRequest req)
+    {
+        if (req.LiftDurationMs < 0 || req.LiftDurationMs > 600000
+            || req.LowerDurationMs < 0 || req.LowerDurationMs > 600000
+            || req.GenericActionDurationMs < 0 || req.GenericActionDurationMs > 600000
+            || req.LoadStateDelayMs < 0 || req.LoadStateDelayMs > 60000)
+            return BadRequest("Action durations out of range.");
+        var ids = ResolveIds(req.Ids);
+        var updated = _simulator.ApplyActionsConfig(ids, req.LiftDurationMs, req.LowerDurationMs, req.GenericActionDurationMs, req.LoadStateDelayMs);
+        return Ok(new { Updated = updated, Total = ids.Count });
+    }
+
+    /// <summary>
+    /// Apply thời gian sạc đầy cho nhiều AGV. Body { ids?, fullChargeHours } — ids rỗng = toàn bộ fleet.
+    /// POST /api/fleet/bulk/battery-config
+    /// </summary>
+    [HttpPost("battery-config")]
+    public IActionResult BulkBatteryConfig([FromBody] BulkBatteryConfigRequest req)
+    {
+        if (!double.IsFinite(req.FullChargeHours) || req.FullChargeHours <= 0 || req.FullChargeHours > 1000)
+            return BadRequest("FullChargeHours must be within (0, 1000] hours.");
+        var ids = ResolveIds(req.Ids);
+        var updated = _simulator.ApplyBatteryChargeConfig(ids, req.FullChargeHours);
+        return Ok(new { Updated = updated, Total = ids.Count, req.FullChargeHours });
+    }
+
     /// <summary>Ids trong body; null/rỗng = toàn bộ fleet hiện có.</summary>
     private List<string> ResolveIds(BulkOperationRequest? req) => ResolveIds(req?.Ids);
 
@@ -169,3 +218,12 @@ public record BulkOperationRequest(List<string>? Ids);
 
 /// <summary>Bulk set pin; ids null/rỗng = toàn bộ fleet, level null = 100%.</summary>
 public record BulkBatteryRequest(List<string>? Ids, double? Level);
+
+/// <summary>Bulk motion config; ids null/rỗng = toàn bộ fleet.</summary>
+public record BulkMotionConfigRequest(List<string>? Ids, double MaxSpeed, double Acceleration, double Deceleration);
+
+/// <summary>Bulk actions config; ids null/rỗng = toàn bộ fleet.</summary>
+public record BulkActionsConfigRequest(List<string>? Ids, int LiftDurationMs, int LowerDurationMs, int GenericActionDurationMs, int LoadStateDelayMs);
+
+/// <summary>Bulk battery charge time; ids null/rỗng = toàn bộ fleet.</summary>
+public record BulkBatteryConfigRequest(List<string>? Ids, double FullChargeHours);

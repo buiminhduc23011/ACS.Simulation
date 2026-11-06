@@ -123,6 +123,7 @@ public class SavedAgvConfig
     public int LowerDurationMs { get; set; } = 2000;
     public int GenericActionDurationMs { get; set; } = 3500;
     public int LoadStateDelayMs { get; set; } = 250;
+    public double FullChargeHours { get; set; } = 100.0 / (2.0 * 60.0);
     public int VehicleShapeId { get; set; } = 1;
     public int NavigationTechnologyId { get; set; } = 1;
     public bool AutoStart { get; set; } = true;
