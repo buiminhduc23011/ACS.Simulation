@@ -101,6 +101,8 @@ function isAgvEqual(a: ISimAgv, b: ISimAgv): boolean {
     a.actions?.loadStateDelayMs === b.actions?.loadStateDelayMs &&
     a.battery?.fullChargeHours === b.battery?.fullChargeHours &&
     a.battery?.chargeRatePerMinute === b.battery?.chargeRatePerMinute &&
+    a.battery?.continuousOperatingHours === b.battery?.continuousOperatingHours &&
+    a.battery?.drainRatePerMinute === b.battery?.drainRatePerMinute &&
     a.activeNotification?.type === b.activeNotification?.type &&
     a.activeNotification?.message === b.activeNotification?.message &&
     mapMappingsEqual(a.mapMappings, b.mapMappings)

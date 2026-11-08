@@ -38,6 +38,7 @@ public record UpdateAgvRequest(
 public record SetPositionRequest(double X, double Y, double Theta, string MapId);
 public record SetBatteryRequest(double Level);
 public record SetBatteryChargeRequest(double FullChargeHours);
+public record SetBatteryDrainRequest(double ContinuousOperatingHours);
 public record SetSpeedRequest(double Speed);
 public record SetMotionConfigRequest(double MaxSpeed, double Acceleration, double Deceleration);
 public record SetActionsConfigRequest(int LiftDurationMs, int LowerDurationMs, int GenericActionDurationMs, int LoadStateDelayMs);
@@ -73,7 +74,9 @@ public record MotionConfigDto(
 
 public record BatteryConfigDto(
     double FullChargeHours,
-    double ChargeRatePerMinute
+    double ChargeRatePerMinute,
+    double ContinuousOperatingHours,
+    double DrainRatePerMinute
 );
 
 public record ActionsConfigDto(

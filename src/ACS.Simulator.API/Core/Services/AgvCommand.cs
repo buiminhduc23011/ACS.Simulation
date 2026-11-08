@@ -38,6 +38,9 @@ public sealed record SetBatteryCmd(double Level) : AgvCommand;
 /// <summary>Enqueued by SetBatteryChargeConfig() — thời gian sạc đầy 0-100% (giờ, tuyến tính).</summary>
 public sealed record SetBatteryChargeCmd(double FullChargeHours) : AgvCommand;
 
+/// <summary>Enqueued by SetBatteryDrainConfig() — thời gian hoạt động liên tục 100-0% (giờ, tuyến tính).</summary>
+public sealed record SetBatteryDrainCmd(double ContinuousOperatingHours) : AgvCommand;
+
 /// <summary>Enqueued by SetSpeed() HTTP call.</summary>
 public sealed record SetSpeedCmd(double Speed) : AgvCommand;
 

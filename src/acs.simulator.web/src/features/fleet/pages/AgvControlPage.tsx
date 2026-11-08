@@ -94,7 +94,7 @@ export const AgvControlPage: React.FC = () => {
   const navigate = useNavigate();
   const agv = useFleetStore(useShallow((s) => (id ? s.agvs[id] : undefined)));
   const {
-    fetchFleet, startAgv, stopAgv, setBattery, setBatteryConfig, setMotionConfig, setActionsConfig, setOperatingMode,
+    fetchFleet, startAgv, stopAgv, setBattery, setBatteryConfig, setBatteryDrainConfig, setMotionConfig, setActionsConfig, setOperatingMode,
     fetchInboundMessages, fetchOutboundState, fetchMapNodes, addError, clearErrors, injectTemplate,
     liftAgv, lowerAgv, clearLoads, disconnect, clearOrderState, setPosition, setActionHold, setOrderEchoDelay,
   } = useFleetApi();
@@ -106,6 +106,7 @@ export const AgvControlPage: React.FC = () => {
   const [motionForm] = Form.useForm();
   const [actionsForm] = Form.useForm();
   const [batteryConfigForm] = Form.useForm();
+  const [batteryDrainConfigForm] = Form.useForm();
   const [inboundMessages, setInboundMessages] = useState<IInboundMqttMessage[]>([]);
   const [outboundState, setOutboundState] = useState<Record<string, unknown> | null>(null);
   const [modalMessage, setModalMessage] = useState<IInboundMqttMessage | null>(null);
@@ -129,6 +130,7 @@ export const AgvControlPage: React.FC = () => {
   const motionSyncRef = useRef<string>('');
   const actionsSyncRef = useRef<string>('');
   const batterySyncRef = useRef<string>('');
+  const batteryDrainSyncRef = useRef<string>('');
 
   useEffect(() => {
     if (!agv?.motion || !id) return;
@@ -167,6 +169,17 @@ export const AgvControlPage: React.FC = () => {
       });
     }
   }, [id, agv?.battery?.fullChargeHours, batteryConfigForm]);
+
+  useEffect(() => {
+    if (!agv?.battery || !id) return;
+    const key = `${id}|${agv.battery.continuousOperatingHours}`;
+    if (batteryDrainSyncRef.current !== key) {
+      batteryDrainSyncRef.current = key;
+      batteryDrainConfigForm.setFieldsValue({
+        continuousOperatingHours: agv.battery.continuousOperatingHours,
+      });
+    }
+  }, [id, agv?.battery?.continuousOperatingHours, batteryDrainConfigForm]);
 
   useEffect(() => { fetchFleet(); }, [fetchFleet]);
 
@@ -509,6 +522,41 @@ export const AgvControlPage: React.FC = () => {
                   </Form.Item>
                   <Button htmlType="submit" size="small" type="primary" loading={loading === 'battCfg'}>
                     Lưu sạc
+                  </Button>
+                </Form>
+              </Flex>
+              <Flex vertical gap={8} style={{ marginTop: 8 }}>
+                <Flex align="center" gap={8}>
+                  <Text className="stat-title" style={{ width: 52 }}>Xả</Text>
+                  <Text type="secondary" style={{ fontSize: 11 }}>
+                    Thời gian hoạt động liên tục 100→0% (giờ, tuyến tính)
+                    {agv.battery ? ` · hiện tại ≈ ${(agv.battery.drainRatePerMinute ?? 0).toFixed(3)}%/phút` : ''}
+                  </Text>
+                </Flex>
+                <Form
+                  form={batteryDrainConfigForm}
+                  layout="inline"
+                  size="small"
+                  initialValues={{ continuousOperatingHours: agv.battery?.continuousOperatingHours ?? 8 }}
+                  onFinish={(v) => run('battDrain', () => setBatteryDrainConfig(id, v.continuousOperatingHours))}
+                >
+                  <Form.Item
+                    name="continuousOperatingHours"
+                    rules={[{ required: true, message: 'Nhập giờ chạy, vd 8' }]}
+                    style={{ marginBottom: 8, flex: 1 }}
+                  >
+                    <InputNumber
+                      min={0.01}
+                      max={1000}
+                      step={0.5}
+                      precision={2}
+                      style={{ width: '100%' }}
+                      addonAfter="giờ"
+                      placeholder="vd 8"
+                    />
+                  </Form.Item>
+                  <Button htmlType="submit" size="small" type="primary" loading={loading === 'battDrain'}>
+                    Lưu xả
                   </Button>
                 </Form>
               </Flex>

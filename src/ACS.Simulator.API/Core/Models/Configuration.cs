@@ -72,8 +72,31 @@ public class ActionsConfig
 
 public class BatteryConfig
 {
-    /// <summary>Phần trăm pin tiêu hao mỗi mét di chuyển (default: 0.05%/m)</summary>
+    /// <summary>Phần trăm pin tiêu hao mỗi mét di chuyển (legacy, giữ để tương thích JSON cũ).</summary>
     public double DrainRatePerMeter { get; set; } = 0.05;
+
+    /// <summary>Phần trăm pin tiêu hao mỗi phút khi đang chạy (default: 100/(8*60) ≈ 0.208%/phút).</summary>
+    /// <remarks>
+    /// Giá trị này được suy ra tuyến tính từ <see cref="ContinuousOperatingHours"/>:
+    /// DrainRateDrivingPerMinute = 100 / (ContinuousOperatingHours * 60).
+    /// AGV chạy liên tục bao nhiêu giờ thì hết 100% pin — xả theo thời gian chạy,
+    /// không theo quãng đường như <see cref="DrainRatePerMeter"/> trước đây.
+    /// </remarks>
+    public double DrainRateDrivingPerMinute { get; set; } = 100.0 / (8.0 * 60.0);
+
+    /// <summary>
+    /// Thời gian hoạt động liên tục 100→0% (giờ, cho phép float ví dụ 8).
+    /// AGV đang chạy tụt tuyến tính: mỗi phút mất 100 / (giờ * 60) %.
+    /// </summary>
+    public double ContinuousOperatingHours
+    {
+        get => DrainRateDrivingPerMinute <= 0 ? 0 : 100.0 / (DrainRateDrivingPerMinute * 60.0);
+        set
+        {
+            if (double.IsFinite(value) && value > 0)
+                DrainRateDrivingPerMinute = 100.0 / (value * 60.0);
+        }
+    }
 
     /// <summary>Phần trăm pin tiêu hao mỗi phút khi idle (default: 0.01%/min)</summary>
     public double DrainRateIdlePerMinute { get; set; } = 0.01;

@@ -41,6 +41,19 @@ public class AgvControlController : ControllerBase
         return NotFound();
     }
 
+    /// <summary>
+    /// Đặt thời gian hoạt động liên tục 100-0% (giờ, float ví dụ 8). AGV đang chạy tụt tuyến tính 100/(giờ*60) %/phút.
+    /// </summary>
+    [HttpPost("battery-drain-config")]
+    public IActionResult SetBatteryDrainConfig(string id, [FromBody] SetBatteryDrainRequest req)
+    {
+        if (!double.IsFinite(req.ContinuousOperatingHours) || req.ContinuousOperatingHours <= 0 || req.ContinuousOperatingHours > 1000)
+            return BadRequest(new { message = "ContinuousOperatingHours must be within (0, 1000] hours." });
+        if (_sim.SetBatteryDrainConfig(id, req.ContinuousOperatingHours))
+            return Ok(new { req.ContinuousOperatingHours });
+        return NotFound();
+    }
+
     [HttpPost("speed")]
     public IActionResult SetSpeed(string id, [FromBody] SetSpeedRequest req)
     {

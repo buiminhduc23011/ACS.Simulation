@@ -52,6 +52,8 @@ export interface IMotionConfig {
 export interface IBatteryConfig {
   fullChargeHours: number;
   chargeRatePerMinute: number;
+  continuousOperatingHours: number;
+  drainRatePerMinute: number;
 }
 
 export interface IActionsConfig {

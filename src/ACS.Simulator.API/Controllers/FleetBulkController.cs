@@ -185,6 +185,20 @@ public class FleetBulkController : ControllerBase
         return Ok(new { Updated = updated, Total = ids.Count, req.FullChargeHours });
     }
 
+    /// <summary>
+    /// Apply thời gian hoạt động liên tục cho nhiều AGV. Body { ids?, continuousOperatingHours } — ids rỗng = toàn bộ fleet.
+    /// POST /api/fleet/bulk/battery-drain-config
+    /// </summary>
+    [HttpPost("battery-drain-config")]
+    public IActionResult BulkBatteryDrainConfig([FromBody] BulkBatteryDrainConfigRequest req)
+    {
+        if (!double.IsFinite(req.ContinuousOperatingHours) || req.ContinuousOperatingHours <= 0 || req.ContinuousOperatingHours > 1000)
+            return BadRequest("ContinuousOperatingHours must be within (0, 1000] hours.");
+        var ids = ResolveIds(req.Ids);
+        var updated = _simulator.ApplyBatteryDrainConfig(ids, req.ContinuousOperatingHours);
+        return Ok(new { Updated = updated, Total = ids.Count, req.ContinuousOperatingHours });
+    }
+
     /// <summary>Ids trong body; null/rỗng = toàn bộ fleet hiện có.</summary>
     private List<string> ResolveIds(BulkOperationRequest? req) => ResolveIds(req?.Ids);
 
@@ -227,3 +241,6 @@ public record BulkActionsConfigRequest(List<string>? Ids, int LiftDurationMs, in
 
 /// <summary>Bulk battery charge time; ids null/rỗng = toàn bộ fleet.</summary>
 public record BulkBatteryConfigRequest(List<string>? Ids, double FullChargeHours);
+
+/// <summary>Bulk battery continuous runtime; ids null/rỗng = toàn bộ fleet.</summary>
+public record BulkBatteryDrainConfigRequest(List<string>? Ids, double ContinuousOperatingHours);

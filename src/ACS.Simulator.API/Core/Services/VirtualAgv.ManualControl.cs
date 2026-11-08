@@ -182,6 +182,22 @@ public partial class VirtualAgv
         _batteryConfig.FullChargeHours = fullChargeHours;
     }
 
+    /// <inheritdoc/>
+    public void SetBatteryDrainConfig(double continuousOperatingHours)
+    {
+        if (!double.IsFinite(continuousOperatingHours) || continuousOperatingHours <= 0) return;
+        if (!_isRunning) { ApplyBatteryDrainHours(continuousOperatingHours); return; }
+        _commandChannel.Writer.TryWrite(new SetBatteryDrainCmd(continuousOperatingHours));
+    }
+
+    /// <inheritdoc/>
+    public double GetContinuousOperatingHours() => _batteryConfig.ContinuousOperatingHours;
+
+    private void ApplyBatteryDrainHours(double continuousOperatingHours)
+    {
+        _batteryConfig.ContinuousOperatingHours = continuousOperatingHours;
+    }
+
     private void ApplyBatteryLevel(double level)
     {
         _batteryLevel = Math.Clamp(level, 0, 100);

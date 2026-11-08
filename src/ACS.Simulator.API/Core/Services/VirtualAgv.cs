@@ -261,7 +261,18 @@ public partial class VirtualAgv : IVirtualAgv
 
     private int CalculateReach(double batteryLevel)
     {
-        if (!_batteryConfig.Enabled || _batteryConfig.DrainRatePerMeter <= 0)
+        if (!_batteryConfig.Enabled)
+            return 10000;
+
+        // Quãng đường ước lượng từ thời gian chạy còn lại × trần tốc độ hiện tại.
+        if (_batteryConfig.DrainRateDrivingPerMinute > 0)
+        {
+            double speedRef = _movementConfig.MaxSpeed > 0 ? _movementConfig.MaxSpeed : 1.5;
+            double remainingMinutes = batteryLevel / _batteryConfig.DrainRateDrivingPerMinute;
+            return (int)(remainingMinutes * 60.0 * speedRef);
+        }
+
+        if (_batteryConfig.DrainRatePerMeter <= 0)
             return 10000;
             
         return (int)(batteryLevel / _batteryConfig.DrainRatePerMeter);

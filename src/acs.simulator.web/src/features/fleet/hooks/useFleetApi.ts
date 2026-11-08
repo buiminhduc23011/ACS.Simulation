@@ -60,6 +60,12 @@ export function useFleetApi() {
     await fetchFleet();
   }, [fetchFleet]);
 
+  const setBatteryDrainConfig = useCallback(async (id: string, continuousOperatingHours: number) => {
+    await apiClient.post(ENDPOINTS.control.batteryDrainConfig(id), { continuousOperatingHours });
+    message.success(`AGV ${id} chạy liên tục ${continuousOperatingHours}h thì hết pin`);
+    await fetchFleet();
+  }, [fetchFleet]);
+
   const setSpeed = useCallback(async (id: string, speed: number) => {
     await apiClient.post(ENDPOINTS.control.speed(id), { speed });
   }, []);
@@ -228,6 +234,14 @@ export function useFleetApi() {
     await fetchFleet();
   }, [fetchFleet]);
 
+  const applyBatteryDrainToMany = useCallback(async (ids: string[] | undefined, continuousOperatingHours: number) => {
+    const res = await apiClient.post<{ updated: number; total: number }>(
+      ENDPOINTS.fleet.bulkBatteryDrainConfig,
+      { ids: ids?.length ? ids : undefined, continuousOperatingHours });
+    message.success(`Chạy liên tục ${continuousOperatingHours}h áp cho ${res.data.updated}/${res.data.total} AGV`);
+    await fetchFleet();
+  }, [fetchFleet]);
+
   /** Import tạo lần lượt từng AGV — trả về số thành công + lỗi theo serial. */
   const importAgvs = useCallback(async (reqs: ICreateAgvRequest[]) => {
     const created: string[] = [];
@@ -247,10 +261,10 @@ export function useFleetApi() {
 
   return {
     fetchFleet, createAgv, updateAgv, deleteAgv, startAgv, stopAgv,
-    setPosition, setBattery, setBatteryConfig, setSpeed, setMotionConfig, setActionsConfig, setOperatingMode, clearOrderState, setActionHold, setOrderEchoDelay, fetchInboundMessages, fetchOutboundState, fetchMapNodes,
+    setPosition, setBattery, setBatteryConfig, setBatteryDrainConfig, setSpeed, setMotionConfig, setActionsConfig, setOperatingMode, clearOrderState, setActionHold, setOrderEchoDelay, fetchInboundMessages, fetchOutboundState, fetchMapNodes,
     addError, clearErrors, injectTemplate, liftAgv, lowerAgv, clearLoads, disconnect,
     bulkCreate, startMany, stopMany, deleteMany, importAgvs, refillBatteryMany,
-    applyMotionToMany, applyActionsToMany, applyBatteryConfigToMany,
+    applyMotionToMany, applyActionsToMany, applyBatteryConfigToMany, applyBatteryDrainToMany,
   };
 
 }

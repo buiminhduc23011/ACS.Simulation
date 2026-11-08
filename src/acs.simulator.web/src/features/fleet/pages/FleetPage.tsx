@@ -33,7 +33,7 @@ export const FleetPage: React.FC = () => {
   const {
     fetchFleet, createAgv, updateAgv, deleteAgv, startAgv, stopAgv, liftAgv, lowerAgv,
     bulkCreate, startMany, stopMany, deleteMany, importAgvs, refillBatteryMany,
-    applyMotionToMany, applyActionsToMany, applyBatteryConfigToMany,
+    applyMotionToMany, applyActionsToMany, applyBatteryConfigToMany, applyBatteryDrainToMany,
   } = useFleetApi();
   const navigate = useNavigate();
 
@@ -131,7 +131,7 @@ export const FleetPage: React.FC = () => {
             Refill Battery
           </Button>
         </Tooltip>
-        <Tooltip title="Áp tốc độ / thời gian PICK-DROP / thời gian sạc cho nhiều AGV">
+        <Tooltip title="Áp tốc độ / thời gian PICK-DROP / thời gian sạc / thời gian chạy cho nhiều AGV">
           <Button size="small" icon={<SettingOutlined />} onClick={() => setApplyAllOpen(true)}>
             Apply All
           </Button>
@@ -344,6 +344,9 @@ export const FleetPage: React.FC = () => {
       }
       if (values.applyBattery) {
         await applyBatteryConfigToMany(ids, values.fullChargeHours);
+      }
+      if (values.applyBatteryDrain) {
+        await applyBatteryDrainToMany(ids, values.continuousOperatingHours);
       }
       setSelectedKeys([]);
     } finally {

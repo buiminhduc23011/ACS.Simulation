@@ -15,6 +15,8 @@ export interface ApplyAllValues {
   loadStateDelayMs: number;
   applyBattery: boolean;
   fullChargeHours: number;
+  applyBatteryDrain: boolean;
+  continuousOperatingHours: number;
 }
 
 interface Props {
@@ -32,12 +34,13 @@ export const ApplyAllConfigModal: React.FC<Props> = ({ open, targetCount, hasSel
   const [applyMotion, setApplyMotion] = useState(true);
   const [applyActions, setApplyActions] = useState(true);
   const [applyBattery, setApplyBattery] = useState(true);
+  const [applyBatteryDrain, setApplyBatteryDrain] = useState(true);
 
   const handleOk = async (scope: 'selected' | 'all') => {
     const values = await form.validateFields();
     setLoading(true);
     try {
-      await onSubmit({ ...values, applyMotion, applyActions, applyBattery }, scope);
+      await onSubmit({ ...values, applyMotion, applyActions, applyBattery, applyBatteryDrain }, scope);
       onClose();
     } finally {
       setLoading(false);
@@ -54,7 +57,7 @@ export const ApplyAllConfigModal: React.FC<Props> = ({ open, targetCount, hasSel
       destroyOnClose={false}
     >
       <Text type="secondary" style={{ fontSize: 12 }}>
-        Tick nhóm nào thì áp nhóm đó. Tuyến tính pin: tốc độ nạp = 100 / (giờ * 60) %/phút.
+        Tick nhóm nào thì áp nhóm đó. Tuyến tính pin: tốc độ nạp = 100 / (giờ * 60) %/phút; tốc độ xả khi chạy = 100 / (giờ chạy * 60) %/phút.
         {hasSelection ? ` Đang chọn ${targetCount} AGV.` : ' Chưa chọn AGV nào — sẽ áp toàn fleet.'}
       </Text>
       <Form
@@ -65,6 +68,7 @@ export const ApplyAllConfigModal: React.FC<Props> = ({ open, targetCount, hasSel
           maxSpeed: 1.5, acceleration: 0.8, deceleration: 0.8,
           liftDurationMs: 2000, lowerDurationMs: 2000, genericActionDurationMs: 3500, loadStateDelayMs: 250,
           fullChargeHours: 5.6,
+          continuousOperatingHours: 8,
         }}
       >
         <Space align="center" style={{ width: '100%', justifyContent: 'space-between' }}>
@@ -116,6 +120,22 @@ export const ApplyAllConfigModal: React.FC<Props> = ({ open, targetCount, hasSel
             extra={<Text type="secondary" style={{ fontSize: 11 }}>vd 5.6h → nạp tuyến tính ≈ 0.298%/phút</Text>}
           >
             <InputNumber min={0.01} max={1000} step={0.1} precision={2} style={{ width: '100%' }} addonAfter="giờ" />
+          </Form.Item>
+        </div>
+
+        <Divider style={{ margin: '8px 0' }} />
+        <Space align="center" style={{ width: '100%', justifyContent: 'space-between' }}>
+          <Text strong>Thời gian chạy liên tục 100→0%</Text>
+          <Switch size="small" checked={applyBatteryDrain} onChange={setApplyBatteryDrain} />
+        </Space>
+        <div style={{ opacity: applyBatteryDrain ? 1 : 0.4, pointerEvents: applyBatteryDrain ? 'auto' : 'none' }}>
+          <Form.Item
+            name="continuousOperatingHours"
+            label="Chạy liên tục (giờ, float vd 8)"
+            rules={[{ required: applyBatteryDrain }]}
+            extra={<Text type="secondary" style={{ fontSize: 11 }}>vd 8h → xả khi chạy ≈ 0.208%/phút</Text>}
+          >
+            <InputNumber min={0.01} max={1000} step={0.5} precision={2} style={{ width: '100%' }} addonAfter="giờ" />
           </Form.Item>
         </div>
 

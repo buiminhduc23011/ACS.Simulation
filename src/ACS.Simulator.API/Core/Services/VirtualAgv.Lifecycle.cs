@@ -255,6 +255,13 @@ public partial class VirtualAgv
                     _config.SerialNumber, _batteryConfig.FullChargeHours, _batteryConfig.ChargeRatePerMinute);
                 break;
 
+            case SetBatteryDrainCmd bd:
+                ApplyBatteryDrainHours(bd.ContinuousOperatingHours);
+                _logger.LogInformation(
+                    "AGV {SerialNumber} battery runtime updated: {Hours:F3}h (drain {Rate:F4}%/min)",
+                    _config.SerialNumber, _batteryConfig.ContinuousOperatingHours, _batteryConfig.DrainRateDrivingPerMinute);
+                break;
+
             case SetSpeedCmd s:
                 _movementConfig.MaxSpeed = s.Speed;
                 _logger.LogInformation("AGV {SerialNumber} speed updated to {Speed} m/s", _config.SerialNumber, s.Speed);

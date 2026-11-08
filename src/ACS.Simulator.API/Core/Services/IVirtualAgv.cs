@@ -42,6 +42,9 @@ public interface IVirtualAgv : IDisposable
     /// <summary>Đặt thời gian sạc đầy 0-100% (giờ, float). AGV nạp tuyến tính 100/(giờ*60) %/phút.</summary>
     void SetBatteryChargeConfig(double fullChargeHours);
     double GetFullChargeHours();
+    /// <summary>Đặt thời gian hoạt động liên tục 100-0% (giờ, float). AGV đang chạy tụt tuyến tính 100/(giờ*60) %/phút.</summary>
+    void SetBatteryDrainConfig(double continuousOperatingHours);
+    double GetContinuousOperatingHours();
     Task<bool> SetOperatingModeAsync(string mode);
     void SetHoldActions(bool enabled);
     void ClearOrderState();

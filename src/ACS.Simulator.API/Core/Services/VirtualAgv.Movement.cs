@@ -316,26 +316,20 @@ public partial class VirtualAgv
 
         _currentState.Driving = true;
 
-        // Previously, distance-to-target was used, which over-drains battery on long edges
-        // (distance ≈ full edge length on the first tick, not the tiny step we actually move).
-        double prevX = _currentX;
-        double prevY = _currentY;
-
         _currentX = nextX;
         _currentY = nextY;
 
-        // Battery drain: use actual displacement this tick, not remaining distance.
+        // Battery drain: xả theo thời gian chạy liên tục (ContinuousOperatingHours),
+        // không theo quãng đường — tốc độ nào thì hết pin sau đúng từng ấy giờ chạy.
         if (_batteryConfig.Enabled && !_isCharging)
         {
-            double actualMoved = Math.Sqrt(
-                (_currentX - prevX) * (_currentX - prevX) +
-                (_currentY - prevY) * (_currentY - prevY));
+            double elapsedMinutes = _movementConfig.MovementUpdateInterval / 60000.0;
             // Floor applies only when the level is still at/above it — a user-set level already
             // below AutoDrainFloor stays there and keeps draining instead of jumping back up.
             double drainFloor = _batteryLevel >= _batteryConfig.AutoDrainFloor
                 ? _batteryConfig.AutoDrainFloor
                 : 0.0;
-            _batteryLevel = Math.Max(drainFloor, _batteryLevel - actualMoved * _batteryConfig.DrainRatePerMeter);
+            _batteryLevel = Math.Max(drainFloor, _batteryLevel - elapsedMinutes * _batteryConfig.DrainRateDrivingPerMinute);
             _currentState.BatteryState.BatteryCharge = _batteryLevel;
             _currentState.BatteryState.Reach = CalculateReach(_batteryLevel);
             await CheckBatteryWarningAsync();

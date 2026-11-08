@@ -20,6 +20,7 @@ export const ENDPOINTS = {
     bulkMotionConfig: '/api/fleet/bulk/motion-config',
     bulkActionsConfig: '/api/fleet/bulk/actions-config',
     bulkBatteryConfig: '/api/fleet/bulk/battery-config',
+    bulkBatteryDrainConfig: '/api/fleet/bulk/battery-drain-config',
   },
   // Workflow pump — giữ số transaction running trên ACS
   pump: {
@@ -34,6 +35,7 @@ export const ENDPOINTS = {
     position: (id: string) => `${BASE}/agvs/${id}/control/position`,
     battery: (id: string) => `${BASE}/agvs/${id}/control/battery`,
     batteryConfig: (id: string) => `${BASE}/agvs/${id}/control/battery-config`,
+    batteryDrainConfig: (id: string) => `${BASE}/agvs/${id}/control/battery-drain-config`,
     speed: (id: string) => `${BASE}/agvs/${id}/control/speed`,
     motionConfig: (id: string) => `${BASE}/agvs/${id}/control/motion-config`,
     actionsConfig: (id: string) => `${BASE}/agvs/${id}/control/actions-config`,
