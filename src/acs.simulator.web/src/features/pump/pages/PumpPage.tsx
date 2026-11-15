@@ -282,7 +282,7 @@ export const PumpPage: React.FC = () => {
                   <Text style={{ fontSize: 12, color: 'var(--text-secondary)', flexShrink: 0 }}>
                     {pumpEnabled
                       ? nextTick
-                        ? `Tick tiếp theo sau ${nextTick.remainSec}s — mỗi transaction poll tối đa 1 lần/15s (+jitter), start bù đúng 1 workflow (xoay vòng)`
+                        ? `Tick tiếp theo sau ${nextTick.remainSec}s — mỗi transaction poll tối đa 1 lần/15s (+jitter), start lấp đầy deficit (xoay vòng)`
                         : 'Đang lên lịch…'
                       : `Pump tắt — khi bật sẽ giữ ${targetRunning} transaction running, mỗi transaction poll tối đa 1 lần/${state?.intervalSeconds ?? 15}s`}
                   </Text>

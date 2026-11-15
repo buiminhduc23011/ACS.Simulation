@@ -392,7 +392,7 @@ public sealed class PumpService
 
     /// <summary>
     /// Một tick của vòng poll duy nhất: health-check, poll các transaction tới hạn (tối đa 4 song song),
-    /// chưa đủ TargetRunning thì start đúng 1 workflow rảnh tiếp theo theo vòng tròn.
+    /// chưa đủ TargetRunning thì lấp đầy deficit bằng cách start lần lượt trên workflow rảnh (xoay vòng).
     /// Không log mỗi lần poll — chỉ event khi trạng thái đổi hoặc lỗi.
     /// </summary>
     public async Task RunTickAsync(CancellationToken cancellationToken)
@@ -543,9 +543,23 @@ public sealed class PumpService
 
         if (target > 0 && activeNow < target && freeNow.Count > 0)
         {
-            var nextId = PickNextRoundRobin(ids, freeNow);
-            if (nextId.HasValue)
-                await StartPickedAsync(client, baseUrl, apiKey, nextId.Value, cancellationToken);
+            // Lấp đầy deficit: start lần lượt trên các workflow rảnh (xoay vòng), vẫn trong giới hạn 10 req/s.
+            // Tx xong tức thì (start đã Completed) thì tick sau bù tiếp; tx chạy lâu thì deficit tự triệt tiêu.
+            var startOutcome = new TickOutcome();
+            var remaining = new List<int>(freeNow);
+            while (activeNow < target && remaining.Count > 0 && startOutcome.Auth is null)
+            {
+                var nextId = PickNextRoundRobin(ids, remaining);
+                if (!nextId.HasValue)
+                    break;
+                remaining.Remove(nextId.Value);
+                if (await StartPickedAsync(client, baseUrl, apiKey, nextId.Value, startOutcome, cancellationToken))
+                    activeNow++;
+            }
+            if (startOutcome.Auth is not null)
+                NoteAuth(startOutcome.Auth);
+            else if (startOutcome.Retryable > 0)
+                NoteRetryable(startOutcome.RetryAfterMs, $"{startOutcome.Retryable} start");
         }
         // Ổn định (đủ target / không còn workflow rảnh): không event, không log — tránh spam.
 
@@ -777,7 +791,8 @@ public sealed class PumpService
     private static string FormatState(string? state, int? code)
         => $"{state ?? "?"}#{code?.ToString() ?? "?"}";
 
-    private async Task StartPickedAsync(HttpClient client, string baseUrl, string apiKey, int workflowId, CancellationToken cancellationToken)
+    /// <returns>true nếu start thành công (workflow đó chiếm slot trong tick này).</returns>
+    private async Task<bool> StartPickedAsync(HttpClient client, string baseUrl, string apiKey, int workflowId, TickOutcome outcome, CancellationToken cancellationToken)
     {
         // correlationId ổn định theo seq: retry lần sau dùng đúng correlationId cũ → ACS dedupe, không tạo trùng.
         var seq = GetStartedCount(workflowId) + 1;
@@ -791,15 +806,20 @@ public sealed class PumpService
         }
         catch (PumpAuthException ex)
         {
-            NoteAuth(ex.Message);
-            return;
+            lock (outcome) outcome.Auth ??= ex.Message;
+            return false;
         }
         catch (PumpRetryableException ex)
         {
             // Giữ nguyên StartedCount → lần sau retry cùng correlationId (idempotent).
-            NoteRetryable(ex.RetryAfterMs, "start");
+            lock (outcome)
+            {
+                outcome.Retryable++;
+                if (ex.RetryAfterMs.HasValue)
+                    outcome.RetryAfterMs = Math.Max(outcome.RetryAfterMs ?? 0, ex.RetryAfterMs.Value);
+            }
             UpdateRuntime(workflowId, r => r.Note = Shorten(ex.Message));
-            return;
+            return false;
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
@@ -807,7 +827,7 @@ public sealed class PumpService
             RecordError();
             SetNoteIfChanged(workflowId, Shorten(ex.Message));
             AddEventIfChanged($"wf {workflowId} error: {Shorten(ex.Message)}", $"wf-error-{workflowId}");
-            return;
+            return false;
         }
         int intervalSec, jitterPct;
         lock (_gate)
@@ -834,6 +854,7 @@ public sealed class PumpService
         AddEvent($"wf {workflowId} start -> tx {started.TransactionId} ({started.Status})");
         _logger.LogInformation("Pump wf {WorkflowId} start -> tx {TransactionId} ({Status})",
             workflowId, started.TransactionId, started.Status);
+        return true;
     }
 
     private void MarkTransactionTerminal(long transactionId, string state)
