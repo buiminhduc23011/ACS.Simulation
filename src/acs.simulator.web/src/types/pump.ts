@@ -26,6 +26,17 @@ export interface IPumpSnapshot {
   lastTickAtUtc?: string | null;
   nextTickAtUtc?: string | null;
   serverTimeUtc: string;
+  pollIntervalMs?: number;
+  jitterPercent?: number;
+  maxConcurrentRequests?: number;
+  maxRequestsPerSecond?: number;
+  requestsLastMinute?: number;
+  errorsLastMinute?: number;
+  activeTransactions?: number;
+  keySource?: string;
+  authError?: string | null;
+  rateWarning?: boolean;
+  backoffDelayMs?: number;
 }
 
 export interface IWorkflowSummary {
@@ -39,4 +50,8 @@ export interface IPumpConfigRequest {
   intervalSeconds?: number;
   targetRunning?: number;
   workflowIds?: number[];
+  jitterPercent?: number;
+  maxConcurrentRequests?: number;
+  maxRequestsPerSecond?: number;
+  warnRequestsPerMinute?: number;
 }

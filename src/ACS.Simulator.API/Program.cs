@@ -42,7 +42,7 @@ try
 
     // HTTP client for ACS API proxy
     builder.Services.AddHttpClient("AcsApi");
-    builder.Services.AddHttpClient("PumpAcs").ConfigureHttpClient(client => client.Timeout = TimeSpan.FromSeconds(15));
+    builder.Services.AddHttpClient("PumpAcs").ConfigureHttpClient(client => client.Timeout = TimeSpan.FromSeconds(8));
 
     // Controllers
     builder.Services.AddControllers();

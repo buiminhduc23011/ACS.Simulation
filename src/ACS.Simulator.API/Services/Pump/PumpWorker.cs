@@ -1,6 +1,6 @@
 namespace ACS.Simulator.API.Services.Pump;
 
-/// <summary>Loop chính: enabled thì tick pump mỗi IntervalSeconds.</summary>
+/// <summary>Vòng poll duy nhất của pump: mỗi tick cách nhau Interval + jitter (tối thiểu 15s), tôn trọng backoff.</summary>
 public sealed class PumpWorker(PumpService pump, ILogger<PumpWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -21,7 +21,8 @@ public sealed class PumpWorker(PumpService pump, ILogger<PumpWorker> logger) : B
             {
                 logger.LogError(ex, "Pump tick failed");
             }
-            var delay = TimeSpan.FromSeconds(Math.Max(snapshot.IntervalSeconds, 3));
+            // Delay do service tính: interval + jitter, không ngắn hơn backoff; disabled/auth thì nghỉ dài.
+            var delay = pump.GetDelay();
             pump.SetNextTick(DateTime.UtcNow + delay);
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken, pump.GetWakeToken());
             try

@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace ACS.Simulator.API.Services.Pump;
 
 // Request DTOs
@@ -8,7 +10,11 @@ public sealed record PumpConfigRequest(
     string? ApiKey,
     int? IntervalSeconds,
     int? TargetRunning,
-    List<int>? WorkflowIds);
+    List<int>? WorkflowIds,
+    int? JitterPercent = null,
+    int? MaxConcurrentRequests = null,
+    int? MaxRequestsPerSecond = null,
+    int? WarnRequestsPerMinute = null);
 
 public sealed record PumpEnabledRequest(bool Enabled);
 
@@ -31,6 +37,10 @@ public sealed class WorkflowRuntime
     public DateTime? LastCheckedAt { get; set; }
     public string? Note { get; set; }
     public int StartedCount { get; set; }
+
+    /// <summary>Không poll transaction này trước thời điểm này (tối đa 1 lần/15s + jitter). Chỉ dùng trong bộ nhớ.</summary>
+    [JsonIgnore]
+    public DateTime? NextPollAtUtc { get; set; }
 }
 
 /// <summary>Snapshot bất biến cho API đọc.</summary>
@@ -48,4 +58,16 @@ public sealed record PumpSnapshot(
     string? AcsVersion,
     DateTime? LastTickAtUtc,
     DateTime? NextTickAtUtc,
-    DateTime ServerTimeUtc);
+    DateTime ServerTimeUtc,
+    // Chống spam ACS: cấu hình giới hạn tải + metric.
+    int PollIntervalMs,
+    int JitterPercent,
+    int MaxConcurrentRequests,
+    int MaxRequestsPerSecond,
+    int RequestsLastMinute,
+    int ErrorsLastMinute,
+    int ActiveTransactions,
+    string KeySource,
+    string? AuthError,
+    bool RateWarning,
+    int BackoffDelayMs);

@@ -273,12 +273,18 @@ export const PumpPage: React.FC = () => {
               <SectionCard uiVariant="compact">
                 <Flex align="center" gap={12} wrap>
                   <SyncOutlined spin={pumpEnabled} style={{ color: pumpEnabled ? 'var(--primary-color)' : 'var(--text-quaternary)' }} />
+                  {state?.authError && (
+                    <Text type="danger" style={{ fontSize: 12 }}>
+                      Pump DỪNG: key/cấu hình không hợp lệ — cập nhật key mới để chạy lại.
+                      {state.keySource ? ` (nguồn key: ${state.keySource})` : ''}
+                    </Text>
+                  )}
                   <Text style={{ fontSize: 12, color: 'var(--text-secondary)', flexShrink: 0 }}>
                     {pumpEnabled
                       ? nextTick
-                        ? `Tick tiếp theo sau ${nextTick.remainSec}s — mỗi tick check toàn bộ workflow, start bù đúng 1 workflow (xoay vòng)`
+                        ? `Tick tiếp theo sau ${nextTick.remainSec}s — mỗi transaction poll tối đa 1 lần/15s (+jitter), start bù đúng 1 workflow (xoay vòng)`
                         : 'Đang lên lịch…'
-                      : `Pump tắt — khi bật sẽ giữ ${targetRunning} transaction running, mỗi ${state?.intervalSeconds ?? 0}s một tick`}
+                      : `Pump tắt — khi bật sẽ giữ ${targetRunning} transaction running, mỗi transaction poll tối đa 1 lần/${state?.intervalSeconds ?? 15}s`}
                   </Text>
                   <Progress
                     percent={pumpEnabled ? nextTick?.pct ?? 0 : 0}
@@ -287,6 +293,16 @@ export const PumpPage: React.FC = () => {
                     strokeColor={{ from: '#2563EB', to: '#22D3EE' }}
                     style={{ margin: 0, flex: 1, minWidth: 160 }}
                   />
+                </Flex>
+                <Flex align="center" gap={12} wrap style={{ marginTop: 8 }}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {`Active: ${state?.activeTransactions ?? 0} tx · Requests/phút: ${state?.requestsLastMinute ?? 0} · Lỗi/phút: ${state?.errorsLastMinute ?? 0}`}
+                    {state?.maxRequestsPerSecond ? ` (giới hạn ${state.maxRequestsPerSecond}/s, ${state.maxConcurrentRequests ?? 4} song song)` : ''}
+                    {state?.backoffDelayMs ? ` · backoff ${(state.backoffDelayMs / 1000).toFixed(1)}s` : ''}
+                  </Text>
+                  {state?.rateWarning && (
+                    <Text type="danger" style={{ fontSize: 12 }}>Vượt ngưỡng request/phút!</Text>
+                  )}
                 </Flex>
               </SectionCard>
 
@@ -343,7 +359,7 @@ export const PumpPage: React.FC = () => {
                 <Form form={cfgForm} layout="vertical" key={state?.baseUrl ?? 'x'}
                   initialValues={{
                     baseUrl: state?.baseUrl ?? '',
-                    intervalSeconds: state?.intervalSeconds ?? 10,
+                    intervalSeconds: state?.intervalSeconds ?? 15,
                     targetRunning: state?.targetRunning ?? 5,
                   }}
                 >
@@ -354,8 +370,8 @@ export const PumpPage: React.FC = () => {
                     <Form.Item name="apiKey" label="API Key (X-ACS-API-Key)" style={{ flex: 2, minWidth: 260, marginBottom: 12 }}>
                       <Input.Password placeholder={state?.hasApiKey ? '(key đã lưu — nhập để thay)' : 'nhập key'} autoComplete="off" />
                     </Form.Item>
-                    <Form.Item name="intervalSeconds" label="Interval (giây, ≥3)" style={{ width: 140, marginBottom: 12 }}>
-                      <InputNumber min={3} max={3600} style={{ width: '100%' }} />
+                    <Form.Item name="intervalSeconds" label="Interval (giây, ≥15)" style={{ width: 140, marginBottom: 12 }}>
+                      <InputNumber min={15} max={3600} style={{ width: '100%' }} />
                     </Form.Item>
                     <Form.Item name="targetRunning" label="Số running mục tiêu" style={{ width: 160, marginBottom: 12 }}>
                       <InputNumber min={0} max={1000} style={{ width: '100%' }} />
@@ -368,6 +384,7 @@ export const PumpPage: React.FC = () => {
                 </Space>
                 <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 10 }}>
                   Base URL để trống = dùng ACS API URL trong Settings chung của simulator.
+                  Key ưu tiên lấy từ biến môi trường ACS_PUMP_API_KEY (hoặc ACS_API_KEY); key nhập ở đây chỉ dùng khi không có key từ env/config.
                 </Text>
               </SectionCard>
 
