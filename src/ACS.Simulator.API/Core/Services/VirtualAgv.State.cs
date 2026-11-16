@@ -79,10 +79,44 @@ public partial class VirtualAgv
         });
     }
 
+    private DateTime _lastStatePublishAt = DateTime.MinValue;
+    private string _lastStatePublishKey = string.Empty;
+
+    /// <summary>
+    /// Snapshot các trường quyết định trạng thái ACS hiển thị/ghi lịch sử.
+    /// Hai bản tin liên tiếp cùng key trong &lt;750ms là trùng lặp trong cùng tick.
+    /// </summary>
+    private string BuildStatePublishKey()
+        => string.Concat(
+            _currentState.Driving ? "D" : "d",
+            _currentState.Paused == true ? "P" : "p",
+            "|e", _currentState.Errors.Count,
+            "|", _currentState.OrderId ?? "",
+            "#", _currentState.OrderUpdateId,
+            "@", _currentState.LastNodeId ?? "",
+            ":", _currentState.LastNodeSequenceId);
+
     private async Task PublishStateAsync(bool immediate)
     {
         // Command còn trong channel sau khi disconnect (stop) — bỏ qua, tránh log lỗi rác.
         if (!_mqttClient.IsConnected) return;
+
+        // Gộp publish immediate trùng lặp trong cùng tick (arrival false + wait false,
+        // merge + departure...): cùng snapshot trạng thái trong <750ms thì bản tin
+        // sau là dư — bỏ để ACS không ghi 2 dòng lịch sử cùng timestamp.
+        // Periodic (immediate=false) là heartbeat VDA5050, không bao giờ bỏ.
+        if (immediate)
+        {
+            var key = BuildStatePublishKey();
+            var nowCoalesce = DateTime.UtcNow;
+            if (key == _lastStatePublishKey &&
+                (nowCoalesce - _lastStatePublishAt) < TimeSpan.FromMilliseconds(750))
+            {
+                _logger.LogDebug("AGV {SerialNumber} skipped duplicate immediate state publish ({Key})",
+                    _config.SerialNumber, key);
+                return;
+            }
+        }
 
         try
         {
@@ -140,6 +174,9 @@ public partial class VirtualAgv
                 .Build();
 
             await _mqttClient.PublishAsync(message);
+
+            _lastStatePublishAt = DateTime.UtcNow;
+            _lastStatePublishKey = BuildStatePublishKey();
 
             if (immediate)
             {

@@ -94,6 +94,9 @@ public partial class VirtualAgv
         _arrivalTheta = null;
         _targetTheta = _currentTheta;
         _currentMovementBlocker = null;
+        // Order mới = đứng yên cho tới hop đầu tiên; tránh publish Driving=true cũ
+        // rồi departure publish lại (cặp trùng) khi wasDriving còn true.
+        _currentState.Driving = false;
 
         _currentState.OrderId = effectiveOrder.OrderId;
         _currentState.OrderUpdateId = effectiveOrder.OrderUpdateId;
@@ -307,7 +310,9 @@ public partial class VirtualAgv
             order.OrderId,
             _currentNodeIndex);
         _currentState.NewBaseRequest = false;
-        await PublishStateAsync(true);
+        // Không publish ở đây: ExecuteNextNodeAsync bên dưới sẽ publish 1 lần
+        // duy nhất (Driving false->true). Publish merge ở đây tạo cặp
+        // Chờ/Đang Chạy cùng timestamp trong lịch sử ACS.
         await ExecuteNextNodeAsync();
     }
 
