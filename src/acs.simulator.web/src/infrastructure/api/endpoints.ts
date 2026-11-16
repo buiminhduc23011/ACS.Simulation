@@ -17,6 +17,8 @@ export const ENDPOINTS = {
     bulkStop: '/api/fleet/bulk/stop',
     bulkDelete: '/api/fleet/bulk/delete',
     bulkBattery: '/api/fleet/bulk/battery',
+    bulkLift: '/api/fleet/bulk/lift',
+    bulkLower: '/api/fleet/bulk/lower',
     bulkMotionConfig: '/api/fleet/bulk/motion-config',
     bulkActionsConfig: '/api/fleet/bulk/actions-config',
     bulkBatteryConfig: '/api/fleet/bulk/battery-config',

@@ -201,6 +201,19 @@ export function useFleetApi() {
     await fetchFleet();
   }, [fetchFleet]);
 
+  /** Nâng hàng fleet — ids rỗng = toàn bộ. */
+  const liftMany = useCallback(async (ids?: string[]) => {
+    const res = await apiClient.post<{ lifted: number; total: number }>(
+      ENDPOINTS.fleet.bulkLift, ids?.length ? { ids } : undefined);
+    message.success(`Lifted ${res.data.lifted}/${res.data.total} AGVs`);
+  }, []);
+
+  /** Hạ hàng fleet — ids rỗng = toàn bộ. */
+  const lowerMany = useCallback(async (ids?: string[]) => {
+    const res = await apiClient.post<{ lowered: number; total: number }>(
+      ENDPOINTS.fleet.bulkLower, ids?.length ? { ids } : undefined);
+    message.success(`Lowered ${res.data.lowered}/${res.data.total} AGVs`);
+  }, []);
   /** Bơm pin fleet — ids rỗng = toàn bộ, level mặc định 100%. */
   const refillBatteryMany = useCallback(async (ids?: string[], level?: number) => {
     const res = await apiClient.post<{ updated: number; level: number }>(
@@ -263,7 +276,7 @@ export function useFleetApi() {
     fetchFleet, createAgv, updateAgv, deleteAgv, startAgv, stopAgv,
     setPosition, setBattery, setBatteryConfig, setBatteryDrainConfig, setSpeed, setMotionConfig, setActionsConfig, setOperatingMode, clearOrderState, setActionHold, setOrderEchoDelay, fetchInboundMessages, fetchOutboundState, fetchMapNodes,
     addError, clearErrors, injectTemplate, liftAgv, lowerAgv, clearLoads, disconnect,
-    bulkCreate, startMany, stopMany, deleteMany, importAgvs, refillBatteryMany,
+    bulkCreate, startMany, stopMany, deleteMany, importAgvs, refillBatteryMany, liftMany, lowerMany,
     applyMotionToMany, applyActionsToMany, applyBatteryConfigToMany, applyBatteryDrainToMany,
   };
 

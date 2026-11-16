@@ -108,6 +108,46 @@ public class FleetBulkController : ControllerBase
     }
 
     /// <summary>
+    /// Nâng hàng (lift/pick) nhiều AGV song song. Body { ids } optional — empty = toàn bộ fleet.
+    /// POST /api/fleet/bulk/lift
+    /// </summary>
+    [HttpPost("lift")]
+    public async Task<IActionResult> BulkLift([FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] BulkOperationRequest? req)
+    {
+        var ids = ResolveIds(req);
+        _logger.LogInformation("BulkLift: lifting {Count} AGVs in parallel", ids.Count);
+
+        var results = await Task.WhenAll(ids.Select(async id =>
+        {
+            try { return await _simulator.LiftAsync(id) ? id : null; }
+            catch { return null; }
+        }));
+
+        var lifted = results.Where(r => r != null).ToList();
+        return Ok(new { Lifted = lifted.Count, Total = ids.Count });
+    }
+
+    /// <summary>
+    /// Hạ hàng (lower/drop) nhiều AGV song song. Body { ids } optional — empty = toàn bộ fleet.
+    /// POST /api/fleet/bulk/lower
+    /// </summary>
+    [HttpPost("lower")]
+    public async Task<IActionResult> BulkLower([FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] BulkOperationRequest? req)
+    {
+        var ids = ResolveIds(req);
+        _logger.LogInformation("BulkLower: lowering {Count} AGVs in parallel", ids.Count);
+
+        var results = await Task.WhenAll(ids.Select(async id =>
+        {
+            try { return await _simulator.LowerAsync(id) ? id : null; }
+            catch { return null; }
+        }));
+
+        var lowered = results.Where(r => r != null).ToList();
+        return Ok(new { Lowered = lowered.Count, Total = ids.Count });
+    }
+
+    /// <summary>
     /// Delete AGVs. Body { ids } optional — empty = toàn bộ fleet.
     /// POST /api/fleet/bulk-delete
     /// </summary>

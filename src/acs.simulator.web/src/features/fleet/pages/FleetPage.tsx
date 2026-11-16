@@ -32,7 +32,7 @@ export const FleetPage: React.FC = () => {
   const agvs = useFleetStore(useShallow((s) => Object.values(s.agvs).sort((a, b) => a.id.localeCompare(b.id))));
   const {
     fetchFleet, createAgv, updateAgv, deleteAgv, startAgv, stopAgv, liftAgv, lowerAgv,
-    bulkCreate, startMany, stopMany, deleteMany, importAgvs, refillBatteryMany,
+    bulkCreate, startMany, stopMany, deleteMany, importAgvs, refillBatteryMany, liftMany, lowerMany,
     applyMotionToMany, applyActionsToMany, applyBatteryConfigToMany, applyBatteryDrainToMany,
   } = useFleetApi();
   const navigate = useNavigate();
@@ -125,6 +125,12 @@ export const FleetPage: React.FC = () => {
         >
           <Button size="small" danger icon={<StopOutlined />} loading={busy === 'stopAll'}>Stop All</Button>
         </Popconfirm>
+        <Tooltip title="Nâng hàng toàn bộ AGV (pick load)">
+          <Button size="small" icon={<VerticalAlignTopOutlined />} loading={busy === 'liftAll'}
+            onClick={() => runBulk('liftAll', () => liftMany())}>
+            Lift All
+          </Button>
+        </Tooltip>
         <Tooltip title="Bơm đầy pin toàn bộ AGV (100%)">
           <Button size="small" icon={<PercentageOutlined />} loading={busy === 'batteryAll'}
             onClick={() => runBulk('batteryAll', () => refillBatteryMany())}>
@@ -167,7 +173,7 @@ export const FleetPage: React.FC = () => {
     );
     return () => setHeaderRight(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setHeaderRight, busy, agvs.length, startMany, stopMany, deleteMany, refillBatteryMany]);
+  }, [setHeaderRight, busy, agvs.length, startMany, stopMany, deleteMany, refillBatteryMany, liftMany]);
 
   // Chỉ table body scroll: đo vùng còn lại trừ thead + pagination.
   const tableAreaRef = useRef<HTMLDivElement>(null);
@@ -415,6 +421,22 @@ export const FleetPage: React.FC = () => {
               onClick={() => runBulk('stopSel', () => stopMany(selectedIds))}
             >
               Stop
+            </Button>
+            <Button
+              size="small"
+              icon={<VerticalAlignTopOutlined />}
+              loading={busy === 'liftSel'}
+              onClick={() => runBulk('liftSel', () => liftMany(selectedIds))}
+            >
+              Lift
+            </Button>
+            <Button
+              size="small"
+              icon={<VerticalAlignBottomOutlined />}
+              loading={busy === 'lowerSel'}
+              onClick={() => runBulk('lowerSel', () => lowerMany(selectedIds))}
+            >
+              Lower
             </Button>
             <Popconfirm
               title={`Delete ${selectedIds.length} AGV(s)?`}
