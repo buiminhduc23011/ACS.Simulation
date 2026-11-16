@@ -113,6 +113,22 @@ public partial class VirtualAgv
                 _currentTheta = NormalizeAngle(_arrivalTheta.Value);
             }
 
+            // Transit node (không action, còn node kế tiếp đã released, không pause/error):
+            // giữ Driving=true xuyên suốt để ACS không thấy nháy Chờ -> Đang Chạy,
+            // và bỏ 1 bản tin trung gian (arrival Driving=false) — ExecuteNextNode
+            // sẽ publish 1 lần Driving=true. Cắt ~50% state spam khi chạy nhiều node.
+            bool hasNodeActions = currentNode.Actions is { Count: > 0 };
+            int nextIdx = _currentNodeIndex + 1;
+            var nextNode = (_currentOrder != null && nextIdx >= 0 && nextIdx < _currentOrder.Nodes.Count)
+                ? _currentOrder.Nodes[nextIdx]
+                : null;
+            bool willStop = hasNodeActions
+                || nextNode == null
+                || !nextNode.Released
+                || _pauseLatched
+                || _currentState.Paused == true
+                || _currentState.Errors.Count > 0;
+
             _currentState.AgvPosition.Theta = ToServerTheta(_currentTheta);
             _currentVisualization.AgvPosition.Theta = ToServerTheta(_currentTheta);
             _currentState.Velocity!.Vx = 0;
@@ -121,7 +137,7 @@ public partial class VirtualAgv
             _currentVisualization.Velocity!.Vx = 0;
             _currentVisualization.Velocity.Vy = 0;
             _currentVisualization.Velocity.Omega = 0;
-            _currentState.Driving = false;
+            _currentState.Driving = !willStop;
             _isMoving = false;
             _isRotating = false;
             _isReversing = false;
@@ -133,12 +149,21 @@ public partial class VirtualAgv
             _activeTrajectoryPoints = null;
             _currentTrajectorySegmentIndex = 0;
 
-            StopVisualizationTimer();
+            if (willStop)
+            {
+                StopVisualizationTimer();
 
-            _logger.LogInformation("AGV {SerialNumber} arrived at node {NodeId} ({X}, {Y})",
-                _config.SerialNumber, currentNode.NodeId, _currentX, _currentY);
+                _logger.LogInformation("AGV {SerialNumber} arrived at node {NodeId} ({X}, {Y})",
+                    _config.SerialNumber, currentNode.NodeId, _currentX, _currentY);
 
-            await PublishStateAsync(true);
+                await PublishStateAsync(true);
+            }
+            else
+            {
+                _logger.LogDebug("AGV {SerialNumber} transit node {NodeId} — skip stop publish, keep Driving=true",
+                    _config.SerialNumber, currentNode.NodeId);
+            }
+
             await ExecuteNodeActionsAsync(currentNode);
             await ExecuteNextNodeAsync();
             return;

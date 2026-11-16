@@ -645,6 +645,7 @@ public partial class VirtualAgv
                 return;
             }
 
+            bool wasDriving = _currentState.Driving;
             _isMoving = true;
             _currentState.Driving = true;
 
@@ -663,7 +664,18 @@ public partial class VirtualAgv
 
             StartVisualizationTimer();
 
-            await PublishStateAsync(true);
+            // Transit giữa 2 node (wasDriving=true nhờ fix arrival): bỏ publish
+            // departure trùng lặp — periodic 2s sẽ đồng bộ NodeStates/EdgeStates.
+            // Chỉ publish khi bắt đầu chạy từ trạng thái đứng yên.
+            if (!wasDriving)
+            {
+                await PublishStateAsync(true);
+            }
+            else
+            {
+                _logger.LogDebug("AGV {SerialNumber} transit — skip departure publish (already Driving)",
+                    _config.SerialNumber);
+            }
 
             _logger.LogInformation(
                 "AGV {SerialNumber} moving to ({X}, {Y}) with heading {Heading:F2} rad ({Direction})",
