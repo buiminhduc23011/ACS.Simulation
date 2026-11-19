@@ -392,7 +392,7 @@ public sealed class PumpService
 
     /// <summary>
     /// Một tick của vòng poll duy nhất: health-check, poll các transaction tới hạn (tối đa 4 song song),
-    /// chưa đủ TargetRunning thì lấp đầy deficit bằng cách start lần lượt trên workflow rảnh (xoay vòng).
+    /// chưa chạm trần TargetRunning thì start tối đa 1 workflow rảnh (xoay vòng) trong tick này.
     /// Không log mỗi lần poll — chỉ event khi trạng thái đổi hoặc lỗi.
     /// </summary>
     public async Task RunTickAsync(CancellationToken cancellationToken)
@@ -541,25 +541,18 @@ public sealed class PumpService
             }
         }
 
+        // Mỗi tick tối đa 1 lệnh start: không dồn nhiều lệnh trong cùng 1 lần gọi ACS.
+        // TargetRunning chỉ là trần: chưa chạm trần và còn workflow rảnh thì start thêm 1, không cần lấp đầy.
         if (target > 0 && activeNow < target && freeNow.Count > 0)
         {
-            // Lấp đầy deficit: start lần lượt trên các workflow rảnh (xoay vòng), vẫn trong giới hạn 10 req/s.
-            // Tx xong tức thì (start đã Completed) thì tick sau bù tiếp; tx chạy lâu thì deficit tự triệt tiêu.
             var startOutcome = new TickOutcome();
-            var remaining = new List<int>(freeNow);
-            while (activeNow < target && remaining.Count > 0 && startOutcome.Auth is null)
-            {
-                var nextId = PickNextRoundRobin(ids, remaining);
-                if (!nextId.HasValue)
-                    break;
-                remaining.Remove(nextId.Value);
-                if (await StartPickedAsync(client, baseUrl, apiKey, nextId.Value, startOutcome, cancellationToken))
-                    activeNow++;
-            }
+            var nextId = PickNextRoundRobin(ids, freeNow);
+            if (nextId.HasValue)
+                await StartPickedAsync(client, baseUrl, apiKey, nextId.Value, startOutcome, cancellationToken);
             if (startOutcome.Auth is not null)
                 NoteAuth(startOutcome.Auth);
             else if (startOutcome.Retryable > 0)
-                NoteRetryable(startOutcome.RetryAfterMs, $"{startOutcome.Retryable} start");
+                NoteRetryable(startOutcome.RetryAfterMs, "start");
         }
         // Ổn định (đủ target / không còn workflow rảnh): không event, không log — tránh spam.
 
