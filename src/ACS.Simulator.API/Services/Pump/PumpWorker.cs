@@ -1,6 +1,6 @@
 namespace ACS.Simulator.API.Services.Pump;
 
-/// <summary>Vòng poll duy nhất của pump: mỗi tick cách nhau Interval + jitter (tối thiểu 15s), tôn trọng backoff.</summary>
+/// <summary>Vòng poll duy nhất của pump: mỗi tick cách nhau Interval + jitter (tối thiểu 1s), tôn trọng backoff.</summary>
 public sealed class PumpWorker(PumpService pump, ILogger<PumpWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

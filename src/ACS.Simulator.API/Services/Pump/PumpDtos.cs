@@ -38,7 +38,7 @@ public sealed class WorkflowRuntime
     public string? Note { get; set; }
     public int StartedCount { get; set; }
 
-    /// <summary>Không poll transaction này trước thời điểm này (tối đa 1 lần/15s + jitter). Chỉ dùng trong bộ nhớ.</summary>
+    /// <summary>Không poll transaction này trước thời điểm này (tối đa 1 lần/interval + jitter). Chỉ dùng trong bộ nhớ.</summary>
     [JsonIgnore]
     public DateTime? NextPollAtUtc { get; set; }
 }

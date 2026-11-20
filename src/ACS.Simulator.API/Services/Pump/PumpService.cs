@@ -7,8 +7,8 @@ namespace ACS.Simulator.API.Services.Pump;
 /// <summary>
 /// Giữ config + runtime của pump; persist vào data/pump-state.json (schema tương thích acs-pump cũ).
 ///
-/// Chính sách chống spam ACS (ACS cache trạng thái transaction 15s, gộp RequestCount mỗi 60s):
-/// - Mỗi transaction active chỉ poll tối đa 1 lần/15s + jitter ±20%; poll nhanh hơn không có dữ liệu mới.
+/// Chính sách chống spam ACS (ACS cache trạng thái transaction ~15s, gộp RequestCount mỗi 60s):
+/// - Mỗi transaction active chỉ poll tối đa 1 lần/interval + jitter ±20% (interval tối thiểu 1s, mặc định 15s);
 /// - Một vòng poll duy nhất (PumpWorker): tối đa 4 request đồng thời, tối đa 10 request/giây, timeout 8s.
 /// - Transaction terminal (Completed/Failed/Cancelled/Timeout/404) gỡ khỏi danh sách poll ngay, không poll lại.
 /// - Chỉ dùng GET /workflows/transactions/{id} để lấy trạng thái; không dùng fleet/AGV để suy ra transaction.
@@ -21,8 +21,8 @@ public sealed class PumpService
     private const string IntegrationApiPath = "/api/integration/v1";
     private const int MaxEvents = 50;
 
-    // Chu kỳ tối thiểu: ACS cache trạng thái transaction 15s.
-    public const int MinIntervalSeconds = 15;
+    // Chu kỳ tối thiểu: cho phép tới 1s (mặc định 15s theo cache ACS).
+    public const int MinIntervalSeconds = 1;
     private const int DefaultIntervalSeconds = 15;
     private const int DefaultJitterPercent = 20;
     private const int DefaultMaxConcurrentRequests = 4;
@@ -485,7 +485,7 @@ public sealed class PumpService
                 }
                 if (r.NextPollAtUtc.HasValue && now < r.NextPollAtUtc.Value)
                 {
-                    // Chưa tới hạn 15s → giữ nguyên phân loại cũ, không poll lại.
+                    // Chưa tới hạn poll lại → giữ nguyên phân loại cũ, không poll lại.
                     // Tx chưa rõ trạng thái vẫn chiếm slot (không start đè lên workflow này).
                     active++;
                     continue;
@@ -761,7 +761,7 @@ public sealed class PumpService
                 r.AgvName = tx.AgvName;
                 r.CommandAccepted = tx.CommandAccepted;
                 r.LastCheckedAt = now;
-                // Terminal: gỡ khỏi poll (không đặt NextPollAt); active: hẹn lần poll kế sau 15s + jitter.
+                // Terminal: gỡ khỏi poll (không đặt NextPollAt); active: hẹn lần poll kế sau interval + jitter.
                 r.NextPollAtUtc = terminal ? null : now + TimeSpan.FromMilliseconds(ApplyJitter(intervalSec * 1000, jitterPct));
                 r.Note = null;
             });

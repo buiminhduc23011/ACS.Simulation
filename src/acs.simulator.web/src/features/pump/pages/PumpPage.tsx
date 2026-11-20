@@ -282,7 +282,7 @@ export const PumpPage: React.FC = () => {
                   <Text style={{ fontSize: 12, color: 'var(--text-secondary)', flexShrink: 0 }}>
                     {pumpEnabled
                       ? nextTick
-                        ? `Tick tiếp theo sau ${nextTick.remainSec}s — mỗi transaction poll tối đa 1 lần/15s (+jitter), mỗi tick start tối đa 1 workflow (xoay vòng)`
+                        ? `Tick tiếp theo sau ${nextTick.remainSec}s — mỗi transaction poll tối đa 1 lần/${state?.intervalSeconds ?? 1}s (+jitter), mỗi tick start tối đa 1 workflow (xoay vòng)`
                         : 'Đang lên lịch…'
                       : `Pump tắt — khi bật sẽ chạy tối đa ${targetRunning} transaction cùng lúc, mỗi transaction poll tối đa 1 lần/${state?.intervalSeconds ?? 15}s`}
                   </Text>
@@ -370,8 +370,8 @@ export const PumpPage: React.FC = () => {
                     <Form.Item name="apiKey" label="API Key (X-ACS-API-Key)" style={{ flex: 2, minWidth: 260, marginBottom: 12 }}>
                       <Input.Password placeholder={state?.hasApiKey ? '(key đã lưu — nhập để thay)' : 'nhập key'} autoComplete="off" />
                     </Form.Item>
-                    <Form.Item name="intervalSeconds" label="Interval (giây, ≥15)" style={{ width: 140, marginBottom: 12 }}>
-                      <InputNumber min={15} max={3600} style={{ width: '100%' }} />
+                    <Form.Item name="intervalSeconds" label="Interval (giây, ≥1)" style={{ width: 140, marginBottom: 12 }}>
+                      <InputNumber min={1} max={3600} style={{ width: '100%' }} />
                     </Form.Item>
                     <Form.Item name="targetRunning" label="Trần running (tối đa)" style={{ width: 160, marginBottom: 12 }}>
                       <InputNumber min={0} max={1000} style={{ width: '100%' }} />
